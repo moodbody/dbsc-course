@@ -81,6 +81,17 @@
                 <span>Course #</span>
                 <select id="courseSel"></select>
             </label>
+            <label class="full twd-label">
+                <span>True wind direction (°)
+                    <span class="twd-hint" id="twdHint">default</span>
+                </span>
+                <div class="twd-row">
+                    <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
+                        autocomplete="off" />
+                    <button id="btnTwdReset" type="button" class="ghost-sm" title="Reset to course default">↺
+                        default</button>
+                </div>
+            </label>
         </section>
 
         <section class="summary" id="summary"></section>

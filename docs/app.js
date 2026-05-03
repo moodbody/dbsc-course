@@ -48,6 +48,9 @@ const countdownSub = $("countdownSub");
 const tidePanel = $("tidePanel");
 const tideBig = $("tideBig");
 const tideSub = $("tideSub");
+const twdInput = $("twdInput");
+const twdHint = $("twdHint");
+const btnTwdReset = $("btnTwdReset");
 
 // ---------- state ----------
 const state = {
@@ -62,6 +65,15 @@ const state = {
     heading: null,         // degrees true (or magnetic if true unavailable)
     headingTrue: false,    // whether `heading` is true-north (vs magnetic)
     chartFullscreen: false,
+    // True wind direction override (degrees, where wind blows FROM).
+    // null  = follow the course-card default (card.wind[windKey].bearing)
+    // 0–359 = user-entered value, persisted for the session only since
+    //         real wind shifts hour-by-hour.
+    twdOverride: (() => {
+        const v = sessionStorage.getItem("dbsc.twd");
+        const n = v == null ? NaN : parseInt(v, 10);
+        return Number.isFinite(n) && n >= 0 && n < 360 ? n : null;
+    })(),
 };
 
 // ---------- helpers ----------
@@ -177,6 +189,50 @@ function currentCourse() {
     };
 }
 
+// True Wind Direction in degrees (0–359, where wind blows FROM).
+// User override takes priority; otherwise the course card's expected
+// wind axis is used so things "just work" without any input.
+function effectiveTWD() {
+    if (state.twdOverride != null) return state.twdOverride;
+    const c = currentCourse();
+    return c && c.bearing != null ? c.bearing : 0;
+}
+
+// True Wind Angle for a given leg bearing (degrees).
+// Returns:
+//   { angle: 0..180,        // |TWA| – absolute angle off the bow
+//     side: "S" | "P" | "", // tack: wind on Stbd/Port (empty when head-to-wind or DDW)
+//     pos:  string }        // point of sail label
+//
+// Worked example matches the user's spec:
+//   TWD = 090°, leg bearing = 000°
+//   diff = ((90 - 0 + 540) % 360) - 180 = 90  -> wind on starboard, beam reach
+function twa(legBearing, twd) {
+    if (legBearing == null) return null;
+    const wind = (twd != null) ? twd : effectiveTWD();
+    let diff = ((wind - legBearing + 540) % 360) - 180; // -180..+180
+    const angle = Math.abs(diff);
+    let side = "";
+    if (angle > 1 && angle < 179) side = (diff > 0) ? "S" : "P";
+    let pos;
+    if (angle < 30) pos = "head to wind";
+    else if (angle < 60) pos = "close-hauled";
+    else if (angle < 80) pos = "close reach";
+    else if (angle < 100) pos = "beam reach";
+    else if (angle < 150) pos = "broad reach";
+    else if (angle < 175) pos = "run";
+    else pos = "dead downwind";
+    return { angle: Math.round(angle), side, pos };
+}
+
+function twaHtml(t) {
+    if (!t) return "";
+    const tackTxt = t.side === "S" ? `<span class="tack-s">${t.angle}°S</span>`
+        : t.side === "P" ? `<span class="tack-p">${t.angle}°P</span>`
+            : `<span>${t.angle}°</span>`;
+    return `${tackTxt} · <span class="pos">${t.pos}</span>`;
+}
+
 function renderSummary() {
     const c = currentCourse();
     cardSub.textContent = `${c.card.id} – ${c.card.name}  •  VHF ${c.card.vhf}`;
@@ -191,7 +247,7 @@ function renderSummary() {
     }
 
     summaryEl.innerHTML = `
-    <div class="k">Wind</div><div class="v">${c.windKey || state.windKey} – ${fmtBearing(c.bearing)}</div>
+    <div class="k">Wind</div><div class="v">${c.windKey || state.windKey} – ${fmtBearing(c.bearing)}${state.twdOverride != null ? ` <span style="color:var(--accent)">(using ${fmtBearing(state.twdOverride)})</span>` : ""}</div>
     <div class="k">Course</div><div class="v">#${state.courseN} – ${c.tokens.length} marks</div>
     <div class="k">Mark-to-mark</div><div class="v">${total ? total.toFixed(2) + " NM" : "—"}</div>
     <div class="raw">${rawStr || "(no marks)"}</div>
@@ -219,11 +275,15 @@ function renderLegs() {
                 sideKey === "s" ? `<span class="pill s">STBD</span>` :
                     `<span class="pill x">—</span>`;
 
+        const legTwa = (i > 0 && bearing != null) ? twa(bearing) : null;
+        const twaLine = legTwa ? `<div class="twa">TWA ${twaHtml(legTwa)}</div>` : "";
+
         li.innerHTML = `
       <div class="idx">${i + 1}</div>
       <div class="info">
         <div class="name">${tok.mark} – ${markName(tok.mark)}${isFinish ? " (Finish)" : ""}</div>
         <div class="meta">${sidePillHtml}<span class="colour">${markColour(tok.mark)}</span></div>
+        ${twaLine}
       </div>
       <div class="nav">
         ${i === 0
@@ -303,6 +363,20 @@ function renderNow() {
             sideKey === "s" ? `<span class="pill s">STBD</span>` :
                 `<span class="pill x">—</span>`;
 
+    // True wind angle for the upcoming leg (uses chart bearing if we have it,
+    // otherwise the live GPS bearing — either way it's relative to the same TWD).
+    let twaForLeg = null;
+    if (idx > 0 && tableNav.bearing != null) twaForLeg = twa(tableNav.bearing);
+    else if (state.gpsPos && MARKS[target.mark]) {
+        const g = geo(state.gpsPos.lat, state.gpsPos.lon, MARKS[target.mark].lat, MARKS[target.mark].lon);
+        twaForLeg = twa(g.bearing);
+    }
+    const twdNow = effectiveTWD();
+    const twdSrc = state.twdOverride != null ? "your input" : "course default";
+    const twaLineHtml = twaForLeg
+        ? `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc}) · TWA ${twaHtml(twaForLeg)}</div>`
+        : `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc})</div>`;
+
     nowEl.innerHTML = `
     <h3>Next mark — ${idx + 1} of ${c.tokens.length}</h3>
     <div class="name">${target.mark} – ${markName(target.mark)} ${sidePillHtml}</div>
@@ -320,6 +394,7 @@ function renderNow() {
         <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
       </div>
     </div>
+    ${twaLineHtml}
     ${gpsHtml}
   `;
 
@@ -341,14 +416,24 @@ function renderAll() {
 
 // ---------- events ----------
 cardSel.addEventListener("change", () => {
+    const oldDefault = currentCourse().bearing;
     state.cardId = cardSel.value;
     state.rounded = 0;
-    populateWinds(); populateCourses(); saveSelection(); renderAll();
+    populateWinds(); populateCourses(); saveSelection();
+    // If override exactly matches the previous default, the user almost
+    // certainly hasn't customised TWD — let the new card's default take over.
+    if (state.twdOverride === oldDefault) clearTwdOverride();
+    syncTwdInput();
+    renderAll();
 });
 windSel.addEventListener("change", () => {
+    const oldDefault = currentCourse().bearing;
     state.windKey = windSel.value;
     state.rounded = 0;
-    populateCourses(); saveSelection(); renderAll();
+    populateCourses(); saveSelection();
+    if (state.twdOverride === oldDefault) clearTwdOverride();
+    syncTwdInput();
+    renderAll();
 });
 courseSel.addEventListener("change", () => {
     state.courseN = +courseSel.value;
@@ -369,6 +454,80 @@ btnReset.addEventListener("click", () => {
     state.rounded = 0;
     renderAll();
 });
+
+// ---------- True wind direction input ----------
+function clearTwdOverride() {
+    state.twdOverride = null;
+    sessionStorage.removeItem("dbsc.twd");
+}
+
+// Push the effective TWD value (and override-vs-default state) back to the
+// input field. Called whenever something upstream changes (card / wind sector
+// / reset). User typing into the field doesn't trigger this.
+function syncTwdInput() {
+    if (!twdInput) return;
+    const eff = effectiveTWD();
+    if (state.twdOverride != null) {
+        twdInput.value = String(state.twdOverride);
+        if (twdHint) {
+            twdHint.textContent = "your input";
+            twdHint.classList.add("override");
+        }
+    } else {
+        twdInput.value = String(Math.round(eff));
+        if (twdHint) {
+            twdHint.textContent = "default";
+            twdHint.classList.remove("override");
+        }
+    }
+}
+
+if (twdInput) {
+    const onTwdChange = () => {
+        const raw = twdInput.value.trim();
+        if (raw === "") { clearTwdOverride(); syncTwdInput(); renderAll(); return; }
+        let n = parseInt(raw, 10);
+        if (!Number.isFinite(n)) return;
+        // Wrap any value into 0..359 so the helm can type "370" or "-10".
+        n = ((n % 360) + 360) % 360;
+        const def = currentCourse().bearing;
+        if (n === def) {
+            clearTwdOverride();
+        } else {
+            state.twdOverride = n;
+            sessionStorage.setItem("dbsc.twd", String(n));
+        }
+        syncTwdInput();
+        renderAll();
+    };
+    twdInput.addEventListener("change", onTwdChange);
+    // Also live-update on input for instant feedback while spinner is being used.
+    twdInput.addEventListener("input", () => {
+        const raw = twdInput.value.trim();
+        if (raw === "") return;
+        const n = parseInt(raw, 10);
+        if (!Number.isFinite(n)) return;
+        const wrapped = ((n % 360) + 360) % 360;
+        const def = currentCourse().bearing;
+        state.twdOverride = (wrapped === def) ? null : wrapped;
+        if (state.twdOverride != null) sessionStorage.setItem("dbsc.twd", String(wrapped));
+        else sessionStorage.removeItem("dbsc.twd");
+        // Don't call syncTwdInput() here — we'd fight the user's caret.
+        if (twdHint) {
+            twdHint.textContent = state.twdOverride != null ? "your input" : "default";
+            twdHint.classList.toggle("override", state.twdOverride != null);
+        }
+        renderAll();
+    });
+}
+
+if (btnTwdReset) {
+    btnTwdReset.addEventListener("click", () => {
+        clearTwdOverride();
+        syncTwdInput();
+        renderAll();
+    });
+}
 
 // ---------- GPS ----------
 btnGps.addEventListener("click", () => {
@@ -413,6 +572,7 @@ btnGps.addEventListener("click", () => {
 populateCards();
 populateWinds();
 populateCourses();
+syncTwdInput();
 renderAll();
 
 // Try to pull a fresh data.json from the network (GitHub Pages) so simple
@@ -431,6 +591,7 @@ renderAll();
             populateCards();
             populateWinds();
             populateCourses();
+            syncTwdInput();
             renderAll();
             if (oldKey !== newKey) console.log("[DBSC] live data refreshed from data.json");
         })
@@ -579,6 +740,44 @@ function drawChartTo(canvas) {
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
         ctx.fillText("N", ax, ay - head * 0.6);
+    }
+
+    // Wind arrow — drawn top-LEFT corner, points in the direction the wind
+    // is blowing TO (i.e. opposite the TWD reading). Includes the numeric
+    // bearing label so a glance at the chart confirms the wind setting.
+    {
+        const wTwd = effectiveTWD();
+        const accent = cssVar("--accent", "#ffb000");
+        const wx = margin + Math.round(W * 0.05);
+        const wy = margin + Math.round(W * 0.05);
+        const wlen = Math.round(W * 0.06);
+        const whead = Math.round(W * 0.018);
+        // Wind blows TO (TWD + 180). Convert to screen angle: 0° = up.
+        const blowTo = (wTwd + 180) % 360;
+        const rad = (blowTo - 90) * Math.PI / 180;
+        const dx = Math.cos(rad), dy = Math.sin(rad);
+        ctx.strokeStyle = accent;
+        ctx.fillStyle = accent;
+        ctx.lineWidth = Math.max(2, W * 0.0035);
+        // shaft: from (wx,wy) outward in the blow direction
+        ctx.beginPath();
+        ctx.moveTo(wx, wy);
+        ctx.lineTo(wx + dx * wlen, wy + dy * wlen);
+        ctx.stroke();
+        // arrowhead at the tip
+        const tipX = wx + dx * wlen, tipY = wy + dy * wlen;
+        const perpX = -dy, perpY = dx;
+        ctx.beginPath();
+        ctx.moveTo(tipX + dx * whead, tipY + dy * whead);
+        ctx.lineTo(tipX - dx * whead * 0.4 + perpX * whead * 0.6, tipY - dy * whead * 0.4 + perpY * whead * 0.6);
+        ctx.lineTo(tipX - dx * whead * 0.4 - perpX * whead * 0.6, tipY - dy * whead * 0.4 - perpY * whead * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        // label below the icon
+        ctx.font = `bold ${Math.round(W * 0.018)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.fillText(`Wind ${String(Math.round(wTwd)).padStart(3, "0")}°`,
+            margin, wy + Math.round(W * 0.06));
     }
 
     // Faint background marks (not in this course)

@@ -959,3 +959,87 @@ footer small a {
 .now .gps.live .steer {
     color: var(--accent);
 }
+
+/* ---------- true wind direction input ---------- */
+.twd-label .twd-hint {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--muted);
+    margin-left: 6px;
+}
+
+.twd-label .twd-hint.override {
+    color: var(--accent);
+}
+
+.twd-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.twd-row #twdInput {
+    flex: 1;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+}
+
+.twd-row #twdInput:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+}
+
+.twd-row .ghost-sm {
+    white-space: nowrap;
+}
+
+/* ---------- TWA chips on legs ---------- */
+.legs li .twa {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+.legs li .twa .pos {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.legs li .twa .tack-s {
+    color: var(--stbd);
+    font-weight: 700;
+}
+
+.legs li .twa .tack-p {
+    color: var(--port);
+    font-weight: 700;
+}
+
+.now .twa-line {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.now .twa-line .pos {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.now .twa-line .tack-s {
+    color: var(--stbd);
+    font-weight: 700;
+}
+
+.now .twa-line .tack-p {
+    color: var(--port);
+    font-weight: 700;
+}
