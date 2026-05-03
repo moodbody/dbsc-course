@@ -16,13 +16,16 @@
     --line: #1f4870;
     --hi: #ffb00022;
     /* Chart-specific tokens (used by canvas drawing in app.js) */
-    --chart-grid: #13314d;
+    --chart-sea: #1d4a73;
+    --chart-land: #2a3848;
+    --chart-coast: #4a6280;
+    --chart-grid: #2a5076;
     --chart-mark-bg: #f5f7fa;
     --chart-mark-text: #0a1a2c;
-    --chart-mark-faint: #23496e;
-    --chart-leg-done: #345a7d;
-    --chart-leg-todo: #e7eef5;
-    --chart-arrow: #8aa5bf;
+    --chart-mark-faint: #3d6b95;
+    --chart-leg-done: #6a90b5;
+    --chart-leg-todo: #f5faff;
+    --chart-arrow: #cfe0f0;
 }
 
 /* Light theme — applied when <html data-theme="light"> or system preference
@@ -39,13 +42,16 @@
     --muted: #5a6f86;
     --line: #c8d4e1;
     --hi: #c97a0022;
-    --chart-grid: #d2dcea;
+    --chart-sea: #cce4f5;
+    --chart-land: #ebe1c8;
+    --chart-coast: #b9a778;
+    --chart-grid: #b9cee0;
     --chart-mark-bg: #11243a;
     --chart-mark-text: #ffffff;
-    --chart-mark-faint: #b8c6d6;
-    --chart-leg-done: #9aaec5;
+    --chart-mark-faint: #98aabe;
+    --chart-leg-done: #7a8ea5;
     --chart-leg-todo: #11243a;
-    --chart-arrow: #5a6f86;
+    --chart-arrow: #4a5e75;
 }
 
 html,
@@ -185,12 +191,15 @@ section {
 }
 
 .controls button.primary:disabled {
-    background: #2c4f3f;
-    color: #9bbfa9;
+    background: var(--card2);
+    color: var(--muted);
+    border-color: var(--line);
+    opacity: .7;
 }
 
 .controls button.ghost:disabled {
-    color: #4f6b85;
+    color: var(--muted);
+    opacity: .55;
 }
 
 .controls button:active {
@@ -439,7 +448,7 @@ footer {
     display: block;
     width: 100%;
     height: auto;
-    background: #0a1a2c;
+    background: var(--chart-sea);
     touch-action: pan-y;
 }
 
@@ -610,11 +619,11 @@ footer {
 }
 
 .recommend.warn .card {
-    border-color: #d33;
+    border-color: var(--port);
 }
 
 .recommend.warn .day {
-    color: #ff7a7a;
+    color: var(--port);
 }
 
 /* ---------- Docs view ---------- */
@@ -667,7 +676,7 @@ footer {
     position: relative;
     margin: 10px 16px 0;
     padding: 12px 38px 12px 14px;
-    background: linear-gradient(180deg, #14375a, #11304b);
+    background: linear-gradient(180deg, var(--card2), var(--card));
     border: 1px solid var(--accent);
     border-radius: 12px;
     color: var(--text);
@@ -705,7 +714,7 @@ footer {
     padding: 0 6px;
     border: 1px solid var(--line);
     border-radius: 4px;
-    background: #0b1f33;
+    background: var(--bg);
     font-weight: 700;
     font-size: 12px;
 }
@@ -760,7 +769,7 @@ footer small a {
     gap: 10px;
     max-width: calc(100vw - 24px);
     padding: 10px 12px 10px 14px;
-    background: #14375a;
+    background: var(--card2);
     border: 1px solid var(--accent);
     border-radius: 999px;
     color: var(--text);
@@ -979,6 +988,7 @@ footer small a {
     width: 100%;
     height: 100%;
     display: block;
+    background: var(--chart-sea);
 }
 
 .chart-modal .cm-close {

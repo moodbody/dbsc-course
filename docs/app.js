@@ -22,6 +22,54 @@ function applyData(d) {
 }
 applyData(window.DBSC_DATA);
 
+// ---------- Coastline (approx) ----------
+// Hand-traced shoreline of Dublin Bay from Howth Head south to Bray Head,
+// running roughly N -> S along the western shore of the bay. Used to
+// shade land on the chart. The polygon is closed by going far inland
+// (lon -6.30) so anything west of the shore is filled as land.
+// These are approximate (~50 m) — fine for at-a-glance context.
+const DUBLIN_BAY_COAST = [
+    { lat: 53.388, lon: -6.046 },   // Howth Head NE (Bailey)
+    { lat: 53.378, lon: -6.061 },   // Howth Head south
+    { lat: 53.372, lon: -6.084 },   // Sutton south
+    { lat: 53.371, lon: -6.144 },   // North Bull Island N tip
+    { lat: 53.359, lon: -6.158 },   // Bull Island W shore
+    { lat: 53.347, lon: -6.193 },   // Causeway / Clontarf
+    { lat: 53.346, lon: -6.222 },   // North Wall (Liffey mouth N)
+    { lat: 53.344, lon: -6.222 },   // Liffey mouth S
+    { lat: 53.343, lon: -6.187 },   // Poolbeg / South Wall tip
+    { lat: 53.339, lon: -6.213 },   // Sandymount strand
+    { lat: 53.330, lon: -6.215 },   // Merrion gates
+    { lat: 53.314, lon: -6.205 },   // Booterstown
+    { lat: 53.303, lon: -6.180 },   // Blackrock
+    { lat: 53.295, lon: -6.165 },   // Seapoint / Salthill
+    { lat: 53.293, lon: -6.149 },   // West Pier root
+    { lat: 53.300, lon: -6.139 },   // West Pier head
+    { lat: 53.297, lon: -6.139 },   // back inside (harbour)
+    { lat: 53.295, lon: -6.135 },   // harbour back
+    { lat: 53.299, lon: -6.131 },   // East Pier head
+    { lat: 53.295, lon: -6.131 },   // East Pier inside
+    { lat: 53.291, lon: -6.107 },   // Sandycove / 40 Foot
+    { lat: 53.282, lon: -6.094 },   // Bullock Harbour
+    { lat: 53.276, lon: -6.087 },   // Coliemore (Dalkey Sound)
+    { lat: 53.263, lon: -6.094 },   // Killiney N
+    { lat: 53.243, lon: -6.090 },   // White Rock
+    { lat: 53.197, lon: -6.077 },   // Bray Head N
+    { lat: 53.180, lon: -6.080 },   // Bray Head south
+    // close polygon far inland so the land fills properly:
+    { lat: 53.180, lon: -6.350 },
+    { lat: 53.400, lon: -6.350 },
+];
+
+// Dalkey Island (separate islet to draw)
+const DALKEY_ISLAND = [
+    { lat: 53.276, lon: -6.094 },
+    { lat: 53.275, lon: -6.088 },
+    { lat: 53.272, lon: -6.087 },
+    { lat: 53.270, lon: -6.092 },
+    { lat: 53.273, lon: -6.096 },
+];
+
 const $ = (id) => document.getElementById(id);
 
 const cardSel = $("cardSel");
@@ -753,6 +801,29 @@ function drawMapTo(canvas) {
         const y = offY + (maxLat - lat) * s;  // y inverted: north up
         return [x, y];
     }
+
+    // ---- sea fill (entire visible area) ----
+    ctx.fillStyle = cssVar("--chart-sea", "#1d4a73");
+    ctx.fillRect(0, 0, W, H);
+
+    // ---- land polygons (Dublin Bay coast + Dalkey Island) ----
+    function fillLand(coords) {
+        if (!coords || coords.length < 3) return;
+        ctx.beginPath();
+        coords.forEach((p, i) => {
+            const [x, y] = project(p.lat, p.lon);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = cssVar("--chart-land", "#2a3848");
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, W * 0.0015);
+        ctx.strokeStyle = cssVar("--chart-coast", "#4a6280");
+        ctx.stroke();
+    }
+    fillLand(DUBLIN_BAY_COAST);
+    fillLand(DALKEY_ISLAND);
 
     // Background grid (very faint)
     ctx.strokeStyle = cssVar("--chart-grid", "#13314d");
