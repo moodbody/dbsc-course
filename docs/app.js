@@ -659,6 +659,12 @@ const ibBody = document.getElementById("ibBody");
 const ibClose = document.getElementById("ibClose");
 const lnkInstallHelp = document.getElementById("lnkInstallHelp");
 
+// One-time migration: earlier versions used localStorage for "dismissed",
+// which made the banner never come back. Drop that so users who closed
+// it on a previous visit see it again. The new logic only persists
+// dismissal when the app is actually installed (`dbsc.installed`).
+try { localStorage.removeItem("dbsc.installDismissed"); } catch (_) { }
+
 function isStandalone() {
     return (
         window.matchMedia("(display-mode: standalone)").matches ||
@@ -709,8 +715,10 @@ function instructionsFor(platform) {
 function renderInstallBanner(force) {
     if (!installBanner || !ibBody) return;
     if (isStandalone()) { installBanner.hidden = true; return; }
-    const dismissed = localStorage.getItem("dbsc.installDismissed") === "1";
-    if (dismissed && !force) { installBanner.hidden = true; return; }
+    // Permanent dismissal only when the user actually installed.
+    if (localStorage.getItem("dbsc.installed") === "1" && !force) { installBanner.hidden = true; return; }
+    // Soft dismissal lasts only until the tab is closed.
+    if (sessionStorage.getItem("dbsc.installHidden") === "1" && !force) { installBanner.hidden = true; return; }
 
     const platform = detectPlatform();
     let html = instructionsFor(platform);
@@ -732,7 +740,7 @@ function renderInstallBanner(force) {
             deferredPrompt = null;
             if (choice && choice.outcome === "accepted") {
                 installBanner.hidden = true;
-                localStorage.setItem("dbsc.installDismissed", "1");
+                localStorage.setItem("dbsc.installed", "1");
             }
         });
     }
@@ -741,13 +749,15 @@ function renderInstallBanner(force) {
 if (ibClose) {
     ibClose.addEventListener("click", () => {
         installBanner.hidden = true;
-        localStorage.setItem("dbsc.installDismissed", "1");
+        // Only hide for this session — reappear on next visit until installed.
+        sessionStorage.setItem("dbsc.installHidden", "1");
     });
 }
 if (lnkInstallHelp) {
     lnkInstallHelp.addEventListener("click", (e) => {
         e.preventDefault();
-        localStorage.removeItem("dbsc.installDismissed");
+        sessionStorage.removeItem("dbsc.installHidden");
+        localStorage.removeItem("dbsc.installed");
         renderInstallBanner(true);
         installBanner.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -757,7 +767,7 @@ if (lnkInstallHelp) {
 window.addEventListener("appinstalled", () => {
     if (installBanner) installBanner.hidden = true;
     if (btnInstall) btnInstall.hidden = true;
-    localStorage.setItem("dbsc.installDismissed", "1");
+    localStorage.setItem("dbsc.installed", "1");
 });
 
 renderInstallBanner();
