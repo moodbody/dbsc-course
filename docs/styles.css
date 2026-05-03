@@ -914,40 +914,36 @@ footer small a {
     background: var(--card2);
 }
 
-/* segmented Chart / Steer toggle, top-left of chartwrap */
-.view-toggle {
+/* single Chart/Steer toggle button, top-left of chartwrap */
+.view-toggle-single {
     position: absolute;
     top: 8px;
     left: 8px;
-    display: flex;
-    gap: 0;
-    border-radius: 8px;
-    overflow: hidden;
+    z-index: 2;
     border: 1px solid var(--line);
     background: rgba(11, 31, 51, .65);
-    z-index: 2;
-}
-
-:root[data-theme="light"] .view-toggle {
-    background: rgba(255, 255, 255, .85);
-}
-
-.view-toggle .vt-btn {
-    appearance: none;
-    border: 0;
-    background: transparent;
     color: var(--text);
     font: inherit;
     font-size: 13px;
-    padding: 7px 10px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 8px;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
 
-.view-toggle .vt-btn.active {
+:root[data-theme="light"] .view-toggle-single {
+    background: rgba(255, 255, 255, .85);
+}
+
+.view-toggle-single[aria-pressed="true"] {
     background: var(--accent);
     color: #07223a;
-    font-weight: 700;
+    border-color: var(--accent);
+}
+
+.view-toggle-single:active {
+    transform: scale(.97);
 }
 
 /* ---------- fullscreen chart modal ---------- */

@@ -953,26 +953,22 @@ function drawMapTo(canvas) {
     }
 }
 
-// ---------- Steer (compass-arrow) view ----------
-// Big rotating arrow that points at the next mark. North-up when the
-// device compass is off; head-up when the compass is on (so the arrow
-// always tells you which way to turn from your current bow direction).
+// ---------- Steer (big-arrow) view ----------
+// A single, full-size arrow that points at the next mark on the True
+// bearing. North is always up. No compass / device-orientation needed.
+// If GPS is on we use boat->mark; otherwise we fall back to the leg
+// bearing from the previous mark, which is what you should be sailing.
 function drawSteerTo(canvas) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    const cx = W / 2, cy = H / 2;
-    const R = Math.min(W, H) * 0.42;     // outer dial radius
     const accent = cssVar("--accent", "#ffb000");
     const text = cssVar("--text", "#e7eef5");
     const muted = cssVar("--muted", "#cfd9e4");
-    const line = cssVar("--line", "#1c3a5b");
-    const stbd = cssVar("--stbd", "#1aa64a");
-    const port = cssVar("--port", "#d33");
 
-    // Figure out the current leg target (next mark to round) + bearing
+    // Find the target mark
     const c = currentCourse();
     const tokens = c.tokens || [];
     const nextIdx = state.rounded;
@@ -980,191 +976,129 @@ function drawSteerTo(canvas) {
     const nextMarkLetter = nextTok ? nextTok.mark : null;
     const nextMark = nextMarkLetter ? MARKS[nextMarkLetter] : null;
 
-    let bearingToMark = null, distanceToMark = null;
+    // Compute bearing & distance
+    let bearingToMark = null, distanceToMark = null, src = null;
     if (state.gpsPos && nextMark) {
         const g = geo(state.gpsPos.lat, state.gpsPos.lon, nextMark.lat, nextMark.lon);
         bearingToMark = g.bearing;
         distanceToMark = g.distance;
+        src = "gps";
     } else if (nextIdx > 0 && tokens[nextIdx - 1] && nextMark) {
-        // Without GPS, fall back to leg bearing from the previous mark
         const prev = MARKS[tokens[nextIdx - 1].mark];
         if (prev) {
             const g = geo(prev.lat, prev.lon, nextMark.lat, nextMark.lon);
             bearingToMark = g.bearing;
             distanceToMark = g.distance;
+            src = "leg";
+        }
+    } else if (nextMark && tokens[0] && tokens[0].mark === nextMarkLetter) {
+        // Very first mark of the course — use the start->first-mark leg if
+        // there's a second token, else just point along the wind axis as a
+        // graceful fallback.
+        if (tokens[1]) {
+            const m2 = MARKS[tokens[1].mark];
+            if (m2) {
+                const g = geo(nextMark.lat, nextMark.lon, m2.lat, m2.lon);
+                // bearing is roughly along the first leg; show it pointed at
+                // the mark from the boat-direction perspective.
+                bearingToMark = g.bearing;
+                distanceToMark = null;
+                src = "leg";
+            }
         }
     }
 
-    const headingActive = state.headingOn && state.heading != null;
-    // If compass is on, rotate the dial so the heading points up (head-up).
-    // Otherwise the dial is fixed with North up.
-    const dialRot = headingActive ? -state.heading : 0; // degrees rotation
-
-    // ---- dial background ----
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.fillStyle = cssVar("--card2", "#0e2a45");
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = line;
-    ctx.stroke();
-
-    // ---- ticks & cardinals (rotate with dial) ----
-    ctx.translate(cx, cy);
-    ctx.rotate((dialRot * Math.PI) / 180);
-    for (let deg = 0; deg < 360; deg += 10) {
-        const major = deg % 30 === 0;
-        const a = (deg - 90) * Math.PI / 180;
-        const r1 = R - (major ? 14 : 7);
-        const r2 = R - 2;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
-        ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
-        ctx.lineWidth = major ? 2 : 1;
-        ctx.strokeStyle = major ? muted : line;
-        ctx.stroke();
-    }
-    const labels = [["N", 0], ["E", 90], ["S", 180], ["W", 270]];
-    ctx.font = `bold ${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    for (const [lbl, deg] of labels) {
-        const a = (deg - 90) * Math.PI / 180;
-        const r = R - 30;
-        ctx.save();
-        ctx.translate(Math.cos(a) * r, Math.sin(a) * r);
-        ctx.rotate(-(dialRot * Math.PI) / 180); // counter-rotate text to keep upright
-        ctx.fillStyle = lbl === "N" ? accent : muted;
-        ctx.fillText(lbl, 0, 0);
-        ctx.restore();
-    }
-    ctx.restore();
-
-    // ---- bow indicator at top of dial (only when head-up) ----
-    if (headingActive) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.fillStyle = "#3aa0ff";
-        ctx.beginPath();
-        ctx.moveTo(0, -R - 4);
-        ctx.lineTo(-8, -R + 10);
-        ctx.lineTo(8, -R + 10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.font = `bold 11px -apple-system, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillStyle = "#3aa0ff";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText("BOW", 0, -R - 22);
-        ctx.restore();
-    }
-
-    // ---- big arrow to next mark ----
-    if (bearingToMark != null) {
-        // Arrow direction in dial coords: head-up => arrow at (bearing - heading).
-        // North-up => arrow at bearing.
-        const arrowDeg = headingActive
-            ? ((bearingToMark - state.heading + 540) % 360) - 180   // -180..180 (signed offset)
-            : bearingToMark;
-        const a = (arrowDeg - 90) * Math.PI / 180;
-        const armLen = R * 0.78;
-        const armW = Math.max(10, R * 0.10);
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(a + Math.PI / 2);  // 0° = up before rotation
-        // shaft
-        ctx.fillStyle = accent;
-        ctx.beginPath();
-        ctx.moveTo(-armW * 0.35, armLen * 0.05);
-        ctx.lineTo(armW * 0.35, armLen * 0.05);
-        ctx.lineTo(armW * 0.35, -armLen * 0.6);
-        ctx.lineTo(armW * 1.1, -armLen * 0.6);
-        ctx.lineTo(0, -armLen);
-        ctx.lineTo(-armW * 1.1, -armLen * 0.6);
-        ctx.lineTo(-armW * 0.35, -armLen * 0.6);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = "#0a1a2c";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-
-        // hub
-        ctx.beginPath();
-        ctx.arc(cx, cy, Math.max(6, R * 0.06), 0, Math.PI * 2);
-        ctx.fillStyle = "#0a1a2c";
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = accent;
-        ctx.stroke();
-    }
-
-    // ---- text block below dial ----
-    const baseY = cy + R + Math.max(20, H * 0.05);
+    // North label / cardinal markers (small, top of canvas)
+    ctx.font = `700 ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
+    ctx.fillStyle = muted;
+    ctx.fillText("N ↑", W / 2, Math.round(H * 0.025));
 
+    // Layout: top text block, big arrow centred, bottom text block
+    const topBlockH = Math.round(H * 0.10);
+    const bottomBlockH = Math.round(H * 0.22);
+    const arrowAreaH = H - topBlockH - bottomBlockH;
+    const cx = W / 2;
+    const cy = topBlockH + arrowAreaH / 2;
+
+    // Empty / done states
     if (!nextMark) {
         ctx.fillStyle = muted;
-        ctx.font = `${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillText("Course complete 🏁", cx, baseY);
+        ctx.font = `${Math.round(W * 0.05)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("🏁  Course complete", cx, cy);
         return;
     }
     if (bearingToMark == null) {
         ctx.fillStyle = muted;
-        ctx.font = `${Math.round(W * 0.026)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillText("Turn on GPS for live steer to next mark", cx, baseY);
+        ctx.font = `${Math.round(W * 0.035)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(`Heading to ${nextMarkLetter}`, cx, cy - 18);
+        ctx.fillStyle = text;
+        ctx.fillText("Turn on GPS for live bearing", cx, cy + 18);
         return;
     }
 
-    // Bearing big number
-    ctx.fillStyle = accent;
-    ctx.font = `800 ${Math.round(W * 0.06)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillText(fmtBearing(bearingToMark), cx, baseY);
+    // ---- big arrow ----
+    const arrowLen = Math.min(arrowAreaH, W) * 0.85;
+    const shaftW = arrowLen * 0.14;
+    const headW = arrowLen * 0.36;
+    const headH = arrowLen * 0.32;
+    const halfL = arrowLen / 2;
 
-    // "to <mark>"  •  side
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(((bearingToMark - 0) * Math.PI) / 180); // 0° = up = North
+    // arrow shape pointing up before rotation
+    ctx.beginPath();
+    ctx.moveTo(0, -halfL);                      // tip
+    ctx.lineTo(headW / 2, -halfL + headH);
+    ctx.lineTo(shaftW / 2, -halfL + headH);
+    ctx.lineTo(shaftW / 2, halfL);
+    ctx.lineTo(-shaftW / 2, halfL);
+    ctx.lineTo(-shaftW / 2, -halfL + headH);
+    ctx.lineTo(-headW / 2, -halfL + headH);
+    ctx.closePath();
+    ctx.fillStyle = accent;
+    ctx.fill();
+    ctx.lineWidth = Math.max(2, W * 0.004);
+    ctx.strokeStyle = "#0a1a2c";
+    ctx.stroke();
+    ctx.restore();
+
+    // ---- top text: "Next mark"
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = muted;
+    ctx.font = `600 ${Math.round(W * 0.024)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText("Next mark", cx, topBlockH * 0.55);
+
+    // ---- bottom text block: bearing, mark + side, distance ----
+    const baseY = H - bottomBlockH;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    // Bearing (big)
+    ctx.fillStyle = accent;
+    ctx.font = `800 ${Math.round(W * 0.07)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(fmtBearing(bearingToMark), cx, baseY + Math.round(H * 0.005));
+
+    // "to <mark>  ·  Port/Stbd"
     const sideTok = nextTok && nextTok.side;
     const sideStr = (sideTok === "p" || (c.card && c.card.all_port && !sideTok))
         ? "  ·  Port"
         : sideTok === "s" ? "  ·  Stbd" : "";
     ctx.fillStyle = text;
-    ctx.font = `600 ${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    ctx.fillText(`to ${nextMarkLetter}${sideStr}`, cx, baseY + Math.round(W * 0.075));
+    ctx.font = `600 ${Math.round(W * 0.034)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(`to ${nextMarkLetter}${sideStr}`, cx, baseY + Math.round(H * 0.10));
 
-    // Distance
-    if (distanceToMark != null) {
-        ctx.fillStyle = muted;
-        ctx.font = `${Math.round(W * 0.024)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillText(fmtDist(distanceToMark), cx, baseY + Math.round(W * 0.115));
-    }
-
-    // Turn cue (only when compass is active)
-    if (headingActive) {
-        let off = ((bearingToMark - state.heading + 540) % 360) - 180;
-        const absOff = Math.abs(off);
-        let cue, color;
-        if (absOff < 5) { cue = "On course ▲"; color = stbd; }
-        else if (off > 0) { cue = `Turn STBD ${Math.round(absOff)}°`; color = stbd; }
-        else { cue = `Turn PORT ${Math.round(absOff)}°`; color = port; }
-        ctx.fillStyle = color;
-        ctx.font = `700 ${Math.round(W * 0.03)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-        ctx.fillText(cue, cx, baseY + Math.round(W * 0.155));
-    }
-
-    // Top-corner readouts: heading (left), wind (right)
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.font = `600 ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    if (headingActive) {
-        ctx.fillStyle = "#3aa0ff";
-        ctx.fillText(`HDG ${fmtBearing(state.heading)}${state.headingTrue ? "T" : "M"}`,
-            Math.round(W * 0.06), Math.round(H * 0.04));
-    }
-    ctx.textAlign = "right";
-    ctx.fillStyle = accent;
-    const tw = effectiveTWD();
-    ctx.fillText(`WIND ${fmtBearing(tw)}`, W - Math.round(W * 0.06), Math.round(H * 0.04));
+    // Distance + source
+    ctx.fillStyle = muted;
+    ctx.font = `${Math.round(W * 0.026)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    const distStr = distanceToMark != null ? fmtDist(distanceToMark) : "—";
+    const srcStr = src === "gps" ? " · from GPS" : src === "leg" ? " · leg bearing" : "";
+    ctx.fillText(`${distStr}${srcStr}`, cx, baseY + Math.round(H * 0.155));
 }
 
 // Wrap renderAll to also redraw the chart
@@ -1826,20 +1760,19 @@ if (chartModal) {
 
 // ---------- Chart / Steer view toggle ----------
 (function setupViewToggle() {
-    const btnChart = document.getElementById("btnViewChart");
-    const btnSteer = document.getElementById("btnViewSteer");
-    if (!btnChart || !btnSteer) return;
+    const btn = document.getElementById("btnViewToggle");
+    if (!btn) return;
     function apply() {
         const isSteer = state.viewMode === "steer";
-        btnSteer.classList.toggle("active", isSteer);
-        btnChart.classList.toggle("active", !isSteer);
-        btnSteer.setAttribute("aria-selected", isSteer ? "true" : "false");
-        btnChart.setAttribute("aria-selected", isSteer ? "false" : "true");
+        btn.setAttribute("aria-pressed", isSteer ? "true" : "false");
+        btn.textContent = isSteer ? "🗺 Chart" : "🧭 Steer";
         try { localStorage.setItem("dbsc.viewMode", state.viewMode); } catch (_) { }
         if (typeof renderChart === "function") renderChart();
     }
-    btnChart.addEventListener("click", () => { state.viewMode = "chart"; apply(); });
-    btnSteer.addEventListener("click", () => { state.viewMode = "steer"; apply(); });
+    btn.addEventListener("click", () => {
+        state.viewMode = state.viewMode === "steer" ? "chart" : "steer";
+        apply();
+    });
     apply();
 })();
 window.addEventListener("keydown", (e) => {
