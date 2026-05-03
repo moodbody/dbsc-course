@@ -5,6 +5,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b3d66" />
+    <!-- Content Security Policy: same-origin only. No remote scripts, no inline JS,
+         no plugins, no foreign forms. Inline styles are permitted because the canvas
+         chart and a few computed colours are set inline. -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
+    <meta name="referrer" content="no-referrer" />
     <title>DBSC Race Course</title>
 
     <link rel="manifest" href="manifest.webmanifest" />
