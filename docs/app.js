@@ -218,8 +218,8 @@ function twa(legBearing, twd) {
 
 function twaHtml(t) {
     if (!t) return "";
-    if (t.side === "S") return `<span class="tack-s">${t.angle}° starboard</span>`;
-    if (t.side === "P") return `<span class="tack-p">${t.angle}° port</span>`;
+    if (t.side === "S") return `<span class="tack-s">${t.angle}° Starboard</span>`;
+    if (t.side === "P") return `<span class="tack-p">${t.angle}° Port</span>`;
     return `<span>${t.angle}°</span>`;
 }
 
@@ -1156,6 +1156,32 @@ window.addEventListener("appinstalled", () => {
 });
 
 renderInstallBanner();
+
+// ---------- welcome / how-to-use modal ----------
+(function setupWelcome() {
+    const modal = document.getElementById("welcomeModal");
+    const okBtn = document.getElementById("welcomeOk");
+    const helpBtn = document.getElementById("btnHelp");
+    if (!modal) return;
+
+    const SEEN_KEY = "dbsc.welcomeSeen";
+    const open = () => { modal.hidden = false; };
+    const close = () => {
+        modal.hidden = true;
+        try { localStorage.setItem(SEEN_KEY, "1"); } catch (_) { }
+    };
+
+    if (okBtn) okBtn.addEventListener("click", close);
+    if (helpBtn) helpBtn.addEventListener("click", open);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !modal.hidden) close();
+    });
+
+    let seen = false;
+    try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch (_) { }
+    if (!seen) open();
+})();
 
 // ============================================================
 // Tabs (Course / Today / Docs)

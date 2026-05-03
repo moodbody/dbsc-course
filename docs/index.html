@@ -37,10 +37,62 @@
         <button class="ut-close" id="utClose" type="button" aria-label="Dismiss">×</button>
     </div>
 
+    <div id="welcomeModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="welcomeTitle">⛵ Welcome to the DBSC Race Course app</h2>
+            <p>A quick tour — about 30 seconds.</p>
+
+            <h3>1. Pick your course</h3>
+            <ul>
+                <li>Choose your <strong>Course card</strong> (CC1–CC5), the posted <strong>wind direction</strong>, and
+                    the <strong>Course #</strong> from the committee boat board.</li>
+                <li>The chart and leg list update instantly. Tap any leg to jump to it.</li>
+            </ul>
+
+            <h3>2. Refine the wind</h3>
+            <ul>
+                <li>The card's wind direction is a <em>sector</em> (e.g. "SW"). For sharper TWA values, type the actual
+                    <strong>True wind direction</strong> in degrees.
+                </li>
+                <li>Each leg shows TWA as <span class="tack-s">42° Starboard</span> or <span class="tack-p">42°
+                        Port</span>.</li>
+            </ul>
+
+            <h3>3. Race the course</h3>
+            <ul>
+                <li>The <strong>Now</strong> panel shows the current leg, bearing and distance to the next mark, and
+                    which side it's rounded.</li>
+                <li>Tap <strong>✓ Mark rounded</strong> as you round each mark. Use <strong>↶ Undo</strong> if you tap
+                    too soon.</li>
+                <li><strong>📍 Use GPS</strong> adds your live position to the chart and a steer cue. Auto-off after 30
+                    min.</li>
+                <li><strong>🧭 Compass</strong> overlays your heading (mobile only).</li>
+                <li><strong>⛶</strong> opens the chart fullscreen.</li>
+            </ul>
+
+            <h3>4. Other tabs</h3>
+            <ul>
+                <li><strong>Race finder</strong> — pick a date and your boat, get the course card, VHF channel, flag
+                    and warning signal.</li>
+                <li><strong>Docs</strong> — Sailing Instructions, NoR, mark charts, course cards. Cached for offline
+                    use after first view.</li>
+            </ul>
+
+            <p class="modal-note">Bearings are true; distances in nautical miles. Tap the <strong>?</strong> button at
+                the top any time to re-open this guide.</p>
+
+            <div class="modal-row">
+                <button id="welcomeOk" class="primary" type="button">Got it</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="title-row">
             <h1>DBSC Race Course</h1>
             <div class="header-actions">
+                <button id="btnHelp" class="theme-toggle" type="button" aria-label="How to use this app"
+                    title="How to use">?</button>
                 <button id="btnTheme" class="theme-toggle" type="button" aria-label="Toggle light/dark theme"
                     title="Toggle theme">🌙</button>
                 <button id="btnInstall" class="install" hidden>Install</button>

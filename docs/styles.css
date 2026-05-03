@@ -1151,3 +1151,32 @@ footer small a {
     color: #07223a;
     border-color: var(--accent);
 }
+
+/* taller welcome card with scrollable body */
+.modal .welcome-card {
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+}
+
+.modal .welcome-card h2 {
+    font-size: 19px;
+}
+
+.modal .welcome-card h3 {
+    margin: 14px 0 4px;
+    font-size: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+}
+
+.modal .welcome-card .tack-s {
+    color: var(--stbd);
+    font-weight: 700;
+}
+
+.modal .welcome-card .tack-p {
+    color: var(--port);
+    font-weight: 700;
+}
