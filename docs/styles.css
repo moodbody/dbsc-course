@@ -893,7 +893,7 @@ footer small a {
 .chart-expand {
     position: absolute;
     top: 8px;
-    left: 8px;
+    right: 8px;
     width: 36px;
     height: 36px;
     border-radius: 8px;
@@ -912,6 +912,42 @@ footer small a {
 
 .chart-expand:active {
     background: var(--card2);
+}
+
+/* segmented Chart / Steer toggle, top-left of chartwrap */
+.view-toggle {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    gap: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: rgba(11, 31, 51, .65);
+    z-index: 2;
+}
+
+:root[data-theme="light"] .view-toggle {
+    background: rgba(255, 255, 255, .85);
+}
+
+.view-toggle .vt-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.view-toggle .vt-btn.active {
+    background: var(--accent);
+    color: #07223a;
+    font-weight: 700;
 }
 
 /* ---------- fullscreen chart modal ---------- */

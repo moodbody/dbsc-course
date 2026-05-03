@@ -149,6 +149,12 @@
         <section class="summary" id="summary"></section>
 
         <section class="chartwrap">
+            <div class="view-toggle" role="tablist" aria-label="Chart view">
+                <button id="btnViewChart" class="vt-btn active" type="button" role="tab"
+                    aria-selected="true">🗺 Chart</button>
+                <button id="btnViewSteer" class="vt-btn" type="button" role="tab"
+                    aria-selected="false">🧭 Steer</button>
+            </div>
             <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
             <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                 title="Expand">⛶</button>

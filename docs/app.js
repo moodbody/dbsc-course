@@ -65,6 +65,7 @@ const state = {
     heading: null,         // degrees true (or magnetic if true unavailable)
     headingTrue: false,    // whether `heading` is true-north (vs magnetic)
     chartFullscreen: false,
+    viewMode: localStorage.getItem("dbsc.viewMode") === "steer" ? "steer" : "chart",
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
@@ -687,6 +688,12 @@ function renderChart() {
 
 function drawChartTo(canvas) {
     if (!canvas) return;
+    if (state.viewMode === "steer") return drawSteerTo(canvas);
+    return drawMapTo(canvas);
+}
+
+function drawMapTo(canvas) {
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
@@ -944,6 +951,220 @@ function drawChartTo(canvas) {
             ctx.setLineDash([]);
         }
     }
+}
+
+// ---------- Steer (compass-arrow) view ----------
+// Big rotating arrow that points at the next mark. North-up when the
+// device compass is off; head-up when the compass is on (so the arrow
+// always tells you which way to turn from your current bow direction).
+function drawSteerTo(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W / 2, cy = H / 2;
+    const R = Math.min(W, H) * 0.42;     // outer dial radius
+    const accent = cssVar("--accent", "#ffb000");
+    const text = cssVar("--text", "#e7eef5");
+    const muted = cssVar("--muted", "#cfd9e4");
+    const line = cssVar("--line", "#1c3a5b");
+    const stbd = cssVar("--stbd", "#1aa64a");
+    const port = cssVar("--port", "#d33");
+
+    // Figure out the current leg target (next mark to round) + bearing
+    const c = currentCourse();
+    const tokens = c.tokens || [];
+    const nextIdx = state.rounded;
+    const nextTok = tokens[nextIdx];
+    const nextMarkLetter = nextTok ? nextTok.mark : null;
+    const nextMark = nextMarkLetter ? MARKS[nextMarkLetter] : null;
+
+    let bearingToMark = null, distanceToMark = null;
+    if (state.gpsPos && nextMark) {
+        const g = geo(state.gpsPos.lat, state.gpsPos.lon, nextMark.lat, nextMark.lon);
+        bearingToMark = g.bearing;
+        distanceToMark = g.distance;
+    } else if (nextIdx > 0 && tokens[nextIdx - 1] && nextMark) {
+        // Without GPS, fall back to leg bearing from the previous mark
+        const prev = MARKS[tokens[nextIdx - 1].mark];
+        if (prev) {
+            const g = geo(prev.lat, prev.lon, nextMark.lat, nextMark.lon);
+            bearingToMark = g.bearing;
+            distanceToMark = g.distance;
+        }
+    }
+
+    const headingActive = state.headingOn && state.heading != null;
+    // If compass is on, rotate the dial so the heading points up (head-up).
+    // Otherwise the dial is fixed with North up.
+    const dialRot = headingActive ? -state.heading : 0; // degrees rotation
+
+    // ---- dial background ----
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = cssVar("--card2", "#0e2a45");
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = line;
+    ctx.stroke();
+
+    // ---- ticks & cardinals (rotate with dial) ----
+    ctx.translate(cx, cy);
+    ctx.rotate((dialRot * Math.PI) / 180);
+    for (let deg = 0; deg < 360; deg += 10) {
+        const major = deg % 30 === 0;
+        const a = (deg - 90) * Math.PI / 180;
+        const r1 = R - (major ? 14 : 7);
+        const r2 = R - 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+        ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+        ctx.lineWidth = major ? 2 : 1;
+        ctx.strokeStyle = major ? muted : line;
+        ctx.stroke();
+    }
+    const labels = [["N", 0], ["E", 90], ["S", 180], ["W", 270]];
+    ctx.font = `bold ${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const [lbl, deg] of labels) {
+        const a = (deg - 90) * Math.PI / 180;
+        const r = R - 30;
+        ctx.save();
+        ctx.translate(Math.cos(a) * r, Math.sin(a) * r);
+        ctx.rotate(-(dialRot * Math.PI) / 180); // counter-rotate text to keep upright
+        ctx.fillStyle = lbl === "N" ? accent : muted;
+        ctx.fillText(lbl, 0, 0);
+        ctx.restore();
+    }
+    ctx.restore();
+
+    // ---- bow indicator at top of dial (only when head-up) ----
+    if (headingActive) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = "#3aa0ff";
+        ctx.beginPath();
+        ctx.moveTo(0, -R - 4);
+        ctx.lineTo(-8, -R + 10);
+        ctx.lineTo(8, -R + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = `bold 11px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillStyle = "#3aa0ff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText("BOW", 0, -R - 22);
+        ctx.restore();
+    }
+
+    // ---- big arrow to next mark ----
+    if (bearingToMark != null) {
+        // Arrow direction in dial coords: head-up => arrow at (bearing - heading).
+        // North-up => arrow at bearing.
+        const arrowDeg = headingActive
+            ? ((bearingToMark - state.heading + 540) % 360) - 180   // -180..180 (signed offset)
+            : bearingToMark;
+        const a = (arrowDeg - 90) * Math.PI / 180;
+        const armLen = R * 0.78;
+        const armW = Math.max(10, R * 0.10);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(a + Math.PI / 2);  // 0° = up before rotation
+        // shaft
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.moveTo(-armW * 0.35, armLen * 0.05);
+        ctx.lineTo(armW * 0.35, armLen * 0.05);
+        ctx.lineTo(armW * 0.35, -armLen * 0.6);
+        ctx.lineTo(armW * 1.1, -armLen * 0.6);
+        ctx.lineTo(0, -armLen);
+        ctx.lineTo(-armW * 1.1, -armLen * 0.6);
+        ctx.lineTo(-armW * 0.35, -armLen * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "#0a1a2c";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+
+        // hub
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(6, R * 0.06), 0, Math.PI * 2);
+        ctx.fillStyle = "#0a1a2c";
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = accent;
+        ctx.stroke();
+    }
+
+    // ---- text block below dial ----
+    const baseY = cy + R + Math.max(20, H * 0.05);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    if (!nextMark) {
+        ctx.fillStyle = muted;
+        ctx.font = `${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillText("Course complete 🏁", cx, baseY);
+        return;
+    }
+    if (bearingToMark == null) {
+        ctx.fillStyle = muted;
+        ctx.font = `${Math.round(W * 0.026)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillText("Turn on GPS for live steer to next mark", cx, baseY);
+        return;
+    }
+
+    // Bearing big number
+    ctx.fillStyle = accent;
+    ctx.font = `800 ${Math.round(W * 0.06)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(fmtBearing(bearingToMark), cx, baseY);
+
+    // "to <mark>"  •  side
+    const sideTok = nextTok && nextTok.side;
+    const sideStr = (sideTok === "p" || (c.card && c.card.all_port && !sideTok))
+        ? "  ·  Port"
+        : sideTok === "s" ? "  ·  Stbd" : "";
+    ctx.fillStyle = text;
+    ctx.font = `600 ${Math.round(W * 0.028)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    ctx.fillText(`to ${nextMarkLetter}${sideStr}`, cx, baseY + Math.round(W * 0.075));
+
+    // Distance
+    if (distanceToMark != null) {
+        ctx.fillStyle = muted;
+        ctx.font = `${Math.round(W * 0.024)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillText(fmtDist(distanceToMark), cx, baseY + Math.round(W * 0.115));
+    }
+
+    // Turn cue (only when compass is active)
+    if (headingActive) {
+        let off = ((bearingToMark - state.heading + 540) % 360) - 180;
+        const absOff = Math.abs(off);
+        let cue, color;
+        if (absOff < 5) { cue = "On course ▲"; color = stbd; }
+        else if (off > 0) { cue = `Turn STBD ${Math.round(absOff)}°`; color = stbd; }
+        else { cue = `Turn PORT ${Math.round(absOff)}°`; color = port; }
+        ctx.fillStyle = color;
+        ctx.font = `700 ${Math.round(W * 0.03)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillText(cue, cx, baseY + Math.round(W * 0.155));
+    }
+
+    // Top-corner readouts: heading (left), wind (right)
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = `600 ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+    if (headingActive) {
+        ctx.fillStyle = "#3aa0ff";
+        ctx.fillText(`HDG ${fmtBearing(state.heading)}${state.headingTrue ? "T" : "M"}`,
+            Math.round(W * 0.06), Math.round(H * 0.04));
+    }
+    ctx.textAlign = "right";
+    ctx.fillStyle = accent;
+    const tw = effectiveTWD();
+    ctx.fillText(`WIND ${fmtBearing(tw)}`, W - Math.round(W * 0.06), Math.round(H * 0.04));
 }
 
 // Wrap renderAll to also redraw the chart
@@ -1602,6 +1823,25 @@ if (chartModal) {
         if (e.target === chartModal) closeChartModal();
     });
 }
+
+// ---------- Chart / Steer view toggle ----------
+(function setupViewToggle() {
+    const btnChart = document.getElementById("btnViewChart");
+    const btnSteer = document.getElementById("btnViewSteer");
+    if (!btnChart || !btnSteer) return;
+    function apply() {
+        const isSteer = state.viewMode === "steer";
+        btnSteer.classList.toggle("active", isSteer);
+        btnChart.classList.toggle("active", !isSteer);
+        btnSteer.setAttribute("aria-selected", isSteer ? "true" : "false");
+        btnChart.setAttribute("aria-selected", isSteer ? "false" : "true");
+        try { localStorage.setItem("dbsc.viewMode", state.viewMode); } catch (_) { }
+        if (typeof renderChart === "function") renderChart();
+    }
+    btnChart.addEventListener("click", () => { state.viewMode = "chart"; apply(); });
+    btnSteer.addEventListener("click", () => { state.viewMode = "steer"; apply(); });
+    apply();
+})();
 window.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && state.chartFullscreen) closeChartModal();
 });
