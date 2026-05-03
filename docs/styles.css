@@ -332,6 +332,36 @@ section {
     background: #555;
 }
 
+/* Pill colours apply everywhere (Now panel, anywhere we re-use the markup),
+   not just inside the legs list. The dark-on-coloured contrast carries the
+   port/starboard meaning at a glance. */
+.pill.p {
+    background: var(--port);
+    color: #fff;
+}
+
+.pill.s {
+    background: var(--stbd);
+    color: #fff;
+}
+
+.pill.x {
+    background: #555;
+    color: #fff;
+}
+
+/* In the Now panel the pill is the dominant cue — make it bigger. */
+.now .name .pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: .8px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 .legs li .info .meta .colour {
     font-size: 11px;
     color: var(--muted);
@@ -1042,4 +1072,82 @@ footer small a {
 .now .twa-line .tack-p {
     color: var(--port);
     font-weight: 700;
+}
+
+/* ---------- generic modal (used by the GPS explainer) ---------- */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    background: rgba(7, 19, 33, .65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.modal .modal-card {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 18px 14px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+}
+
+.modal .modal-card h2 {
+    margin: 0 0 8px;
+    font-size: 17px;
+}
+
+.modal .modal-card p {
+    margin: 6px 0;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.modal .modal-card ul {
+    margin: 6px 0 8px;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.modal .modal-card .modal-note {
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.modal .modal-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.modal .modal-row button {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--line);
+}
+
+.modal .modal-row .ghost {
+    background: transparent;
+    color: var(--text);
+}
+
+.modal .modal-row .primary {
+    background: var(--accent);
+    color: #07223a;
+    border-color: var(--accent);
 }

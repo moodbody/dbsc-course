@@ -110,6 +110,27 @@
             <button id="btnReset" class="ghost">⟳ Reset</button>
         </section>
 
+        <div id="gpsExplain" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="gpsExplainTitle">
+            <div class="modal-card">
+                <h2 id="gpsExplainTitle">Use GPS for live navigation?</h2>
+                <p>Turning on GPS lets the app show:</p>
+                <ul>
+                    <li>your boat's position on the chart;</li>
+                    <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
+                    <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
+                </ul>
+                <p class="modal-note">Your location is used only on this device. It is never sent off your phone, never
+                    stored, and never shared with anyone — DBSC included. The app has no server and no analytics.</p>
+                <p class="modal-note">GPS will <strong>switch off automatically after 30 minutes</strong> to save your
+                    battery, or when you close the app. You can also turn it off any time by tapping the GPS button
+                    again.</p>
+                <div class="modal-row">
+                    <button id="gpsExplainCancel" class="ghost" type="button">Cancel</button>
+                    <button id="gpsExplainOk" class="primary" type="button">Enable GPS</button>
+                </div>
+            </div>
+        </div>
+
         <section class="now" id="now"></section>
 
         <section class="legs">

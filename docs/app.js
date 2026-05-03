@@ -201,12 +201,11 @@ function effectiveTWD() {
 // True Wind Angle for a given leg bearing (degrees).
 // Returns:
 //   { angle: 0..180,        // |TWA| – absolute angle off the bow
-//     side: "S" | "P" | "", // tack: wind on Stbd/Port (empty when head-to-wind or DDW)
-//     pos:  string }        // point of sail label
+//     side: "S" | "P" | "" } // tack: wind on Stbd/Port (empty when head-to-wind or DDW)
 //
 // Worked example matches the user's spec:
 //   TWD = 090°, leg bearing = 000°
-//   diff = ((90 - 0 + 540) % 360) - 180 = 90  -> wind on starboard, beam reach
+//   diff = ((90 - 0 + 540) % 360) - 180 = 90  -> wind on starboard
 function twa(legBearing, twd) {
     if (legBearing == null) return null;
     const wind = (twd != null) ? twd : effectiveTWD();
@@ -214,23 +213,14 @@ function twa(legBearing, twd) {
     const angle = Math.abs(diff);
     let side = "";
     if (angle > 1 && angle < 179) side = (diff > 0) ? "S" : "P";
-    let pos;
-    if (angle < 30) pos = "head to wind";
-    else if (angle < 60) pos = "close-hauled";
-    else if (angle < 80) pos = "close reach";
-    else if (angle < 100) pos = "beam reach";
-    else if (angle < 150) pos = "broad reach";
-    else if (angle < 175) pos = "run";
-    else pos = "dead downwind";
-    return { angle: Math.round(angle), side, pos };
+    return { angle: Math.round(angle), side };
 }
 
 function twaHtml(t) {
     if (!t) return "";
-    const tackTxt = t.side === "S" ? `<span class="tack-s">${t.angle}°S</span>`
-        : t.side === "P" ? `<span class="tack-p">${t.angle}°P</span>`
-            : `<span>${t.angle}°</span>`;
-    return `${tackTxt} · <span class="pos">${t.pos}</span>`;
+    if (t.side === "S") return `<span class="tack-s">${t.angle}° starboard</span>`;
+    if (t.side === "P") return `<span class="tack-p">${t.angle}° port</span>`;
+    return `<span>${t.angle}°</span>`;
 }
 
 function renderSummary() {
@@ -530,17 +520,31 @@ if (btnTwdReset) {
 }
 
 // ---------- GPS ----------
-btnGps.addEventListener("click", () => {
-    if (state.gpsOn) {
-        if (state.gpsWatch != null) navigator.geolocation.clearWatch(state.gpsWatch);
-        state.gpsOn = false;
-        state.gpsWatch = null;
-        state.gpsPos = null;
-        btnGps.textContent = "📍 Use GPS";
-        btnGps.classList.remove("primary");
-        renderNow();
-        return;
+const GPS_AUTO_OFF_MS = 30 * 60 * 1000; // 30 minutes
+const gpsExplain = $("gpsExplain");
+const gpsExplainOk = $("gpsExplainOk");
+const gpsExplainCancel = $("gpsExplainCancel");
+
+function stopGps(reason) {
+    if (state.gpsWatch != null && "geolocation" in navigator) {
+        navigator.geolocation.clearWatch(state.gpsWatch);
     }
+    if (state.gpsTimer) {
+        clearTimeout(state.gpsTimer);
+        state.gpsTimer = null;
+    }
+    state.gpsOn = false;
+    state.gpsWatch = null;
+    state.gpsPos = null;
+    btnGps.textContent = "📍 Use GPS";
+    btnGps.classList.remove("primary");
+    renderNow();
+    if (reason === "timeout") {
+        showToast("GPS switched off after 30 min to save battery.");
+    }
+}
+
+function startGps() {
     if (!("geolocation" in navigator)) {
         alert("Geolocation not available in this browser.");
         return;
@@ -560,13 +564,52 @@ btnGps.addEventListener("click", () => {
         },
         (err) => {
             alert("GPS error: " + err.message);
-            state.gpsOn = false;
-            state.gpsWatch = null;
-            btnGps.textContent = "📍 Use GPS";
+            stopGps();
         },
         { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
     );
+    if (state.gpsTimer) clearTimeout(state.gpsTimer);
+    state.gpsTimer = setTimeout(() => stopGps("timeout"), GPS_AUTO_OFF_MS);
+}
+
+function showToast(msg) {
+    // lightweight, only when a #toast element exists; otherwise fall back to console.
+    const t = document.getElementById("toast");
+    if (!t) { console.log(msg); return; }
+    t.textContent = msg;
+    t.hidden = false;
+    setTimeout(() => { t.hidden = true; }, 4000);
+}
+
+btnGps.addEventListener("click", () => {
+    if (state.gpsOn) { stopGps(); return; }
+    if (!("geolocation" in navigator)) {
+        alert("Geolocation not available in this browser.");
+        return;
+    }
+    if (gpsExplain) {
+        gpsExplain.hidden = false;
+    } else {
+        startGps();
+    }
 });
+
+if (gpsExplainOk) {
+    gpsExplainOk.addEventListener("click", () => {
+        gpsExplain.hidden = true;
+        startGps();
+    });
+}
+if (gpsExplainCancel) {
+    gpsExplainCancel.addEventListener("click", () => {
+        gpsExplain.hidden = true;
+    });
+}
+if (gpsExplain) {
+    gpsExplain.addEventListener("click", (e) => {
+        if (e.target === gpsExplain) gpsExplain.hidden = true;
+    });
+}
 
 // ---------- init ----------
 populateCards();
@@ -1633,18 +1676,19 @@ let TIDES = null;
 
 function renderTides() {
     if (!tidePanel || !infoStrip) return;
-    if (!TIDES || !TIDES.events || TIDES.events.length === 0) {
+    if (!TIDES || !Array.isArray(TIDES.events) || TIDES.events.length === 0) {
+        // No data yet — hide the panel rather than show fake / stale values.
         tidePanel.hidden = true;
+        if (countdownPanel.hidden) infoStrip.hidden = true;
         return;
     }
     const now = new Date();
-    // Pick the next two events whose datetime is in the future.
     const upcoming = TIDES.events.filter((e) => new Date(e.datetime) > now).slice(0, 2);
     if (upcoming.length === 0) {
-        tideBig.textContent = "Out of date";
-        tideSub.textContent = "tides.json needs new entries";
-        tidePanel.hidden = false;
-        infoStrip.hidden = false;
+        // Data file exists but is now stale — hide silently. The point is to
+        // never display anything that might be wrong.
+        tidePanel.hidden = true;
+        if (countdownPanel.hidden) infoStrip.hidden = true;
         return;
     }
     const fmt = (ev) => {

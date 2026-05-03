@@ -1,10 +1,9 @@
 {
     "_README": [
         "Static tide table for Dún Laoghaire harbour.",
-        "PLACEHOLDER DATA — these times are illustrative only and MUST be replaced",
-        "with values from an authoritative source before relying on them at sea.",
         "",
-        "Sources to copy values from:",
+        "This file is INTENTIONALLY EMPTY until verified data is added.",
+        "Replace `events` with values copied from an authoritative source:",
         "  https://easytide.admiralty.co.uk/  (Admiralty EasyTide, Dún Laoghaire)",
         "  https://www.met.ie/forecasts/marine-inland-lakes/sea-level-and-tide",
         "",
@@ -12,37 +11,9 @@
         "                     type: 'high' | 'low',",
         "                     height_m: number}",
         "All times are local (Europe/Dublin). Heights are above chart datum, in metres.",
-        "The app picks the next two events relative to the user's clock."
+        "The app hides the tide panel entirely while events is empty."
     ],
     "port": "Dún Laoghaire",
     "timezone": "Europe/Dublin",
-    "events": [
-        { "datetime": "2026-05-03T03:48", "type": "low",  "height_m": 0.6 },
-        { "datetime": "2026-05-03T10:02", "type": "high", "height_m": 4.0 },
-        { "datetime": "2026-05-03T16:11", "type": "low",  "height_m": 0.7 },
-        { "datetime": "2026-05-03T22:24", "type": "high", "height_m": 3.9 },
-        { "datetime": "2026-05-04T04:32", "type": "low",  "height_m": 0.6 },
-        { "datetime": "2026-05-04T10:46", "type": "high", "height_m": 4.0 },
-        { "datetime": "2026-05-04T16:55", "type": "low",  "height_m": 0.7 },
-        { "datetime": "2026-05-04T23:08", "type": "high", "height_m": 3.9 },
-        { "datetime": "2026-05-05T05:18", "type": "low",  "height_m": 0.7 },
-        { "datetime": "2026-05-05T11:32", "type": "high", "height_m": 3.9 },
-        { "datetime": "2026-05-05T17:42", "type": "low",  "height_m": 0.8 },
-        { "datetime": "2026-05-05T23:56", "type": "high", "height_m": 3.8 },
-        { "datetime": "2026-05-06T06:08", "type": "low",  "height_m": 0.8 },
-        { "datetime": "2026-05-06T12:22", "type": "high", "height_m": 3.8 },
-        { "datetime": "2026-05-06T18:34", "type": "low",  "height_m": 0.9 },
-        { "datetime": "2026-05-07T00:50", "type": "high", "height_m": 3.7 },
-        { "datetime": "2026-05-07T07:04", "type": "low",  "height_m": 0.9 },
-        { "datetime": "2026-05-07T13:19", "type": "high", "height_m": 3.7 },
-        { "datetime": "2026-05-07T19:33", "type": "low",  "height_m": 1.0 },
-        { "datetime": "2026-05-08T01:50", "type": "high", "height_m": 3.6 },
-        { "datetime": "2026-05-08T08:08", "type": "low",  "height_m": 1.0 },
-        { "datetime": "2026-05-08T14:23", "type": "high", "height_m": 3.7 },
-        { "datetime": "2026-05-08T20:38", "type": "low",  "height_m": 1.0 },
-        { "datetime": "2026-05-09T02:56", "type": "high", "height_m": 3.7 },
-        { "datetime": "2026-05-09T09:14", "type": "low",  "height_m": 1.0 },
-        { "datetime": "2026-05-09T15:29", "type": "high", "height_m": 3.7 },
-        { "datetime": "2026-05-09T21:42", "type": "low",  "height_m": 0.9 }
-    ]
+    "events": []
 }
