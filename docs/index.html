@@ -25,42 +25,106 @@
             <button id="btnInstall" class="install" hidden>Install</button>
         </div>
         <div class="sub" id="cardSub">Select a course card</div>
+        <nav class="tabs" role="tablist">
+            <button class="tab active" data-tab="course" role="tab" aria-selected="true">Course</button>
+            <button class="tab" data-tab="today" role="tab" aria-selected="false">Today</button>
+            <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
+        </nav>
     </header>
 
-    <section class="picker">
-        <label class="full">
-            <span>Course card</span>
-            <select id="cardSel"></select>
-        </label>
-        <label>
-            <span>Wind direction</span>
-            <select id="windSel"></select>
-        </label>
-        <label>
-            <span>Course #</span>
-            <select id="courseSel"></select>
-        </label>
-    </section>
+    <div id="view-course" class="view">
+        <section class="picker">
+            <label class="full">
+                <span>Course card</span>
+                <select id="cardSel"></select>
+            </label>
+            <label>
+                <span>Wind direction</span>
+                <select id="windSel"></select>
+            </label>
+            <label>
+                <span>Course #</span>
+                <select id="courseSel"></select>
+            </label>
+        </section>
 
-    <section class="summary" id="summary"></section>
+        <section class="summary" id="summary"></section>
 
-    <section class="chartwrap">
-        <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
-    </section>
+        <section class="chartwrap">
+            <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+        </section>
 
-    <section class="controls">
-        <button id="btnGps" class="ghost">📍 Use GPS</button>
-        <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
-        <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
-        <button id="btnReset" class="ghost">⟳ Reset</button>
-    </section>
+        <section class="controls">
+            <button id="btnGps" class="ghost">📍 Use GPS</button>
+            <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
+            <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
+            <button id="btnReset" class="ghost">⟳ Reset</button>
+        </section>
 
-    <section class="now" id="now"></section>
+        <section class="now" id="now"></section>
 
-    <section class="legs">
-        <h2>Legs <span class="hint">tap a leg to jump</span></h2>
-        <ol id="legList"></ol>
-    </section>
+        <section class="legs">
+            <h2>Legs <span class="hint">tap a leg to jump</span></h2>
+            <ol id="legList"></ol>
+        </section>
+    </div>
+
+    <div id="view-today" class="view" hidden>
+        <section class="picker">
+            <label class="full">
+                <span>Race date</span>
+                <input id="todayDate" type="date" />
+            </label>
+            <label class="full">
+                <span>Your boat / class</span>
+                <select id="todayBoat"></select>
+            </label>
+        </section>
+        <section class="controls">
+            <button id="btnFindRace" class="primary">Find my race</button>
+        </section>
+        <section id="todayResult" class="recommend"></section>
+    </div>
+
+    <div id="view-docs" class="view" hidden>
+        <section class="docs-intro">
+            <p>Reference PDFs from DBSC. Tap to open in a new tab — they’re cached for offline use after first view.</p>
+        </section>
+        <section class="docs-list">
+            <a class="doc" href="pdfs/DBSC_Racing_Programme_2026_v2.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">📅 DBSC Racing Programme 2026</div>
+                <div class="doc-sub">Full season calendar, blue/red weeks, regattas</div>
+            </a>
+            <a class="doc" href="pdfs/DBSC_Keelboat_Race_Times_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">⏱️ Keelboat Race Times 2026</div>
+                <div class="doc-sub">Flags, warning signals, VHF channels per class</div>
+            </a>
+            <a class="doc" href="pdfs/DBSC_Marks_Bearings_Distances_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">📐 Marks, Bearings &amp; Distances 2026</div>
+                <div class="doc-sub">Master table of all marks</div>
+            </a>
+            <a class="doc" href="pdfs/CC-DBSC-Racing-Marks-Chart-2025.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">🗺️ Racing Marks Chart</div>
+                <div class="doc-sub">Bay overview chart with all marks</div>
+            </a>
+            <div class="docs-h">Course cards</div>
+            <a class="doc" href="pdfs/CC1_Saturday_CV_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">CC1 — Saturday CV (Corinthian)</div>
+            </a>
+            <a class="doc" href="pdfs/CC2_Saturday_Hut_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">CC2 — Saturday Hut</div>
+            </a>
+            <a class="doc" href="pdfs/CC3_Thursday_Blue_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">CC3 — Thursday Blue (Corinthian)</div>
+            </a>
+            <a class="doc" href="pdfs/CC4_Thursday_Red_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">CC4 — Thursday Red (Freebird)</div>
+            </a>
+            <a class="doc" href="pdfs/CC5_Tuesday_Hut_2026_v1.pdf" target="_blank" rel="noopener">
+                <div class="doc-name">CC5 — Tuesday Hut</div>
+            </a>
+        </section>
+    </div>
 
     <footer>
         <small>Bearings true; distances NM. Data: DBSC 2026 cards.</small>

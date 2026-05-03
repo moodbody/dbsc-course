@@ -651,3 +651,219 @@ if (btnInstall) {
 window.addEventListener("appinstalled", () => {
     if (btnInstall) btnInstall.hidden = true;
 });
+
+// ============================================================
+// Tabs (Course / Today / Docs)
+// ============================================================
+const tabButtons = document.querySelectorAll(".tabs .tab");
+const views = {
+    course: document.getElementById("view-course"),
+    today: document.getElementById("view-today"),
+    docs: document.getElementById("view-docs"),
+};
+function showTab(name) {
+    for (const btn of tabButtons) {
+        const active = btn.dataset.tab === name;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+    }
+    for (const [k, el] of Object.entries(views)) {
+        if (!el) continue;
+        if (k === name) el.removeAttribute("hidden");
+        else el.setAttribute("hidden", "");
+    }
+    if (name === "course") {
+        // Recompute chart size in case it was hidden when last resized
+        try { resizeChart(); } catch (_) { }
+    }
+}
+tabButtons.forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+// ============================================================
+// Schedule (Today view) — date + boat -> recommended card
+// ============================================================
+let SCHED = null;
+const todayDate = document.getElementById("todayDate");
+const todayBoat = document.getElementById("todayBoat");
+const btnFindRace = document.getElementById("btnFindRace");
+const todayResult = document.getElementById("todayResult");
+
+function todayIsoLocal() {
+    const d = new Date();
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0, 10);
+}
+todayDate.value = todayIsoLocal();
+
+function applySchedule(s) {
+    if (!s) return;
+    SCHED = s;
+    // Populate boat dropdown
+    todayBoat.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "— Select a boat / class —";
+    todayBoat.appendChild(placeholder);
+    for (const b of s.boats || []) {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        opt.textContent = b.name;
+        todayBoat.appendChild(opt);
+    }
+    const saved = localStorage.getItem("dbsc.boat");
+    if (saved && s.boats.some((b) => b.id === saved)) todayBoat.value = saved;
+}
+
+todayBoat.addEventListener("change", () => {
+    if (todayBoat.value) localStorage.setItem("dbsc.boat", todayBoat.value);
+});
+
+function dayKeyFromDateStr(iso) {
+    // iso = "YYYY-MM-DD"; build a local date so weekday matches user expectation
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    const wd = dt.getDay(); // 0 Sun, 2 Tue, 4 Thu, 6 Sat
+    if (wd === 2) return "tue";
+    if (wd === 4) return "thu";
+    if (wd === 6) return "sat";
+    return null;
+}
+
+function findRace() {
+    if (!SCHED) {
+        todayResult.innerHTML = `<div class="card"><div class="big">Schedule still loading…</div></div>`;
+        return;
+    }
+    const dateStr = todayDate.value;
+    const boatId = todayBoat.value;
+    if (!dateStr || !boatId) {
+        todayResult.innerHTML = `<div class="card"><div class="big">Pick a date and a boat.</div></div>`;
+        return;
+    }
+    const dayKey = dayKeyFromDateStr(dateStr);
+    const boat = (SCHED.boats || []).find((b) => b.id === boatId);
+    const dt = new Date(dateStr);
+    const dateLabel = dt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+
+    if (!dayKey) {
+        return showRecommend({
+            warn: true,
+            day: dateLabel,
+            big: "No DBSC racing on this day",
+            note: "DBSC races on Tuesdays, Thursdays, and Saturdays. Pick another date.",
+        });
+    }
+    if (!boat || !boat[dayKey]) {
+        return showRecommend({
+            warn: true,
+            day: dateLabel,
+            big: `${boat ? boat.name : "Your class"} doesn't race on ${dayKey === "tue" ? "Tuesdays" : dayKey === "thu" ? "Thursdays" : "Saturdays"}`,
+            note: "Try another day, or check the Racing Programme PDF in the Docs tab.",
+        });
+    }
+
+    const dayInfo = boat[dayKey]; // {flag, warn, fleet?, group?}
+    const cal = (SCHED.calendar && SCHED.calendar[dayKey]) || [];
+    const inCal = dayKey === "sat"
+        ? cal.find((e) => e.date === dateStr)
+        : (cal.includes(dateStr) ? { date: dateStr } : null);
+
+    if (!inCal) {
+        return showRecommend({
+            warn: true,
+            day: dateLabel,
+            big: "Not on the 2026 schedule",
+            note: `No DBSC ${dayKey === "tue" ? "Tuesday" : dayKey === "thu" ? "Thursday" : "Saturday"} race is listed for this date in the 2026 programme.`,
+        });
+    }
+
+    // Resolve which course card slot
+    let slotKey = null;
+    let extraNote = inCal.note || "";
+    if (dayKey === "tue") {
+        slotKey = "tue_hut";
+    } else if (dayKey === "thu") {
+        slotKey = dayInfo.fleet === "red" ? "thu_red_freebird" : "thu_blue_corinthian";
+    } else if (dayKey === "sat") {
+        const hut = inCal.hut; // "blue" | "red" | "none" | "regatta"
+        if (hut === "regatta") {
+            return showRecommend({
+                warn: true,
+                day: dateLabel,
+                big: "Regatta — no DBSC racing",
+                note: extraNote || "An external club regatta is on; DBSC isn't running races on this Saturday.",
+            });
+        }
+        const grp = dayInfo.group;
+        if (grp === "alwaysHut") slotKey = "sat_hut";
+        else if (grp === "alwaysCorinthian" || grp === "satGreen") slotKey = "sat_corinthian";
+        else if (hut === "none") slotKey = "sat_corinthian"; // coastal/special: everyone CV
+        else if (grp === "satBlue") slotKey = (hut === "blue") ? "sat_hut" : "sat_corinthian";
+        else if (grp === "satRed") slotKey = (hut === "red") ? "sat_hut" : "sat_corinthian";
+        else slotKey = "sat_corinthian";
+    }
+
+    const slot = SCHED.cards && SCHED.cards[slotKey];
+    if (!slot) {
+        return showRecommend({
+            warn: true,
+            day: dateLabel,
+            big: "Couldn't determine a course card",
+            note: "Schedule data is incomplete for this combination — please check the PDFs in the Docs tab.",
+        });
+    }
+
+    showRecommend({
+        warn: false,
+        day: dateLabel + " • " + slot.name,
+        big: `${boat.name} → ${slot.card}`,
+        rows: [
+            ["Course card", slot.card],
+            ["VHF channel", "Ch " + slot.vhf],
+            ["Warning signal", dayInfo.warn || "—"],
+            ["Class flag", dayInfo.flag || "—"],
+        ],
+        note: extraNote || (dayKey === "sat" && inCal.hut ? `Saturday hut colour: ${inCal.hut}.` : ""),
+        openCard: slot.card,
+    });
+}
+
+function showRecommend({ warn, day, big, rows, note, openCard }) {
+    todayResult.classList.toggle("warn", !!warn);
+    const rowsHtml = rows
+        ? `<div class="grid">${rows.map(([l, v]) => `<div><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join("")}</div>`
+        : "";
+    const noteHtml = note ? `<div class="note">${note}</div>` : "";
+    const btnHtml = openCard ? `<button id="btnOpenCard" type="button">Open ${openCard} →</button>` : "";
+    todayResult.innerHTML = `
+        <div class="card">
+            <div class="day">${day}</div>
+            <div class="big">${big}</div>
+            ${rowsHtml}
+            ${noteHtml}
+            ${btnHtml}
+        </div>`;
+    const openBtn = document.getElementById("btnOpenCard");
+    if (openBtn && openCard) {
+        openBtn.addEventListener("click", () => {
+            if (CARDS && CARDS[openCard]) {
+                state.cardId = openCard;
+                state.rounded = 0;
+                cardSel.value = openCard;
+                populateWinds(); populateCourses(); saveSelection(); renderAll();
+            }
+            showTab("course");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
+}
+
+btnFindRace.addEventListener("click", findRace);
+todayDate.addEventListener("change", () => { if (todayBoat.value) findRace(); });
+todayBoat.addEventListener("change", () => { if (todayDate.value) findRace(); });
+
+// Fetch schedule.json (network-first via SW; falls back to cache when offline).
+fetch("schedule.json?v=" + Date.now(), { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((s) => { if (s) applySchedule(s); })
+    .catch(() => { /* offline – feature unavailable until first online run */ });

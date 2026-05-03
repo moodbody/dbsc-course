@@ -6,7 +6,7 @@
  * Bump CACHE_VERSION when index.html / app.js / styles.css / data.js
  * change so installed phones reload the shell.
  */
-const CACHE_VERSION = "dbsc-v3";
+const CACHE_VERSION = "dbsc-v4";
 const CORE = [
     "./",
     "./index.html",
@@ -45,19 +45,21 @@ self.addEventListener("fetch", (event) => {
 
     const url = new URL(req.url);
     const isData = url.pathname.endsWith("/data.json") || url.pathname.endsWith("data.json");
+    const isSchedule = url.pathname.endsWith("/schedule.json") || url.pathname.endsWith("schedule.json");
 
-    if (isData) {
+    if (isData || isSchedule) {
+        const fallbackPath = isSchedule ? "./schedule.json" : "./data.json";
         // Network-first: try the network, fall back to cache when offline.
         event.respondWith(
             fetch(req, { cache: "no-store" })
                 .then((res) => {
                     if (res && res.status === 200) {
                         const clone = res.clone();
-                        caches.open(CACHE_VERSION).then((c) => c.put("./data.json", clone));
+                        caches.open(CACHE_VERSION).then((c) => c.put(fallbackPath, clone));
                     }
                     return res;
                 })
-                .catch(() => caches.match("./data.json"))
+                .catch(() => caches.match(fallbackPath))
         );
         return;
     }

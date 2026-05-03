@@ -68,6 +68,30 @@ change you commit to that file is picked up automatically.
 > No need to bump the service-worker version for `data.json` edits —
 > the SW is configured to fetch it network-first.
 
+### A2 · Editing the schedule (`docs/schedule.json`)
+
+The **Today** tab uses `docs/schedule.json` to recommend the right
+course card for a given date and boat. It's also fetched
+network-first, so github.com pencil edits go live within ~30 s.
+
+Common edits:
+
+- **Add/remove a regatta or coastal Saturday**: under
+  `"calendar" → "sat"`, change the `hut` field of that date to
+  `"regatta"` (no DBSC racing) or `"none"` (everyone CV).
+- **Change a boat's start time / flag**: edit the `flag` and `warn`
+  fields under `"boats" → <boat> → "tue" / "thu" / "sat"`.
+- **Move a class between blue/red Thursday fleets**: change
+  `"thu" → "fleet"` between `"blue"` and `"red"`.
+
+The lookup logic is:
+
+| Day | Resolution                                                                 |
+| --- | -------------------------------------------------------------------------- |
+| Tue | Everyone → `tue_hut` (CC5)                                                 |
+| Thu | `boat.thu.fleet === "red"` → `thu_red_freebird` (CC4); else `thu_blue_corinthian` (CC3) |
+| Sat | Combine `boat.sat.group` with that Saturday's `hut` colour. `alwaysHut` → CC2; `alwaysCorinthian`/`satGreen` → CC1; `satBlue` is at the hut on blue weeks; `satRed` is at the hut on red weeks; everyone else falls back to CC1. |
+
 ### B · Regenerate from new DBSC PDFs (full season update)
 
 If DBSC publishes new course-card PDFs:

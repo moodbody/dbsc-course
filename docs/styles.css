@@ -87,7 +87,10 @@ section {
     .picker {
         grid-template-columns: 2fr 1fr 1fr;
     }
-    .picker label.full { grid-column: auto; }
+
+    .picker label.full {
+        grid-column: auto;
+    }
 }
 
 .summary {
@@ -320,31 +323,217 @@ footer {
         margin: 0 auto;
     }
 }
+
 /* ---------- additions: install btn, chart, tappable legs ---------- */
-.title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
 .title-row .install {
-  background: var(--accent); color: #1a1a1a; border: 0;
-  padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer;
+    background: var(--accent);
+    color: #1a1a1a;
+    border: 0;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
 }
 
 .chartwrap {
-  margin: 0 16px;
-  padding: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
+    margin: 0 16px;
+    padding: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
 }
+
 .chartwrap canvas {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #0a1a2c;
-  touch-action: pan-y;
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #0a1a2c;
+    touch-action: pan-y;
 }
 
 .legs h2 .hint {
-  font-size: 11px; color: var(--muted); margin-left: 8px; font-weight: 400; text-transform: none; letter-spacing: 0;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 8px;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
 }
-.legs li { cursor: pointer; user-select: none; }
-.legs li:active { transform: scale(0.995); }
+
+.legs li {
+    cursor: pointer;
+    user-select: none;
+}
+
+.legs li:active {
+    transform: scale(0.995);
+}
+
+/* ---------- tabs ---------- */
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    border-bottom: 1px solid var(--line);
+}
+
+.tabs .tab {
+    flex: 1;
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 10px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tabs .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+}
+
+.view[hidden] {
+    display: none;
+}
+
+/* ---------- Today view ---------- */
+.picker input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    color-scheme: dark;
+}
+
+.recommend {
+    margin: 12px 16px;
+    padding: 0;
+}
+
+.recommend .card {
+    background: var(--card2);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.recommend .day {
+    color: var(--accent);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-bottom: 4px;
+}
+
+.recommend .big {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.recommend .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.recommend .grid .lbl {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.recommend .grid .val {
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.recommend .note {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.recommend button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 0;
+    background: var(--good);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.recommend.warn .card {
+    border-color: #d33;
+}
+
+.recommend.warn .day {
+    color: #ff7a7a;
+}
+
+/* ---------- Docs view ---------- */
+.docs-intro p {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 6px;
+}
+
+.docs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.docs-list .docs-h {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    margin-top: 8px;
+}
+
+.docs-list .doc {
+    display: block;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.docs-list .doc:active {
+    background: var(--card2);
+}
+
+.docs-list .doc-name {
+    font-weight: 700;
+}
+
+.docs-list .doc-sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 2px;
+}
