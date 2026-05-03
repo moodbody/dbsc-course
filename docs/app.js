@@ -721,7 +721,7 @@ function instructionsFor(platform) {
         return `
             <div>Add to your home screen for an offline, full-screen app:</div>
             <ol>
-                <li>Tap the <span class="key">⋮</span> menu in Chrome.</li>
+                <li>Tap the menu in Chrome.</li>
                 <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
                 <li>Confirm — the app icon will appear on your home screen.</li>
             </ol>`;
@@ -729,7 +729,7 @@ function instructionsFor(platform) {
     return `
         <div>You can install this as a desktop app:</div>
         <ol>
-            <li>In Chrome / Edge, click the <span class="key">⊕</span> install icon in the address bar.</li>
+            <li>In Chrome / Edge, click the install icon in the address bar.</li>
             <li>Or open the browser menu and choose <strong>Install DBSC Race Course</strong>.</li>
         </ol>`;
 }
