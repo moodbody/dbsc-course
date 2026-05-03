@@ -27,7 +27,7 @@
         <div class="sub" id="cardSub">Select a course card</div>
         <nav class="tabs" role="tablist">
             <button class="tab active" data-tab="course" role="tab" aria-selected="true">Course</button>
-            <button class="tab" data-tab="today" role="tab" aria-selected="false">Today</button>
+            <button class="tab" data-tab="today" role="tab" aria-selected="false">Race finder</button>
             <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
         </nav>
     </header>
@@ -70,10 +70,16 @@
     </div>
 
     <div id="view-today" class="view" hidden>
+        <section class="docs-intro">
+            <p>Pick <strong>any</strong> Tue / Thu / Sat in the 2026 season and any boat — the app shows the course card, VHF channel, class flag and warning signal for that race.</p>
+        </section>
         <section class="picker">
             <label class="full">
                 <span>Race date</span>
-                <input id="todayDate" type="date" />
+                <div class="date-row">
+                    <input id="todayDate" type="date" />
+                    <button id="btnDateToday" type="button" class="ghost-sm">Today</button>
+                </div>
             </label>
             <label class="full">
                 <span>Your boat / class</span>

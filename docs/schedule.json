@@ -1,154 +1,430 @@
 {
-  "_comment": "Hand-curated DBSC 2026 keelboat schedule. Edit on github.com to keep it in sync with the official Programme/Race Times PDFs in docs/pdfs/. The app reads this live on every online launch.",
-  "season": "2026",
-  "vhf": {
-    "tue_hut": "68",
-    "thu_blue_corinthian": "74",
-    "thu_red_freebird": "72",
-    "sat_corinthian": "74",
-    "sat_hut": "68",
-    "sat_green_cv": "74"
-  },
-  "cards": {
-    "tue_hut":             { "card": "CC5", "name": "Tuesday – Hut",                 "vhf": "68" },
-    "thu_blue_corinthian": { "card": "CC3", "name": "Thursday – Blue Fleet",         "vhf": "74" },
-    "thu_red_freebird":    { "card": "CC4", "name": "Thursday – Red Fleet",          "vhf": "72" },
-    "sat_corinthian":      { "card": "CC1", "name": "Saturday – Committee Vessel",   "vhf": "74" },
-    "sat_hut":             { "card": "CC2", "name": "Saturday – Hut",                "vhf": "68" }
-  },
-  "calendar": {
-    "tue": [
-      "2026-04-28","2026-05-05","2026-05-12","2026-05-19","2026-05-26",
-      "2026-06-02","2026-06-09","2026-06-16","2026-06-23","2026-06-30",
-      "2026-07-07","2026-07-14","2026-07-21","2026-07-28",
-      "2026-08-04","2026-08-11","2026-08-18","2026-08-25"
+    "_comment": "Hand-curated DBSC 2026 keelboat schedule. Edit on github.com to keep it in sync with the official Programme/Race Times PDFs in docs/pdfs/. The app reads this live on every online launch.",
+    "season": "2026",
+    "vhf": {
+        "tue_hut": "68",
+        "thu_blue_corinthian": "74",
+        "thu_red_freebird": "72",
+        "sat_corinthian": "74",
+        "sat_hut": "68",
+        "sat_green_cv": "74"
+    },
+    "cards": {
+        "tue_hut": {
+            "card": "CC5",
+            "name": "Tuesday – Hut",
+            "vhf": "68"
+        },
+        "thu_blue_corinthian": {
+            "card": "CC3",
+            "name": "Thursday – Blue Fleet",
+            "vhf": "74"
+        },
+        "thu_red_freebird": {
+            "card": "CC4",
+            "name": "Thursday – Red Fleet",
+            "vhf": "72"
+        },
+        "sat_corinthian": {
+            "card": "CC1",
+            "name": "Saturday – Committee Vessel",
+            "vhf": "74"
+        },
+        "sat_hut": {
+            "card": "CC2",
+            "name": "Saturday – Hut",
+            "vhf": "68"
+        }
+    },
+    "calendar": {
+        "tue": [
+            "2026-04-28",
+            "2026-05-05",
+            "2026-05-12",
+            "2026-05-19",
+            "2026-05-26",
+            "2026-06-02",
+            "2026-06-09",
+            "2026-06-16",
+            "2026-06-23",
+            "2026-06-30",
+            "2026-07-07",
+            "2026-07-14",
+            "2026-07-21",
+            "2026-07-28",
+            "2026-08-04",
+            "2026-08-11",
+            "2026-08-18",
+            "2026-08-25"
+        ],
+        "thu": [
+            "2026-04-23",
+            "2026-04-30",
+            "2026-05-07",
+            "2026-05-14",
+            "2026-05-21",
+            "2026-05-28",
+            "2026-06-04",
+            "2026-06-11",
+            "2026-06-18",
+            "2026-06-25",
+            "2026-07-02",
+            "2026-07-09",
+            "2026-07-16",
+            "2026-07-23",
+            "2026-07-30",
+            "2026-08-06",
+            "2026-08-13",
+            "2026-08-20",
+            "2026-08-27",
+            "2026-09-03",
+            "2026-09-10",
+            "2026-09-17",
+            "2026-09-24"
+        ],
+        "sat": [
+            {
+                "date": "2026-04-25",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-05-02",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-05-09",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-05-16",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-05-23",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-05-30",
+                "hut": "red",
+                "note": "Lambay Race"
+            },
+            {
+                "date": "2026-06-06",
+                "hut": "regatta",
+                "note": "DMYC Regatta"
+            },
+            {
+                "date": "2026-06-13",
+                "hut": "regatta",
+                "note": "NYC & WATH Regatta"
+            },
+            {
+                "date": "2026-06-20",
+                "hut": "red"
+            },
+            {
+                "date": "2026-06-27",
+                "hut": "regatta",
+                "note": "RIYC Regatta"
+            },
+            {
+                "date": "2026-07-04",
+                "hut": "regatta",
+                "note": "RSGYC Regatta"
+            },
+            {
+                "date": "2026-07-11",
+                "hut": "red"
+            },
+            {
+                "date": "2026-07-18",
+                "hut": "red"
+            },
+            {
+                "date": "2026-07-25",
+                "hut": "red"
+            },
+            {
+                "date": "2026-08-01",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-08-08",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-08-15",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-08-22",
+                "hut": "blue"
+            },
+            {
+                "date": "2026-08-29",
+                "hut": "none",
+                "note": "Coastal Race – all classes start from CV"
+            },
+            {
+                "date": "2026-09-05",
+                "hut": "red"
+            },
+            {
+                "date": "2026-09-12",
+                "hut": "none",
+                "note": "Coastal Race – all classes start from CV"
+            },
+            {
+                "date": "2026-09-19",
+                "hut": "red"
+            },
+            {
+                "date": "2026-09-26",
+                "hut": "red"
+            }
+        ]
+    },
+    "boats": [
+        {
+            "id": "c0",
+            "name": "Cruisers 0",
+            "tue": {
+                "flag": "No. 0",
+                "warn": "18:35"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 0",
+                "warn": "14:00"
+            },
+            "sat": {
+                "group": "alwaysCorinthian",
+                "flag": "No. 0",
+                "warn": "14:00"
+            }
+        },
+        {
+            "id": "c1",
+            "name": "Cruisers 1",
+            "tue": {
+                "flag": "No. 1",
+                "warn": "18:40"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 1",
+                "warn": "14:05"
+            },
+            "sat": {
+                "group": "alwaysCorinthian",
+                "flag": "No. 1",
+                "warn": "14:05"
+            }
+        },
+        {
+            "id": "b317",
+            "name": "Beneteau 31.7",
+            "tue": {
+                "flag": "No. 9",
+                "warn": "18:45"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 9",
+                "warn": "14:10"
+            },
+            "sat": {
+                "group": "satBlue",
+                "flag": "No. 9",
+                "warn": "14:10"
+            }
+        },
+        {
+            "id": "c2",
+            "name": "Cruisers 2",
+            "tue": {
+                "flag": "No. 2",
+                "warn": "18:50"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 2",
+                "warn": "14:15"
+            },
+            "sat": {
+                "group": "satBlue",
+                "flag": "No. 2",
+                "warn": "14:15"
+            }
+        },
+        {
+            "id": "c3",
+            "name": "Cruisers 3",
+            "tue": {
+                "flag": "No. 3",
+                "warn": "18:55"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 3",
+                "warn": "14:10"
+            },
+            "sat": {
+                "group": "satRed",
+                "flag": "No. 3",
+                "warn": "14:10"
+            }
+        },
+        {
+            "id": "c45",
+            "name": "Cruisers 4 & 5",
+            "tue": {
+                "flag": "No. 4 & No. 5",
+                "warn": "19:00"
+            },
+            "thu": {
+                "fleet": "blue",
+                "flag": "No. 4 & No. 5",
+                "warn": "14:20"
+            },
+            "sat": {
+                "group": "satBlue",
+                "flag": "No. 4 & No. 5",
+                "warn": "14:20"
+            }
+        },
+        {
+            "id": "ruffian",
+            "name": "Ruffian 23",
+            "tue": {
+                "flag": "Q",
+                "warn": "19:00"
+            },
+            "thu": {
+                "fleet": "red",
+                "flag": "Q",
+                "warn": "18:44"
+            },
+            "sat": {
+                "group": "satRed",
+                "flag": "Q",
+                "warn": "14:15"
+            }
+        },
+        {
+            "id": "shipman",
+            "name": "Shipman",
+            "tue": {
+                "flag": "W",
+                "warn": "19:05"
+            },
+            "thu": {
+                "fleet": "red",
+                "flag": "W",
+                "warn": "18:50"
+            },
+            "sat": {
+                "group": "satRed",
+                "flag": "W",
+                "warn": "14:20"
+            }
+        },
+        {
+            "id": "glen",
+            "name": "Glen & Mermaid",
+            "tue": {
+                "flag": "K",
+                "warn": "19:05"
+            },
+            "thu": {
+                "fleet": "red",
+                "flag": "K",
+                "warn": "18:53"
+            },
+            "sat": {
+                "group": "satRed",
+                "flag": "K",
+                "warn": "14:25"
+            }
+        },
+        {
+            "id": "db21",
+            "name": "Dublin Bay 21",
+            "tue": null,
+            "thu": null,
+            "sat": {
+                "group": "alwaysHut",
+                "flag": "B",
+                "warn": "14:30"
+            }
+        },
+        {
+            "id": "sb20",
+            "name": "SB20",
+            "tue": null,
+            "thu": {
+                "fleet": "red",
+                "flag": "No. 7",
+                "warn": "18:35"
+            },
+            "sat": {
+                "group": "satGreen",
+                "flag": "No. 7",
+                "warn": "—"
+            }
+        },
+        {
+            "id": "sportsboat",
+            "name": "Sportsboat / Dragon",
+            "tue": null,
+            "thu": {
+                "fleet": "red",
+                "flag": "3rd Sub & D",
+                "warn": "18:38"
+            },
+            "sat": {
+                "group": "satGreen",
+                "flag": "3rd Sub & D",
+                "warn": "—"
+            }
+        },
+        {
+            "id": "f15",
+            "name": "Flying Fifteen",
+            "tue": null,
+            "thu": {
+                "fleet": "red",
+                "flag": "Naval 6",
+                "warn": "18:41"
+            },
+            "sat": {
+                "group": "satGreen",
+                "flag": "Naval 6",
+                "warn": "—"
+            }
+        },
+        {
+            "id": "b211",
+            "name": "Beneteau 211",
+            "tue": null,
+            "thu": {
+                "fleet": "red",
+                "flag": "No. 4",
+                "warn": "18:47"
+            },
+            "sat": {
+                "group": "satGreen",
+                "flag": "No. 4",
+                "warn": "—"
+            }
+        }
     ],
-    "thu": [
-      "2026-04-23","2026-04-30",
-      "2026-05-07","2026-05-14","2026-05-21","2026-05-28",
-      "2026-06-04","2026-06-11","2026-06-18","2026-06-25",
-      "2026-07-02","2026-07-09","2026-07-16","2026-07-23","2026-07-30",
-      "2026-08-06","2026-08-13","2026-08-20","2026-08-27",
-      "2026-09-03","2026-09-10","2026-09-17","2026-09-24"
-    ],
-    "sat": [
-      { "date": "2026-04-25", "hut": "blue" },
-      { "date": "2026-05-02", "hut": "blue" },
-      { "date": "2026-05-09", "hut": "blue" },
-      { "date": "2026-05-16", "hut": "blue" },
-      { "date": "2026-05-23", "hut": "blue" },
-      { "date": "2026-05-30", "hut": "red",  "note": "Lambay Race" },
-      { "date": "2026-06-06", "hut": "regatta", "note": "DMYC Regatta" },
-      { "date": "2026-06-13", "hut": "regatta", "note": "NYC & WATH Regatta" },
-      { "date": "2026-06-20", "hut": "red"  },
-      { "date": "2026-06-27", "hut": "regatta", "note": "RIYC Regatta" },
-      { "date": "2026-07-04", "hut": "regatta", "note": "RSGYC Regatta" },
-      { "date": "2026-07-11", "hut": "red"  },
-      { "date": "2026-07-18", "hut": "red"  },
-      { "date": "2026-07-25", "hut": "red"  },
-      { "date": "2026-08-01", "hut": "blue" },
-      { "date": "2026-08-08", "hut": "blue" },
-      { "date": "2026-08-15", "hut": "blue" },
-      { "date": "2026-08-22", "hut": "blue" },
-      { "date": "2026-08-29", "hut": "none", "note": "Coastal Race – all classes start from CV" },
-      { "date": "2026-09-05", "hut": "red"  },
-      { "date": "2026-09-12", "hut": "none", "note": "Coastal Race – all classes start from CV" },
-      { "date": "2026-09-19", "hut": "red"  },
-      { "date": "2026-09-26", "hut": "red"  }
-    ]
-  },
-  "boats": [
-    {
-      "id": "c0",     "name": "Cruisers 0",
-      "tue":   { "flag": "No. 0",   "warn": "18:35" },
-      "thu":   { "fleet": "blue",   "flag": "No. 0",   "warn": "14:00" },
-      "sat":   { "group": "alwaysCorinthian", "flag": "No. 0", "warn": "14:00" }
-    },
-    {
-      "id": "c1",     "name": "Cruisers 1",
-      "tue":   { "flag": "No. 1",   "warn": "18:40" },
-      "thu":   { "fleet": "blue",   "flag": "No. 1",   "warn": "14:05" },
-      "sat":   { "group": "alwaysCorinthian", "flag": "No. 1", "warn": "14:05" }
-    },
-    {
-      "id": "b317",   "name": "Beneteau 31.7",
-      "tue":   { "flag": "No. 9",   "warn": "18:45" },
-      "thu":   { "fleet": "blue",   "flag": "No. 9",   "warn": "14:10" },
-      "sat":   { "group": "satBlue",  "flag": "No. 9", "warn": "14:10" }
-    },
-    {
-      "id": "c2",     "name": "Cruisers 2",
-      "tue":   { "flag": "No. 2",   "warn": "18:50" },
-      "thu":   { "fleet": "blue",   "flag": "No. 2",   "warn": "14:15" },
-      "sat":   { "group": "satBlue",  "flag": "No. 2", "warn": "14:15" }
-    },
-    {
-      "id": "c3",     "name": "Cruisers 3",
-      "tue":   { "flag": "No. 3",   "warn": "18:55" },
-      "thu":   { "fleet": "blue",   "flag": "No. 3",   "warn": "14:10" },
-      "sat":   { "group": "satRed",   "flag": "No. 3", "warn": "14:10" }
-    },
-    {
-      "id": "c45",    "name": "Cruisers 4 & 5",
-      "tue":   { "flag": "No. 4 & No. 5", "warn": "19:00" },
-      "thu":   { "fleet": "blue",   "flag": "No. 4 & No. 5", "warn": "14:20" },
-      "sat":   { "group": "satBlue",  "flag": "No. 4 & No. 5", "warn": "14:20" }
-    },
-    {
-      "id": "ruffian","name": "Ruffian 23",
-      "tue":   { "flag": "Q", "warn": "19:00" },
-      "thu":   { "fleet": "red",  "flag": "Q", "warn": "18:44" },
-      "sat":   { "group": "satRed",  "flag": "Q", "warn": "14:15" }
-    },
-    {
-      "id": "shipman","name": "Shipman",
-      "tue":   { "flag": "W", "warn": "19:05" },
-      "thu":   { "fleet": "red",  "flag": "W", "warn": "18:50" },
-      "sat":   { "group": "satRed",  "flag": "W", "warn": "14:20" }
-    },
-    {
-      "id": "glen",   "name": "Glen & Mermaid",
-      "tue":   { "flag": "K", "warn": "19:05" },
-      "thu":   { "fleet": "red",  "flag": "K", "warn": "18:53" },
-      "sat":   { "group": "satRed",  "flag": "K", "warn": "14:25" }
-    },
-    {
-      "id": "db21",   "name": "Dublin Bay 21",
-      "tue":   null,
-      "thu":   null,
-      "sat":   { "group": "alwaysHut", "flag": "B", "warn": "14:30" }
-    },
-    {
-      "id": "sb20",   "name": "SB20",
-      "tue":   null,
-      "thu":   { "fleet": "red", "flag": "No. 7", "warn": "18:35" },
-      "sat":   { "group": "satGreen", "flag": "No. 7", "warn": "—" }
-    },
-    {
-      "id": "sportsboat", "name": "Sportsboat / Dragon",
-      "tue":   null,
-      "thu":   { "fleet": "red", "flag": "3rd Sub & D", "warn": "18:38" },
-      "sat":   { "group": "satGreen", "flag": "3rd Sub & D", "warn": "—" }
-    },
-    {
-      "id": "f15",    "name": "Flying Fifteen",
-      "tue":   null,
-      "thu":   { "fleet": "red", "flag": "Naval 6", "warn": "18:41" },
-      "sat":   { "group": "satGreen", "flag": "Naval 6", "warn": "—" }
-    },
-    {
-      "id": "b211",   "name": "Beneteau 211",
-      "tue":   null,
-      "thu":   { "fleet": "red", "flag": "No. 4", "warn": "18:47" },
-      "sat":   { "group": "satGreen", "flag": "No. 4", "warn": "—" }
+    "_groups_explanation": {
+        "alwaysCorinthian": "Saturday: always at the Corinthian / committee vessel (CC1)",
+        "alwaysHut": "Saturday: always at the West Pier hut (CC2)",
+        "satBlue": "Saturday Blue group: at the hut on 'blue' weeks (CC2), at CC1 on 'red' weeks",
+        "satRed": "Saturday Red group: at the hut on 'red' weeks (CC2), at CC1 on 'blue' weeks",
+        "satGreen": "Saturday Green group: separate committee vessel; uses CC1 courses",
+        "_notes": "On 'none' (coastal) Saturdays all classes start from a Corinthian-style CV \u2192 CC1. On regatta Saturdays there is no DBSC racing."
     }
-  ],
-  "_groups_explanation": {
-    "alwaysCorinthian": "Saturday: always at the Corinthian / committee vessel (CC1)",
-    "alwaysHut":        "Saturday: always at the West Pier hut (CC2)",
-    "satBlue":          "Saturday Blue group: at the hut on 'blue' weeks (CC2), at CC1 on 'red' weeks",
-    "satRed":           "Saturday Red group: at the hut on 'red' weeks (CC2), at CC1 on 'blue' weeks",
-    "satGreen":         "Saturday Green group: separate committee vessel; uses CC1 courses",
-    "_notes": "On 'none' (coastal) Saturdays all classes start from a Corinthian-style CV \u2192 CC1. On regatta Saturdays there is no DBSC racing."
-  }
 }

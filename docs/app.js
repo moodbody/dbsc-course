@@ -695,6 +695,14 @@ function todayIsoLocal() {
 }
 todayDate.value = todayIsoLocal();
 
+const btnDateToday = document.getElementById("btnDateToday");
+if (btnDateToday) {
+    btnDateToday.addEventListener("click", () => {
+        todayDate.value = todayIsoLocal();
+        if (todayBoat.value) findRace();
+    });
+}
+
 function applySchedule(s) {
     if (!s) return;
     SCHED = s;
