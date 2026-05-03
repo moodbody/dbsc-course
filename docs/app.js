@@ -114,6 +114,12 @@ const state = {
     headingTrue: false,    // whether `heading` is true-north (vs magnetic)
     chartFullscreen: false,
     viewMode: localStorage.getItem("dbsc.viewMode") === "steer" ? "steer" : "chart",
+    // Auto-round: when GPS is on and the boat is within ~30 m of the next
+    // mark for a few consecutive fixes, advance the leg automatically.
+    // Default ON; user can toggle from the controls. Counter resets when
+    // the boat is no longer within range.
+    autoRound: localStorage.getItem("dbsc.autoRound") !== "0",
+    autoRoundHits: 0,
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
@@ -483,14 +489,17 @@ courseSel.addEventListener("change", () => {
 btnNext.addEventListener("click", () => {
     const c = currentCourse();
     if (state.rounded < c.tokens.length) state.rounded += 1;
+    state.autoRoundHits = 0;
     renderAll();
 });
 btnUndo.addEventListener("click", () => {
     if (state.rounded > 0) state.rounded -= 1;
+    state.autoRoundHits = 0;
     renderAll();
 });
 btnReset.addEventListener("click", () => {
     state.rounded = 0;
+    state.autoRoundHits = 0;
     renderAll();
 });
 
@@ -609,6 +618,7 @@ function startGps() {
             };
             state.gpsOn = true;
             btnGps.textContent = "📍 GPS on";
+            checkAutoRound();
             renderNow();
         },
         (err) => {
@@ -628,6 +638,38 @@ function showToast(msg) {
     t.textContent = msg;
     t.hidden = false;
     setTimeout(() => { t.hidden = true; }, 4000);
+}
+
+// ---- auto-round ----
+// When the boat is within AUTO_ROUND_M of the next mark for AUTO_ROUND_HITS
+// consecutive GPS fixes, advance the leg and announce it. The hit counter
+// resets the moment we drift out of range so a fly-by doesn't trigger.
+const AUTO_ROUND_M = 30;     // metres
+const AUTO_ROUND_HITS = 3;   // consecutive fixes inside the radius
+function checkAutoRound() {
+    if (!state.autoRound || !state.gpsOn || !state.gpsPos) return;
+    const c = currentCourse();
+    const tokens = c && c.tokens;
+    if (!tokens || state.rounded >= tokens.length) return;
+    const nextTok = tokens[state.rounded];
+    const m = nextTok && MARKS[nextTok.mark];
+    if (!m) return;
+    const g = geo(state.gpsPos.lat, state.gpsPos.lon, m.lat, m.lon);
+    const distM = g.distance * 1852; // NM -> m
+    if (distM <= AUTO_ROUND_M) {
+        state.autoRoundHits += 1;
+        if (state.autoRoundHits >= AUTO_ROUND_HITS) {
+            state.autoRoundHits = 0;
+            const finishing = state.rounded === tokens.length - 1;
+            state.rounded += 1;
+            renderAll();
+            showToast(finishing
+                ? `🏁 Finished at ${nextTok.mark}`
+                : `✓ Auto-rounded ${nextTok.mark}`);
+        }
+    } else {
+        state.autoRoundHits = 0;
+    }
 }
 
 btnGps.addEventListener("click", () => {
@@ -1843,6 +1885,26 @@ if (chartModal) {
     btn.addEventListener("click", () => {
         state.viewMode = state.viewMode === "steer" ? "chart" : "steer";
         apply();
+    });
+    apply();
+})();
+
+// ---------- Auto-round toggle ----------
+(function setupAutoRoundToggle() {
+    const btn = document.getElementById("btnAutoRound");
+    if (!btn) return;
+    function apply() {
+        btn.setAttribute("aria-pressed", state.autoRound ? "true" : "false");
+        btn.textContent = state.autoRound ? "🎯 Auto-round on" : "🎯 Auto-round off";
+        try { localStorage.setItem("dbsc.autoRound", state.autoRound ? "1" : "0"); } catch (_) { }
+        if (!state.autoRound) state.autoRoundHits = 0;
+    }
+    btn.addEventListener("click", () => {
+        state.autoRound = !state.autoRound;
+        apply();
+        showToast(state.autoRound
+            ? "Auto-round on — marks tick off when within 30 m"
+            : "Auto-round off — tap ✓ Mark rounded manually");
     });
     apply();
 })();

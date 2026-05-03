@@ -202,6 +202,14 @@ section {
     opacity: .55;
 }
 
+/* Toggle-style ghost buttons (Auto-round): show pressed-on state */
+.controls button.ghost[aria-pressed="true"] {
+    background: var(--hi);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+}
+
 .controls button:active {
     transform: translateY(1px);
 }
@@ -778,6 +786,29 @@ footer small a {
 }
 
 .update-toast[hidden] {
+    display: none;
+}
+
+/* generic info toast (auto-round, GPS auto-off, etc.) */
+.toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    z-index: 1000;
+    max-width: calc(100vw - 32px);
+    padding: 10px 16px;
+    background: var(--card2);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+    pointer-events: none;
+}
+
+.toast[hidden] {
     display: none;
 }
 

@@ -37,6 +37,8 @@
         <button class="ut-close" id="utClose" type="button" aria-label="Dismiss">×</button>
     </div>
 
+    <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
     <div id="welcomeModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <div class="modal-card welcome-card">
             <h2 id="welcomeTitle">⛵ Welcome to the DBSC Race Course app</h2>
@@ -160,6 +162,8 @@
 
         <section class="controls">
             <button id="btnGps" class="ghost">📍 Use GPS</button>
+            <button id="btnAutoRound" class="ghost" type="button" aria-pressed="true"
+                title="Auto-round next mark when within 30 m">🎯 Auto-round</button>
             <button id="btnCompass" class="ghost">🧭 Compass</button>
             <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
             <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
@@ -174,6 +178,8 @@
                     <li>your boat's position on the chart;</li>
                     <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
                     <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
+                    <li><strong>Auto-round</strong>: marks tick off automatically when you're within
+                        30&nbsp;m. Disable any time with the 🎯 button.</li>
                 </ul>
                 <p class="modal-note">Your location is used only on this device. It is never sent off your phone, never
                     stored, and never shared with anyone — DBSC included. The app has no server and no analytics.</p>
