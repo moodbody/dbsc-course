@@ -712,7 +712,7 @@ function instructionsFor(platform) {
         return `
             <div>Add to your home screen for an offline, full-screen app:</div>
             <ol>
-                <li>Tap the <strong>Share</strong> icon <span class="key">⬆</span> at the bottom of Safari.</li>
+                <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
                 <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
                 <li>Tap <strong>Add</strong> — the icon appears on your home screen.</li>
             </ol>`;
