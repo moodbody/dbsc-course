@@ -23,42 +23,98 @@ function applyData(d) {
 applyData(window.DBSC_DATA);
 
 // ---------- Coastline (approx) ----------
-// Hand-traced shoreline of Dublin Bay from Howth Head south to Bray Head,
+// Hand-traced shoreline of Dublin Bay — Howth Head south to Bray Head —
 // running roughly N -> S along the western shore of the bay. Used to
-// shade land on the chart. The polygon is closed by going far inland
+// shade land on the chart. Polygons are closed by going far inland
 // (lon -6.30) so anything west of the shore is filled as land.
-// These are approximate (~50 m) — fine for at-a-glance context.
+// Coordinates are eyeballed from OSM / Admiralty 1415 (~50–100 m). Good
+// enough for at-a-glance racing context, NOT for navigation.
 const DUBLIN_BAY_COAST = [
-    { lat: 53.388, lon: -6.046 },   // Howth Head NE (Bailey)
-    { lat: 53.378, lon: -6.061 },   // Howth Head south
-    { lat: 53.372, lon: -6.084 },   // Sutton south
-    { lat: 53.371, lon: -6.144 },   // North Bull Island N tip
-    { lat: 53.359, lon: -6.158 },   // Bull Island W shore
-    { lat: 53.347, lon: -6.193 },   // Causeway / Clontarf
-    { lat: 53.346, lon: -6.222 },   // North Wall (Liffey mouth N)
-    { lat: 53.344, lon: -6.222 },   // Liffey mouth S
-    { lat: 53.343, lon: -6.187 },   // Poolbeg / South Wall tip
-    { lat: 53.339, lon: -6.213 },   // Sandymount strand
-    { lat: 53.330, lon: -6.215 },   // Merrion gates
-    { lat: 53.314, lon: -6.205 },   // Booterstown
-    { lat: 53.303, lon: -6.180 },   // Blackrock
-    { lat: 53.295, lon: -6.165 },   // Seapoint / Salthill
+    // ----- Howth peninsula (clockwise from NE) -----
+    { lat: 53.395, lon: -6.057 },   // Howth Head N (Nose of Howth)
+    { lat: 53.388, lon: -6.046 },   // Bailey Lighthouse promontory
+    { lat: 53.382, lon: -6.052 },   // Drumleck Point
+    { lat: 53.378, lon: -6.061 },   // Howth Head S
+    { lat: 53.376, lon: -6.071 },   // Doldrum Bay
+    { lat: 53.374, lon: -6.080 },   // Red Rock
+    { lat: 53.371, lon: -6.092 },   // Sutton SE
+    { lat: 53.371, lon: -6.105 },   // Sutton Cross
+    // ----- Mainland north shore: Sutton -> Clontarf (inside of Bull) -----
+    { lat: 53.376, lon: -6.121 },   // Sutton Strand inner
+    { lat: 53.378, lon: -6.137 },   // Kilbarrack
+    { lat: 53.376, lon: -6.158 },   // Raheny shore
+    { lat: 53.371, lon: -6.176 },   // St Anne's Park shore
+    { lat: 53.366, lon: -6.190 },   // Clontarf Wooden Bridge
+    { lat: 53.361, lon: -6.205 },   // Clontarf seafront
+    { lat: 53.357, lon: -6.218 },   // Fairview Park
+    { lat: 53.350, lon: -6.230 },   // East Wall / Tolka mouth
+    // ----- Liffey: North Wall -> mouth -> South Wall (Poolbeg) -----
+    { lat: 53.348, lon: -6.230 },   // North Wall quay
+    { lat: 53.347, lon: -6.220 },
+    { lat: 53.347, lon: -6.205 },
+    { lat: 53.347, lon: -6.187 },   // North Bull Lighthouse / channel N
+    { lat: 53.343, lon: -6.187 },   // Poolbeg Lighthouse (S Wall tip)
+    { lat: 53.341, lon: -6.205 },   // Great South Wall middle
+    { lat: 53.340, lon: -6.219 },   // Pigeon House / chimneys
+    { lat: 53.341, lon: -6.230 },   // S Wall root / Ringsend
+    // ----- Sandymount -> Booterstown -> Blackrock -> Seapoint -----
+    { lat: 53.335, lon: -6.225 },   // Sean Moore Park
+    { lat: 53.328, lon: -6.222 },   // Sandymount strand mid
+    { lat: 53.320, lon: -6.215 },   // Merrion Gates
+    { lat: 53.310, lon: -6.200 },   // Booterstown Marsh
+    { lat: 53.302, lon: -6.183 },   // Blackrock Park
+    { lat: 53.299, lon: -6.171 },   // Salthill / Monkstown
+    { lat: 53.295, lon: -6.162 },   // Seapoint
+    { lat: 53.293, lon: -6.155 },   // Seapoint S
+    // ----- Dún Laoghaire harbour: West Pier (L-shape) -----
     { lat: 53.293, lon: -6.149 },   // West Pier root
-    { lat: 53.300, lon: -6.139 },   // West Pier head
-    { lat: 53.297, lon: -6.139 },   // back inside (harbour)
-    { lat: 53.295, lon: -6.135 },   // harbour back
-    { lat: 53.299, lon: -6.131 },   // East Pier head
-    { lat: 53.295, lon: -6.131 },   // East Pier inside
-    { lat: 53.291, lon: -6.107 },   // Sandycove / 40 Foot
-    { lat: 53.282, lon: -6.094 },   // Bullock Harbour
-    { lat: 53.276, lon: -6.087 },   // Coliemore (Dalkey Sound)
-    { lat: 53.263, lon: -6.094 },   // Killiney N
-    { lat: 53.243, lon: -6.090 },   // White Rock
-    { lat: 53.197, lon: -6.077 },   // Bray Head N
-    { lat: 53.180, lon: -6.080 },   // Bray Head south
+    { lat: 53.297, lon: -6.146 },   // West Pier mid
+    { lat: 53.3015, lon: -6.142 },  // West Pier head (N tip)
+    { lat: 53.3010, lon: -6.139 },  // West Pier head inner corner
+    { lat: 53.298, lon: -6.140 },   // back inside (harbour W)
+    { lat: 53.295, lon: -6.139 },   // harbour back (Carlisle Pier root)
+    { lat: 53.294, lon: -6.135 },   // harbour back mid
+    { lat: 53.295, lon: -6.131 },   // East Pier root area
+    // ----- East Pier (L-shape) -----
+    { lat: 53.298, lon: -6.130 },   // East Pier mid
+    { lat: 53.3015, lon: -6.129 },  // East Pier head (N tip)
+    { lat: 53.3008, lon: -6.126 },  // East Pier head outer corner
+    { lat: 53.296, lon: -6.128 },   // back along outer East Pier
+    { lat: 53.294, lon: -6.126 },   // East Pier root outer
+    // ----- Sandycove -> Dalkey -> Killiney -> Bray -----
+    { lat: 53.292, lon: -6.118 },   // Scotsman's Bay
+    { lat: 53.290, lon: -6.108 },   // Sandycove Point / 40 Foot
+    { lat: 53.287, lon: -6.101 },   // Sandycove Avenue
+    { lat: 53.283, lon: -6.092 },   // Bullock Harbour
+    { lat: 53.279, lon: -6.087 },   // Coliemore Harbour
+    { lat: 53.276, lon: -6.087 },   // Sorrento Point (Dalkey Sound W)
+    { lat: 53.270, lon: -6.094 },   // Dalkey S / White Rock
+    { lat: 53.262, lon: -6.098 },   // Killiney N
+    { lat: 53.254, lon: -6.099 },   // Killiney Beach mid
+    { lat: 53.243, lon: -6.094 },   // Killiney S / Shanganagh
+    { lat: 53.225, lon: -6.090 },   // Shanganagh Cliffs
+    { lat: 53.210, lon: -6.085 },   // Bray N
+    { lat: 53.197, lon: -6.077 },   // Bray Harbour
+    { lat: 53.185, lon: -6.078 },   // Bray Head N
+    { lat: 53.180, lon: -6.082 },   // Bray Head south
     // close polygon far inland so the land fills properly:
-    { lat: 53.180, lon: -6.350 },
-    { lat: 53.400, lon: -6.350 },
+    { lat: 53.175, lon: -6.350 },
+    { lat: 53.405, lon: -6.350 },
+];
+
+// North Bull Island — a barrier island between the channel and the open
+// bay, separated from the mainland by a narrow tidal lagoon. Drawn as a
+// separate land polygon so the Causeway gap reads correctly.
+const BULL_ISLAND = [
+    { lat: 53.371, lon: -6.140 },   // N tip (Sutton Creek)
+    { lat: 53.367, lon: -6.150 },   // E shore N (Dollymount strand)
+    { lat: 53.359, lon: -6.158 },   // E shore mid
+    { lat: 53.351, lon: -6.170 },   // E shore S
+    { lat: 53.345, lon: -6.183 },   // S tip (channel mouth)
+    { lat: 53.349, lon: -6.184 },   // back along W shore (lagoon side)
+    { lat: 53.355, lon: -6.176 },
+    { lat: 53.362, lon: -6.165 },
+    { lat: 53.368, lon: -6.150 },
 ];
 
 // Dalkey Island (separate islet to draw)
@@ -865,6 +921,7 @@ function drawMapTo(canvas) {
         ctx.stroke();
     }
     fillLand(DUBLIN_BAY_COAST);
+    fillLand(BULL_ISLAND);
     fillLand(DALKEY_ISLAND);
 
     // Background grid (very faint)
@@ -1026,6 +1083,59 @@ function drawMapTo(canvas) {
         ctx.textAlign = "left"; ctx.textBaseline = "top";
         ctx.fillText(`${i + 1}`, p.x + markR + 4, p.y - markR - 2);
     });
+
+    // ---- Tidal stream arrows at each course mark ----
+    // Only drawn if tides.json has rose data. Arrow points in the
+    // direction the stream is SETTING (i.e. flowing towards). Length
+    // scales with drift in knots. Drawn under the mark dots have
+    // already been rendered above so the arrow start is offset.
+    if (typeof tideStreamAt === "function" && hasTideStreamData()) {
+        const nowMs = Date.now();
+        const tideCol = cssVar("--chart-tide", "#5fc0ff");
+        for (const p of pts) {
+            if (!p) continue;
+            const ts = tideStreamAt(p.mark, nowMs);
+            if (!ts || ts.drift < 0.05) continue;
+            // 1 kn ≈ 24 px, clamped 10..52
+            const len = Math.max(10, Math.min(52, ts.drift * 24));
+            const head = Math.max(5, len * 0.28);
+            // Arrow starts on the mark's edge, offset by markR + a gap,
+            // so it doesn't sit underneath the dot.
+            const rad = (ts.set - 90) * Math.PI / 180;     // 0° = up (north)
+            const dx = Math.cos(rad), dy = Math.sin(rad);
+            const startGap = markR + 4;
+            const sx = p.x + dx * startGap;
+            const sy = p.y + dy * startGap;
+            const ex = sx + dx * len;
+            const ey = sy + dy * len;
+            ctx.strokeStyle = tideCol;
+            ctx.fillStyle = tideCol;
+            ctx.lineWidth = Math.max(1.5, W * 0.0028);
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ex, ey);
+            ctx.stroke();
+            // Arrowhead at the tip
+            const px = -dy, py = dx;
+            ctx.beginPath();
+            ctx.moveTo(ex + dx * head, ey + dy * head);
+            ctx.lineTo(ex - dx * head * 0.3 + px * head * 0.55,
+                       ey - dy * head * 0.3 + py * head * 0.55);
+            ctx.lineTo(ex - dx * head * 0.3 - px * head * 0.55,
+                       ey - dy * head * 0.3 - py * head * 0.55);
+            ctx.closePath();
+            ctx.fill();
+            // Drift label (kn) — small, near the tip
+            if (ts.drift >= 0.2) {
+                ctx.font = `600 ${Math.round(W * 0.014)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+                ctx.textAlign = "left"; ctx.textBaseline = "middle";
+                ctx.fillStyle = tideCol;
+                ctx.fillText(`${ts.drift.toFixed(1)}kn`,
+                    ex + dx * (head + 3) + 2,
+                    ey + dy * (head + 3));
+            }
+        }
+    }
 
     // GPS position
     if (state.gpsPos) {
@@ -1212,6 +1322,30 @@ function drawSteerTo(canvas) {
     const distStr = distanceToMark != null ? fmtDist(distanceToMark) : "—";
     const srcStr = src === "gps" ? " · from GPS" : src === "leg" ? " · leg bearing" : "";
     ctx.fillText(`${distStr}${srcStr}`, cx, baseY + Math.round(H * 0.155));
+
+    // ---- Tide-push cue (relative to the next leg) ----
+    if (typeof tideStreamAt === "function" && hasTideStreamData() && bearingToMark != null) {
+        const ts = tideStreamAt(nextMarkLetter, Date.now());
+        if (ts && ts.drift >= 0.1) {
+            // Relative angle of the stream vs the bearing to the mark.
+            // 0 = pushing you onto the mark (lift), 180 = head-on,
+            // +90 = pushing you to STBD of the rhumb, -90 = to PORT.
+            let rel = ((ts.set - bearingToMark + 540) % 360) - 180;
+            const absRel = Math.abs(rel);
+            let cue;
+            if (absRel < 25) {
+                cue = `Tide ${ts.drift.toFixed(1)} kn with you`;
+            } else if (absRel > 155) {
+                cue = `Tide ${ts.drift.toFixed(1)} kn against you`;
+            } else {
+                const side = rel > 0 ? "STBD" : "PORT";
+                cue = `Tide ${ts.drift.toFixed(1)} kn pushing ${Math.round(absRel)}° ${side}`;
+            }
+            ctx.fillStyle = cssVar("--chart-tide", "#5fc0ff");
+            ctx.font = `600 ${Math.round(W * 0.024)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+            ctx.fillText(cue, cx, baseY + Math.round(H * 0.195));
+        }
+    }
 }
 
 // Wrap renderAll to also redraw the chart
@@ -2002,44 +2136,154 @@ if (countdownPanel) {
 }
 
 // ============================================================
-// Tide info (Dún Laoghaire, static table)
+// Tide engine (Dún Laoghaire, static table) + tidal streams
 // ============================================================
 let TIDES = null;
+
+// ---- low-level helpers ----------------------------------------------------
+
+function _evDate(ev) { return new Date(ev.datetime); }
+
+/** Return the two HW/LW events that bracket time `t`, plus their indices. */
+function _surroundingTideEvents(t) {
+    if (!TIDES || !Array.isArray(TIDES.events) || TIDES.events.length < 2) return null;
+    const evs = TIDES.events;
+    for (let i = 0; i < evs.length - 1; i++) {
+        const a = _evDate(evs[i]).getTime();
+        const b = _evDate(evs[i + 1]).getTime();
+        if (t >= a && t <= b) return { a: evs[i], b: evs[i + 1], idx: i };
+    }
+    return null;
+}
+
+/** Cosine interpolation of tide height between two consecutive HW/LW events. */
+function tideHeightAt(t) {
+    const s = _surroundingTideEvents(t);
+    if (!s) return null;
+    const ta = _evDate(s.a).getTime(), tb = _evDate(s.b).getTime();
+    const ha = s.a.height_m, hb = s.b.height_m;
+    if (ha == null || hb == null) return null;
+    const f = (t - ta) / (tb - ta);                 // 0..1
+    // Cosine: smooth and matches real tides (ha at f=0, hb at f=1).
+    return ha + (hb - ha) * (1 - Math.cos(f * Math.PI)) / 2;
+}
+
+/**
+ * Hours from the nearest HW. Negative = before HW, positive = after HW.
+ * Range: −6.2 .. +6.2 (semidiurnal). Returns null if no surrounding data.
+ */
+function tidePhaseHoursFromHW(t) {
+    if (!TIDES || !Array.isArray(TIDES.events) || TIDES.events.length === 0) return null;
+    const evs = TIDES.events;
+    // Find nearest HW event in time
+    let nearest = null, nearestDt = Infinity;
+    for (const e of evs) {
+        if (e.type !== "high") continue;
+        const dt = Math.abs(_evDate(e).getTime() - t);
+        if (dt < nearestDt) { nearestDt = dt; nearest = e; }
+    }
+    if (!nearest) return null;
+    return (t - _evDate(nearest).getTime()) / 3600000;
+}
+
+/** Find the next event of given type strictly after `t`. */
+function nextTideEvent(t, type) {
+    if (!TIDES || !Array.isArray(TIDES.events)) return null;
+    for (const e of TIDES.events) {
+        if (type && e.type !== type) continue;
+        if (_evDate(e).getTime() > t) return e;
+    }
+    return null;
+}
+
+/**
+ * Tide stream at `markLetter` at time `t`. Linear interpolation between the
+ * two surrounding entries of the per-mark or default tide rose.
+ * Returns { set, drift } in degrees-true / knots, or null if no rose data.
+ */
+function tideStreamAt(markLetter, t) {
+    if (!TIDES) return null;
+    const rose = (TIDES.marksTideRose && TIDES.marksTideRose[markLetter])
+        || TIDES.defaultTideRose;
+    if (!Array.isArray(rose) || rose.length === 0) return null;
+    const phase = tidePhaseHoursFromHW(t);
+    if (phase == null) return null;
+    const h = Math.max(-6, Math.min(6, phase));
+    // Sort just in case
+    const sorted = rose.slice().sort((a, b) => a.h - b.h);
+    let lo = sorted[0], hi = sorted[sorted.length - 1];
+    for (let i = 0; i < sorted.length - 1; i++) {
+        if (h >= sorted[i].h && h <= sorted[i + 1].h) {
+            lo = sorted[i]; hi = sorted[i + 1]; break;
+        }
+    }
+    const span = hi.h - lo.h || 1;
+    const f = (h - lo.h) / span;
+    // Interpolate set as a circular angle, drift linearly.
+    const a1 = (lo.set || 0) * Math.PI / 180;
+    const a2 = (hi.set || 0) * Math.PI / 180;
+    const x = (1 - f) * Math.cos(a1) + f * Math.cos(a2);
+    const y = (1 - f) * Math.sin(a1) + f * Math.sin(a2);
+    const set = ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
+    const drift = (1 - f) * (lo.drift || 0) + f * (hi.drift || 0);
+    return { set, drift };
+}
+
+/** Has the user populated any tidal-stream rose at all? */
+function hasTideStreamData() {
+    if (!TIDES) return false;
+    if (Array.isArray(TIDES.defaultTideRose) && TIDES.defaultTideRose.length > 0) return true;
+    const r = TIDES.marksTideRose;
+    return !!(r && Object.keys(r).length > 0);
+}
+
+// ---- info-strip tide card -------------------------------------------------
 
 function renderTides() {
     if (!tidePanel || !infoStrip) return;
     if (!TIDES || !Array.isArray(TIDES.events) || TIDES.events.length === 0) {
-        // No data yet — hide the panel rather than show fake / stale values.
         tidePanel.hidden = true;
         if (countdownPanel.hidden) infoStrip.hidden = true;
         return;
     }
-    const now = new Date();
-    const upcoming = TIDES.events.filter((e) => new Date(e.datetime) > now).slice(0, 2);
+    const nowMs = Date.now();
+    const upcoming = TIDES.events.filter((e) => _evDate(e).getTime() > nowMs).slice(0, 2);
     if (upcoming.length === 0) {
-        // Data file exists but is now stale — hide silently. The point is to
-        // never display anything that might be wrong.
         tidePanel.hidden = true;
         if (countdownPanel.hidden) infoStrip.hidden = true;
         return;
     }
-    const fmt = (ev) => {
-        const dt = new Date(ev.datetime);
-        const hh = String(dt.getHours()).padStart(2, "0");
-        const mm = String(dt.getMinutes()).padStart(2, "0");
-        const tag = ev.type === "high" ? "HW" : "LW";
-        return `${tag} ${hh}:${mm} (${ev.height_m.toFixed(1)} m)`;
-    };
-    tideBig.textContent = fmt(upcoming[0]);
-    tideSub.textContent = upcoming[1] ? "then " + fmt(upcoming[1]) : "";
+    const next = upcoming[0];
+    const dt = _evDate(next);
+    const hh = String(dt.getHours()).padStart(2, "0");
+    const mm = String(dt.getMinutes()).padStart(2, "0");
+    const tag = next.type === "high" ? "HW" : "LW";
+    const arrow = next.type === "high" ? "▲" : "▼";   // rising => HW next, falling => LW next
+    const minsTo = Math.round((dt.getTime() - nowMs) / 60000);
+    const inStr = minsTo < 60
+        ? `in ${minsTo}m`
+        : `in ${Math.floor(minsTo / 60)}h ${minsTo % 60}m`;
+    tideBig.textContent = `${arrow} ${tag} ${hh}:${mm}`;
+    const hStr = next.height_m != null ? ` · ${next.height_m.toFixed(1)} m` : "";
+    tideSub.textContent = `${inStr}${hStr}`;
     tidePanel.hidden = false;
     infoStrip.hidden = false;
 }
 
 fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))
-    .then((t) => { if (t) { TIDES = t; renderTides(); } })
+    .then((t) => {
+        if (!t) return;
+        TIDES = t;
+        renderTides();
+        // Tide arrows on the chart depend on this data, redraw if needed.
+        if (typeof renderChart === "function") renderChart();
+    })
     .catch(() => { /* offline / not deployed yet */ });
 
-// Refresh tide panel every 5 minutes so "next event" rolls forward.
-setInterval(renderTides, 5 * 60 * 1000);
+// Refresh tide panel every minute so "in 14m" rolls forward smoothly.
+setInterval(() => {
+    renderTides();
+    if (typeof renderChart === "function" && hasTideStreamData()) renderChart();
+}, 60 * 1000);
+

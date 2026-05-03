@@ -26,6 +26,7 @@
     --chart-leg-done: #6a90b5;
     --chart-leg-todo: #f5faff;
     --chart-arrow: #cfe0f0;
+    --chart-tide: #5fc0ff;
 }
 
 /* Light theme — applied when <html data-theme="light"> or system preference
@@ -52,6 +53,7 @@
     --chart-leg-done: #7a8ea5;
     --chart-leg-todo: #11243a;
     --chart-arrow: #4a5e75;
+    --chart-tide: #1d7fb5;
 }
 
 html,
