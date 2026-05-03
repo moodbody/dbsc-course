@@ -1,0 +1,334 @@
+/* DBSC Race Course – mobile-first */
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0b1f33;
+    --card: #11304b;
+    --card2: #14375a;
+    --accent: #ffb000;
+    --good: #2bb673;
+    --port: #d33;
+    --stbd: #1aa64a;
+    --text: #f5f7fa;
+    --muted: #8aa5bf;
+    --line: #1f4870;
+    --hi: #ffb00022;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+header {
+    padding: 14px 16px 10px;
+    background: linear-gradient(180deg, #0a1c2f, var(--bg));
+    border-bottom: 1px solid var(--line);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: .3px;
+}
+
+header .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+section {
+    padding: 12px 16px;
+}
+
+.picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.picker label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.picker select {
+    padding: 10px;
+    font-size: 16px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.summary {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 12px 16px;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 4px 14px;
+}
+
+.summary .k {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.summary .v {
+    font-weight: 600;
+}
+
+.summary .raw {
+    grid-column: 1 / -1;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.controls button {
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.controls button.primary {
+    background: var(--good);
+    border-color: var(--good);
+    font-weight: 700;
+    grid-column: 1 / -1;
+}
+
+.controls button.primary:disabled {
+    background: #2c4f3f;
+    color: #9bbfa9;
+}
+
+.controls button.ghost:disabled {
+    color: #4f6b85;
+}
+
+.controls button:active {
+    transform: translateY(1px);
+}
+
+.now {
+    margin: 4px 16px 0;
+    background: var(--card2);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.now h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: .8px;
+    text-transform: uppercase;
+}
+
+.now .name {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.now .row {
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.now .row .cell {
+    min-width: 90px;
+}
+
+.now .row .cell .lbl {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.now .row .cell .val {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.now .gps {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
+.now .gps strong {
+    color: var(--text);
+}
+
+.legs h2 {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 8px 0;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+}
+
+.legs ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.legs li {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: var(--card);
+}
+
+.legs li.done {
+    opacity: .55;
+}
+
+.legs li.current {
+    background: var(--hi);
+    border-color: var(--accent);
+}
+
+.legs li.start {
+    background: #14443a;
+    border-color: var(--good);
+}
+
+.legs li.finish {
+    background: #4a2a14;
+    border-color: var(--accent);
+}
+
+.legs li .idx {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.legs li .info .name {
+    font-weight: 700;
+}
+
+.legs li .info .meta {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.legs li .info .meta .pill {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+    margin-right: 4px;
+    color: #fff;
+}
+
+.legs li .info .meta .pill.p {
+    background: var(--port);
+}
+
+.legs li .info .meta .pill.s {
+    background: var(--stbd);
+}
+
+.legs li .info .meta .pill.x {
+    background: #555;
+}
+
+.legs li .info .meta .colour {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 4px;
+}
+
+.legs li .nav {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.legs li .nav .b {
+    font-weight: 700;
+}
+
+.legs li .nav .d {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+footer {
+    padding: 16px;
+    color: var(--muted);
+    text-align: center;
+}
+
+@media (min-width: 720px) {
+    body {
+        max-width: 760px;
+        margin: 0 auto;
+    }
+}
+/* ---------- additions: install btn, chart, tappable legs ---------- */
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.title-row .install {
+  background: var(--accent); color: #1a1a1a; border: 0;
+  padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer;
+}
+
+.chartwrap {
+  margin: 0 16px;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.chartwrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #0a1a2c;
+  touch-action: pan-y;
+}
+
+.legs h2 .hint {
+  font-size: 11px; color: var(--muted); margin-left: 8px; font-weight: 400; text-transform: none; letter-spacing: 0;
+}
+.legs li { cursor: pointer; user-select: none; }
+.legs li:active { transform: scale(0.995); }

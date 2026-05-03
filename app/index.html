@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b3d66" />
+    <title>DBSC Race Course</title>
+
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DBSC Course" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+    <header>
+        <div class="title-row">
+            <h1>DBSC Race Course</h1>
+            <button id="btnInstall" class="install" hidden>Install</button>
+        </div>
+        <div class="sub" id="cardSub">Select a course card</div>
+    </header>
+
+    <section class="picker">
+        <label>
+            <span>Course card</span>
+            <select id="cardSel"></select>
+        </label>
+        <label>
+            <span>Wind direction</span>
+            <select id="windSel"></select>
+        </label>
+        <label>
+            <span>Course #</span>
+            <select id="courseSel"></select>
+        </label>
+    </section>
+
+    <section class="summary" id="summary"></section>
+
+    <section class="chartwrap">
+        <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+    </section>
+
+    <section class="controls">
+        <button id="btnGps" class="ghost">📍 Use GPS</button>
+        <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
+        <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
+        <button id="btnReset" class="ghost">⟳ Reset</button>
+    </section>
+
+    <section class="now" id="now"></section>
+
+    <section class="legs">
+        <h2>Legs <span class="hint">tap a leg to jump</span></h2>
+        <ol id="legList"></ol>
+    </section>
+
+    <footer>
+        <small>Bearings true; distances NM. Data: DBSC 2026 cards.</small>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

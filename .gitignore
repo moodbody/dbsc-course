@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Local debug artefacts
+pdf_dump.txt
+pdf_extracted.json
+server.out
+server.err
