@@ -648,6 +648,44 @@ if ("serviceWorker" in navigator) {
             refreshing = true;
             window.location.reload();
         });
+
+        // Soft update prompt: when stale-while-revalidate finds a fresher
+        // copy of the app shell in the background, the SW posts us a
+        // message. We show a small toast with a Reload button so the user
+        // can grab the update right now instead of waiting for the next
+        // launch. Debounced so multiple changed files = one toast.
+        const updateToast = document.getElementById("updateToast");
+        const utReload = document.getElementById("utReload");
+        const utClose = document.getElementById("utClose");
+        let updateShown = false;
+        let updateDismissed = false;
+
+        function showUpdateToast() {
+            if (updateShown || updateDismissed || !updateToast) return;
+            updateShown = true;
+            updateToast.hidden = false;
+        }
+        function hideUpdateToast() {
+            if (!updateToast) return;
+            updateToast.hidden = true;
+            updateShown = false;
+        }
+        if (utReload) {
+            utReload.addEventListener("click", () => {
+                window.location.reload();
+            });
+        }
+        if (utClose) {
+            utClose.addEventListener("click", () => {
+                updateDismissed = true; // don't pester again this session
+                hideUpdateToast();
+            });
+        }
+        navigator.serviceWorker.addEventListener("message", (event) => {
+            if (event.data && event.data.type === "update-available") {
+                showUpdateToast();
+            }
+        });
     });
 }
 

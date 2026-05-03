@@ -42,13 +42,36 @@ function isPdf(pathname) {
     return pathname.toLowerCase().endsWith(".pdf");
 }
 
+// Compare two Response objects by their ETag, then by Last-Modified.
+// Returns true only when we have signals on both sides AND they differ.
+function responsesDiffer(a, b) {
+    if (!a || !b) return false;
+    const ae = a.headers.get("etag");
+    const be = b.headers.get("etag");
+    if (ae && be) return ae !== be;
+    const al = a.headers.get("last-modified");
+    const bl = b.headers.get("last-modified");
+    if (al && bl) return al !== bl;
+    return false;
+}
+
+async function notifyUpdateAvailable() {
+    const clients = await self.clients.matchAll({ includeUncontrolled: true, type: "window" });
+    clients.forEach((c) => c.postMessage({ type: "update-available" }));
+}
+
 function staleWhileRevalidate(event, req) {
     event.respondWith(
         caches.open(CACHE_VERSION).then(async (cache) => {
             const cached = await cache.match(req);
             const network = fetch(req)
-                .then((res) => {
+                .then(async (res) => {
                     if (res && res.status === 200 && (new URL(req.url)).origin === self.location.origin) {
+                        // Only flag an update if the file actually changed compared to
+                        // the version we just served from cache.
+                        if (cached && responsesDiffer(cached, res)) {
+                            notifyUpdateAvailable();
+                        }
                         cache.put(req, res.clone());
                     }
                     return res;
