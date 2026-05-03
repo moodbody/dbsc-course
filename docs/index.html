@@ -40,7 +40,11 @@
     <header>
         <div class="title-row">
             <h1>DBSC Race Course</h1>
-            <button id="btnInstall" class="install" hidden>Install</button>
+            <div class="header-actions">
+                <button id="btnTheme" class="theme-toggle" type="button" aria-label="Toggle light/dark theme"
+                    title="Toggle theme">🌙</button>
+                <button id="btnInstall" class="install" hidden>Install</button>
+            </div>
         </div>
         <div class="sub" id="cardSub">Select a course card</div>
         <nav class="tabs" role="tablist">
@@ -51,6 +55,19 @@
     </header>
 
     <div id="view-course" class="view">
+        <section id="infoStrip" class="info-strip" hidden>
+            <button id="countdownPanel" class="info-card countdown" type="button" hidden>
+                <div class="ic-lbl">Next race</div>
+                <div class="ic-big" id="countdownBig">—</div>
+                <div class="ic-sub" id="countdownSub"></div>
+            </button>
+            <div id="tidePanel" class="info-card tide" hidden>
+                <div class="ic-lbl">Tide · Dún Laoghaire</div>
+                <div class="ic-big" id="tideBig">—</div>
+                <div class="ic-sub" id="tideSub"></div>
+            </div>
+        </section>
+
         <section class="picker">
             <label class="full">
                 <span>Course card</span>
@@ -70,10 +87,13 @@
 
         <section class="chartwrap">
             <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+            <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
+                title="Expand">⛶</button>
         </section>
 
         <section class="controls">
             <button id="btnGps" class="ghost">📍 Use GPS</button>
+            <button id="btnCompass" class="ghost">🧭 Compass</button>
             <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
             <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
             <button id="btnReset" class="ghost">⟳ Reset</button>
@@ -193,6 +213,11 @@
                 <div class="doc-name">NoR — Dinghy Fleet 2026</div>
             </a>
         </section>
+    </div>
+
+    <div id="chartModal" class="chart-modal" hidden role="dialog" aria-label="Course chart fullscreen">
+        <button class="cm-close" id="cmClose" type="button" aria-label="Close">×</button>
+        <canvas id="chartBig" class="cm-canvas" aria-label="Course chart fullscreen"></canvas>
     </div>
 
     <footer>

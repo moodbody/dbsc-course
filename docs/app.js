@@ -35,6 +35,19 @@ const btnNext = $("btnNext");
 const btnUndo = $("btnUndo");
 const btnReset = $("btnReset");
 const btnGps = $("btnGps");
+const btnCompass = $("btnCompass");
+const btnTheme = $("btnTheme");
+const btnExpandChart = $("btnExpandChart");
+const chartModal = $("chartModal");
+const chartBig = $("chartBig");
+const cmClose = $("cmClose");
+const infoStrip = $("infoStrip");
+const countdownPanel = $("countdownPanel");
+const countdownBig = $("countdownBig");
+const countdownSub = $("countdownSub");
+const tidePanel = $("tidePanel");
+const tideBig = $("tideBig");
+const tideSub = $("tideSub");
 
 // ---------- state ----------
 const state = {
@@ -45,6 +58,10 @@ const state = {
     gpsOn: false,
     gpsWatch: null,
     gpsPos: null,          // {lat, lon, accuracy, heading?, speed?}
+    headingOn: false,      // device-orientation compass active
+    heading: null,         // degrees true (or magnetic if true unavailable)
+    headingTrue: false,    // whether `heading` is true-north (vs magnetic)
+    chartFullscreen: false,
 };
 
 // ---------- helpers ----------
@@ -239,9 +256,42 @@ function renderNow() {
         const m = MARKS[target.mark];
         if (m) {
             const g = geo(state.gpsPos.lat, state.gpsPos.lon, m.lat, m.lon);
-            gpsHtml = `<div class="gps">From your position:
-        <strong>${fmtBearing(g.bearing)}</strong> • <strong>${fmtDist(g.distance)}</strong>
-        <span style="opacity:.7"> (±${Math.round(state.gpsPos.accuracy)} m)</span></div>`;
+            // If we have a compass heading, compute "steer X° port/stbd" so the
+            // helm can just turn until that number reaches 0°.
+            let steerHtml = "";
+            if (state.headingOn && state.heading != null) {
+                let off = ((g.bearing - state.heading + 540) % 360) - 180; // -180..+180
+                const offAbs = Math.abs(off).toFixed(0);
+                const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "—");
+                const steerText = (dir === "—") ? "on bearing" : `${offAbs}° ${dir === "stbd" ? "↻" : "↺"}`;
+                steerHtml = `
+                    <div class="gps-cell">
+                        <div class="lbl">Steer</div>
+                        <div class="val steer">${steerText}</div>
+                    </div>`;
+            } else {
+                steerHtml = `
+                    <div class="gps-cell">
+                        <div class="lbl">Heading</div>
+                        <div class="val" style="font-size:13px; color:var(--muted)">tap 🧭</div>
+                    </div>`;
+            }
+            gpsHtml = `<div class="gps live">
+                <div class="gps-row">
+                    <div class="gps-cell">
+                        <div class="lbl">Bearing (live)</div>
+                        <div class="val">${fmtBearing(g.bearing)}</div>
+                    </div>
+                    <div class="gps-cell">
+                        <div class="lbl">Distance</div>
+                        <div class="val">${fmtDist(g.distance)}</div>
+                    </div>
+                    ${steerHtml}
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-top:4px">
+                    GPS ±${Math.round(state.gpsPos.accuracy)} m${state.headingOn && state.heading != null ? ` · heading ${Math.round(state.heading)}°${state.headingTrue ? "T" : "M"}` : ""}
+                </div>
+            </div>`;
         }
     } else {
         gpsHtml = `<div class="gps">Tap “Use GPS” for live bearing &amp; distance from your boat.</div>`;
@@ -417,10 +467,24 @@ function resizeChart() {
 }
 window.addEventListener("resize", resizeChart);
 
+// Read a CSS custom property (e.g. --bg) from <html>. Used so the canvas
+// drawing follows the active light/dark theme.
+function cssVar(name, fallback) {
+    try {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        return v || fallback;
+    } catch (e) { return fallback; }
+}
+
 function renderChart() {
-    if (!chartCanvas) return;
-    const ctx = chartCanvas.getContext("2d");
-    const W = chartCanvas.width, H = chartCanvas.height;
+    drawChartTo(chartCanvas);
+    if (state.chartFullscreen) drawChartTo(chartBig);
+}
+
+function drawChartTo(canvas) {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
     const c = currentCourse();
@@ -480,7 +544,7 @@ function renderChart() {
     }
 
     // Background grid (very faint)
-    ctx.strokeStyle = "#13314d";
+    ctx.strokeStyle = cssVar("--chart-grid", "#13314d");
     ctx.lineWidth = 1;
     for (let i = 1; i < 4; i++) {
         const y = margin + (chartH * i) / 4;
@@ -495,8 +559,8 @@ function renderChart() {
         const ay = margin + Math.round(W * 0.04);
         const len = Math.round(W * 0.035);
         const head = Math.round(W * 0.012);
-        ctx.strokeStyle = "#8aa5bf";
-        ctx.fillStyle = "#8aa5bf";
+        ctx.strokeStyle = cssVar("--chart-arrow", "#8aa5bf");
+        ctx.fillStyle = cssVar("--chart-arrow", "#8aa5bf");
         ctx.lineWidth = Math.max(2, W * 0.003);
         // shaft
         ctx.beginPath();
@@ -518,7 +582,7 @@ function renderChart() {
     }
 
     // Faint background marks (not in this course)
-    ctx.fillStyle = "#23496e";
+    ctx.fillStyle = cssVar("--chart-mark-faint", "#23496e");
     const dotR = Math.max(2, Math.round(W * 0.006));
     for (const letter of allLetters) {
         if (courseLetters.includes(letter)) continue;
@@ -543,7 +607,7 @@ function renderChart() {
         const done = i < state.rounded;
         const upcoming = i === state.rounded;
         ctx.lineWidth = upcoming ? Math.max(3, W * 0.005) : Math.max(2, W * 0.0035);
-        ctx.strokeStyle = done ? "#345a7d" : (upcoming ? "#ffb000" : "#e7eef5");
+        ctx.strokeStyle = done ? cssVar("--chart-leg-done", "#345a7d") : (upcoming ? cssVar("--accent", "#ffb000") : cssVar("--chart-leg-todo", "#e7eef5"));
         ctx.setLineDash(done ? [6, 6] : []);
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
 
@@ -571,10 +635,10 @@ function renderChart() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, markR + (isCurrent ? 3 : 0), 0, Math.PI * 2);
-        ctx.fillStyle = isStart ? "#2bb673" : isFinish ? "#ffb000" : "#f5f7fa";
+        ctx.fillStyle = isStart ? cssVar("--good", "#2bb673") : isFinish ? cssVar("--accent", "#ffb000") : cssVar("--chart-mark-bg", "#f5f7fa");
         ctx.fill();
         ctx.lineWidth = 2;
-        ctx.strokeStyle = isCurrent ? "#ffb000" : "#0a1a2c";
+        ctx.strokeStyle = isCurrent ? cssVar("--accent", "#ffb000") : "#0a1a2c";
         ctx.stroke();
 
         // Side indicator
@@ -589,13 +653,13 @@ function renderChart() {
         }
 
         // Label
-        ctx.fillStyle = "#0a1a2c";
+        ctx.fillStyle = cssVar("--chart-mark-text", "#0a1a2c");
         ctx.font = `bold ${Math.round(W * 0.02)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(p.mark, p.x, p.y);
 
         // Outside label with order #
-        ctx.fillStyle = isCurrent ? "#ffb000" : "#cfd9e4";
+        ctx.fillStyle = isCurrent ? cssVar("--accent", "#ffb000") : cssVar("--muted", "#cfd9e4");
         ctx.font = `${Math.round(W * 0.018)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
         ctx.textAlign = "left"; ctx.textBaseline = "top";
         ctx.fillText(`${i + 1}`, p.x + markR + 4, p.y - markR - 2);
@@ -604,6 +668,25 @@ function renderChart() {
     // GPS position
     if (state.gpsPos) {
         const [gx, gy] = project(state.gpsPos.lat, state.gpsPos.lon);
+
+        // Heading wedge (drawn under the dot so the dot stays visible)
+        if (state.headingOn && state.heading != null) {
+            // Convert true bearing -> screen angle. Screen angle 0 is east,
+            // we want compass 0 = up = -π/2.
+            const rad = (state.heading - 90) * Math.PI / 180;
+            const len = Math.max(28, W * 0.07);
+            const half = 0.45; // wedge half-angle in radians (~26°)
+            ctx.beginPath();
+            ctx.moveTo(gx, gy);
+            ctx.arc(gx, gy, len, rad - half, rad + half);
+            ctx.closePath();
+            const grad = ctx.createRadialGradient(gx, gy, Math.max(6, W * 0.013), gx, gy, len);
+            grad.addColorStop(0, "rgba(58,160,255,.55)");
+            grad.addColorStop(1, "rgba(58,160,255,0)");
+            ctx.fillStyle = grad;
+            ctx.fill();
+        }
+
         // ring
         ctx.beginPath();
         ctx.arc(gx, gy, Math.max(6, W * 0.013), 0, Math.PI * 2);
@@ -1080,5 +1163,308 @@ todayBoat.addEventListener("change", () => { if (todayDate.value) findRace(); })
 // Fetch schedule.json (network-first via SW; falls back to cache when offline).
 fetch("schedule.json?v=" + Date.now(), { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))
-    .then((s) => { if (s) applySchedule(s); })
+    .then((s) => { if (s) applySchedule(s); renderCountdown(); })
     .catch(() => { /* offline – feature unavailable until first online run */ });
+
+// ============================================================
+// Theme toggle (light / dark)
+// ============================================================
+// Resolution order:
+//   1. explicit user choice in localStorage ("dbsc.theme" = "light"|"dark")
+//   2. system `prefers-color-scheme: light` -> light
+//   3. dark (default — matches the original design)
+(function initTheme() {
+    const saved = localStorage.getItem("dbsc.theme");
+    let theme;
+    if (saved === "light" || saved === "dark") {
+        theme = saved;
+    } else {
+        theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)
+            ? "light" : "dark";
+    }
+    applyTheme(theme);
+    // Track system changes when the user has no explicit override.
+    if (!saved && window.matchMedia) {
+        const mq = window.matchMedia("(prefers-color-scheme: light)");
+        mq.addEventListener && mq.addEventListener("change", (e) => {
+            if (!localStorage.getItem("dbsc.theme")) {
+                applyTheme(e.matches ? "light" : "dark");
+            }
+        });
+    }
+})();
+
+function applyTheme(theme) {
+    if (theme === "light") {
+        document.documentElement.setAttribute("data-theme", "light");
+        if (btnTheme) btnTheme.textContent = "☀️";
+    } else {
+        document.documentElement.removeAttribute("data-theme");
+        if (btnTheme) btnTheme.textContent = "🌙";
+    }
+    // Theme colour for the OS chrome (status bar tint on installed app).
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", theme === "light" ? "#eaf0f7" : "#0b3d66");
+    // Canvas colours come from CSS variables, so re-render.
+    if (typeof renderChart === "function") renderChart();
+}
+
+if (btnTheme) {
+    btnTheme.addEventListener("click", () => {
+        const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+        const next = current === "light" ? "dark" : "light";
+        localStorage.setItem("dbsc.theme", next);
+        applyTheme(next);
+    });
+}
+
+// ============================================================
+// Compass / device-orientation heading
+// ============================================================
+// On iOS 13+ DeviceOrientationEvent requires an explicit user-gesture
+// permission grant. Older Android & desktop just work after addEventListener.
+let _orientHandler = null;
+
+function stopCompass() {
+    if (_orientHandler) {
+        window.removeEventListener("deviceorientationabsolute", _orientHandler);
+        window.removeEventListener("deviceorientation", _orientHandler);
+        _orientHandler = null;
+    }
+    state.headingOn = false;
+    state.heading = null;
+    state.headingTrue = false;
+    if (btnCompass) {
+        btnCompass.textContent = "🧭 Compass";
+        btnCompass.classList.remove("primary");
+    }
+    renderNow();
+    renderChart();
+}
+
+function startCompass() {
+    if (typeof DeviceOrientationEvent === "undefined") {
+        alert("This device doesn't expose orientation data.");
+        return;
+    }
+    const begin = () => {
+        _orientHandler = (e) => {
+            // Prefer iOS's webkit compass (already true / magnetic-corrected),
+            // then absolute alpha (deviceorientationabsolute), then plain alpha.
+            let h = null, isTrue = false;
+            if (typeof e.webkitCompassHeading === "number") {
+                h = e.webkitCompassHeading; // 0 = north, increasing clockwise
+                isTrue = true;
+            } else if (e.absolute && typeof e.alpha === "number") {
+                h = (360 - e.alpha) % 360;
+                isTrue = true;
+            } else if (typeof e.alpha === "number") {
+                h = (360 - e.alpha) % 360;
+                isTrue = false;
+            }
+            if (h == null) return;
+            state.heading = h;
+            state.headingTrue = isTrue;
+            state.headingOn = true;
+            // Throttle re-render: only redraw if heading changed by ≥ 2°.
+            if (state._lastDrawnHeading == null || Math.abs(h - state._lastDrawnHeading) > 2) {
+                state._lastDrawnHeading = h;
+                renderNow();
+                renderChart();
+            }
+        };
+        window.addEventListener("deviceorientationabsolute", _orientHandler, true);
+        window.addEventListener("deviceorientation", _orientHandler, true);
+        if (btnCompass) {
+            btnCompass.textContent = "🧭 Compass on";
+            btnCompass.classList.add("primary");
+        }
+    };
+
+    // iOS 13+ permission API
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission()
+            .then((res) => { if (res === "granted") begin(); else alert("Compass permission denied."); })
+            .catch(() => alert("Couldn't request compass permission."));
+    } else {
+        begin();
+    }
+}
+
+if (btnCompass) {
+    btnCompass.addEventListener("click", () => {
+        if (state.headingOn || _orientHandler) stopCompass();
+        else startCompass();
+    });
+}
+
+// ============================================================
+// Fullscreen chart modal
+// ============================================================
+function resizeBigChart() {
+    if (!chartBig) return;
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = chartBig.clientWidth;
+    const cssH = chartBig.clientHeight;
+    chartBig.width = Math.round(cssW * dpr);
+    chartBig.height = Math.round(cssH * dpr);
+}
+
+function openChartModal() {
+    if (!chartModal) return;
+    state.chartFullscreen = true;
+    chartModal.hidden = false;
+    // Wait for layout so clientWidth/Height are populated.
+    requestAnimationFrame(() => {
+        resizeBigChart();
+        drawChartTo(chartBig);
+    });
+}
+
+function closeChartModal() {
+    state.chartFullscreen = false;
+    if (chartModal) chartModal.hidden = true;
+}
+
+if (btnExpandChart) btnExpandChart.addEventListener("click", openChartModal);
+if (cmClose) cmClose.addEventListener("click", closeChartModal);
+if (chartModal) {
+    chartModal.addEventListener("click", (e) => {
+        // Tap outside the canvas (i.e. on the backdrop) also closes.
+        if (e.target === chartModal) closeChartModal();
+    });
+}
+window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && state.chartFullscreen) closeChartModal();
+});
+window.addEventListener("resize", () => {
+    if (state.chartFullscreen) {
+        resizeBigChart();
+        drawChartTo(chartBig);
+    }
+});
+
+// ============================================================
+// Next-race countdown (Course tab info strip)
+// ============================================================
+// Picks the next Tue/Thu/Sat date from schedule.json, derives a warning-signal
+// time from the user's last-selected boat (or sensible defaults), and shows
+// "Tuesday 18:35 · in 2 days". Tapping it jumps to the Race finder with that
+// date pre-selected.
+const DEFAULT_WARN = { tue: "18:35", thu: "18:40", sat: "14:00" };
+const DAY_LABELS = { tue: "Tuesday", thu: "Thursday", sat: "Saturday" };
+
+function nextRaceInfo(now) {
+    if (!SCHED || !SCHED.calendar) return null;
+    const cal = SCHED.calendar;
+    const today = (now || new Date()).toISOString().slice(0, 10);
+    const candidates = [];
+    for (const k of ["tue", "thu", "sat"]) {
+        for (const e of (cal[k] || [])) {
+            const date = (typeof e === "string") ? e : e.date;
+            if (!date) continue;
+            if (date >= today) candidates.push({ day: k, date, entry: e });
+        }
+    }
+    candidates.sort((a, b) => a.date.localeCompare(b.date));
+    return candidates[0] || null;
+}
+
+function warnTimeFor(dayKey) {
+    const boatId = localStorage.getItem("dbsc.boat");
+    if (boatId && SCHED && SCHED.boats) {
+        const b = SCHED.boats.find((x) => x.id === boatId);
+        if (b && b[dayKey] && b[dayKey].warn) return b[dayKey].warn;
+    }
+    return DEFAULT_WARN[dayKey];
+}
+
+function renderCountdown() {
+    if (!countdownPanel || !infoStrip) return;
+    const next = nextRaceInfo(new Date());
+    if (!next) {
+        countdownPanel.hidden = true;
+        if (tidePanel.hidden) infoStrip.hidden = true;
+        return;
+    }
+    const warn = warnTimeFor(next.day);
+    const [h, m] = (warn || "00:00").split(":").map((x) => parseInt(x, 10));
+    const raceDt = new Date(next.date + "T" + (warn || "00:00") + ":00");
+    const diffMs = raceDt - new Date();
+    const diffMin = Math.round(diffMs / 60000);
+    let when;
+    if (diffMs < 0) {
+        when = "starting now";
+    } else if (diffMin < 60) {
+        when = `in ${diffMin} min`;
+    } else if (diffMin < 60 * 24) {
+        when = `in ${Math.round(diffMin / 60)} h`;
+    } else {
+        const days = Math.floor(diffMin / (60 * 24));
+        when = days === 1 ? "tomorrow" : `in ${days} days`;
+    }
+    const note = (next.entry && next.entry.note) ? ` · ${next.entry.note}` : "";
+    countdownBig.textContent = `${DAY_LABELS[next.day]} ${warn}`;
+    countdownSub.textContent = `${when}${note}`;
+    countdownPanel.dataset.date = next.date;
+    countdownPanel.hidden = false;
+    infoStrip.hidden = false;
+    // Update every minute so "in 47 min" stays current.
+    if (!renderCountdown._timer) {
+        renderCountdown._timer = setInterval(renderCountdown, 60000);
+    }
+}
+
+if (countdownPanel) {
+    countdownPanel.addEventListener("click", () => {
+        const date = countdownPanel.dataset.date;
+        if (date && todayDate) {
+            todayDate.value = date;
+            showTab("today");
+            if (todayBoat.value) findRace();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    });
+}
+
+// ============================================================
+// Tide info (Dún Laoghaire, static table)
+// ============================================================
+let TIDES = null;
+
+function renderTides() {
+    if (!tidePanel || !infoStrip) return;
+    if (!TIDES || !TIDES.events || TIDES.events.length === 0) {
+        tidePanel.hidden = true;
+        return;
+    }
+    const now = new Date();
+    // Pick the next two events whose datetime is in the future.
+    const upcoming = TIDES.events.filter((e) => new Date(e.datetime) > now).slice(0, 2);
+    if (upcoming.length === 0) {
+        tideBig.textContent = "Out of date";
+        tideSub.textContent = "tides.json needs new entries";
+        tidePanel.hidden = false;
+        infoStrip.hidden = false;
+        return;
+    }
+    const fmt = (ev) => {
+        const dt = new Date(ev.datetime);
+        const hh = String(dt.getHours()).padStart(2, "0");
+        const mm = String(dt.getMinutes()).padStart(2, "0");
+        const tag = ev.type === "high" ? "HW" : "LW";
+        return `${tag} ${hh}:${mm} (${ev.height_m.toFixed(1)} m)`;
+    };
+    tideBig.textContent = fmt(upcoming[0]);
+    tideSub.textContent = upcoming[1] ? "then " + fmt(upcoming[1]) : "";
+    tidePanel.hidden = false;
+    infoStrip.hidden = false;
+}
+
+fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((t) => { if (t) { TIDES = t; renderTides(); } })
+    .catch(() => { /* offline / not deployed yet */ });
+
+// Refresh tide panel every 5 minutes so "next event" rolls forward.
+setInterval(renderTides, 5 * 60 * 1000);

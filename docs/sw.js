@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = "dbsc-v12";
+﻿const CACHE_VERSION = "dbsc-v13";
 
 const CORE = [
     "./",
@@ -7,6 +7,7 @@ const CORE = [
     "./app.js",
     "./data.js",
     "./manifest.webmanifest",
+    "./tides.json",
     "./icons/icon-192.png",
     "./icons/icon-512.png",
     "./icons/icon-512-maskable.png",
@@ -36,7 +37,9 @@ function isLiveJson(pathname) {
     return pathname.endsWith("/data.json")
         || pathname.endsWith("data.json")
         || pathname.endsWith("/schedule.json")
-        || pathname.endsWith("schedule.json");
+        || pathname.endsWith("schedule.json")
+        || pathname.endsWith("/tides.json")
+        || pathname.endsWith("tides.json");
 }
 function isPdf(pathname) {
     return pathname.toLowerCase().endsWith(".pdf");
@@ -117,7 +120,9 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(req.url);
 
     if (isLiveJson(url.pathname)) {
-        const fallbackPath = url.pathname.endsWith("schedule.json") ? "./schedule.json" : "./data.json";
+        let fallbackPath = "./data.json";
+        if (url.pathname.endsWith("schedule.json")) fallbackPath = "./schedule.json";
+        else if (url.pathname.endsWith("tides.json")) fallbackPath = "./tides.json";
         return networkFirst(event, req, fallbackPath);
     }
 
