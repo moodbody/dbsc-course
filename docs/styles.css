@@ -767,6 +767,29 @@ footer small a {
     margin-left: 6px;
 }
 
+footer .app-version {
+    display: block;
+    margin-top: 4px;
+    opacity: .7;
+}
+
+.version-btn {
+    background: none;
+    border: 0;
+    color: var(--muted);
+    font: inherit;
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.version-btn:hover,
+.version-btn:focus {
+    color: var(--accent, var(--text));
+    text-decoration: underline;
+    outline: none;
+}
+
 /* ---------- update toast ---------- */
 .update-toast {
     position: fixed;

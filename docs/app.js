@@ -133,6 +133,12 @@ const DALKEY_ISLAND = [
 // initialised binding instead of hitting the let-TDZ ReferenceError.
 let TIDES = null;
 
+// Build identifier — visible in the footer so it's easy to verify which
+// version is actually running on a phone after a SW update. Bump these
+// together with sw.js CACHE_VERSION on every release.
+const APP_VERSION = "v27";
+const APP_BUILD_DATE = "2026-05-03";
+
 const $ = (id) => document.getElementById(id);
 
 const cardSel = $("cardSel");
@@ -2289,6 +2295,40 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         if (typeof renderChart === "function") renderChart();
     })
     .catch(() => { /* offline / not deployed yet */ });
+
+// ---------- Version footer ----------
+// Show APP_VERSION + build date in the footer so we can confirm which
+// build the installed PWA is actually running. Tap the chip to force the
+// service worker to check for an update.
+(function setupVersion() {
+    const span = document.getElementById("appVersion");
+    if (!span) return;
+    let dateStr = APP_BUILD_DATE;
+    try {
+        const d = new Date(APP_BUILD_DATE + "T00:00");
+        dateStr = d.toLocaleDateString("en-IE", {
+            day: "numeric", month: "short", year: "numeric",
+        });
+    } catch (e) { /* keep raw ISO */ }
+    span.textContent = `${APP_VERSION} · ${dateStr}`;
+
+    const btn = document.getElementById("btnVersion");
+    if (!btn) return;
+    btn.addEventListener("click", async () => {
+        if (!("serviceWorker" in navigator)) {
+            showToast("Service worker not supported.");
+            return;
+        }
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (!reg) { showToast("No service worker registered yet."); return; }
+            showToast("Checking for updates…");
+            await reg.update();
+        } catch (e) {
+            showToast("Update check failed.");
+        }
+    });
+})();
 
 // Refresh tide panel every minute so "in 14m" rolls forward smoothly.
 setInterval(() => {
