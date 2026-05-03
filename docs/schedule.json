@@ -7,7 +7,7 @@
         "thu_red_freebird": "72",
         "sat_corinthian": "74",
         "sat_hut": "68",
-        "sat_green_cv": "74"
+        "sat_green": "72"
     },
     "cards": {
         "tue_hut": {
@@ -34,6 +34,14 @@
             "card": "CC2",
             "name": "Saturday – Hut",
             "vhf": "68"
+        },
+        "sat_green": {
+            "card": null,
+            "name": "Saturday – Green Fleet (Windward / Leeward)",
+            "vhf": "72",
+            "format": "Windward / Leeward course (WA1–3 or WB1–3) – see SI-G",
+            "pdf": "pdfs/si/SI-G_Sailing_Instructions_Green_Fleet_2026_v1.pdf",
+            "note": "Separate committee vessel near Molly / Merrion mark, displaying a green pennant. Orange tetrahedral inflatable marks."
         }
     },
     "calendar": {
@@ -370,7 +378,7 @@
             "sat": {
                 "group": "satGreen",
                 "flag": "No. 7",
-                "warn": "—"
+                "warn": "14:15"
             }
         },
         {
@@ -385,7 +393,7 @@
             "sat": {
                 "group": "satGreen",
                 "flag": "3rd Sub & D",
-                "warn": "—"
+                "warn": "14:18"
             }
         },
         {
@@ -400,7 +408,7 @@
             "sat": {
                 "group": "satGreen",
                 "flag": "Naval 6",
-                "warn": "—"
+                "warn": "14:21"
             }
         },
         {
@@ -415,7 +423,7 @@
             "sat": {
                 "group": "satGreen",
                 "flag": "No. 4",
-                "warn": "—"
+                "warn": "14:24"
             }
         }
     ],
@@ -424,7 +432,7 @@
         "alwaysHut": "Saturday: always at the West Pier hut (CC2)",
         "satBlue": "Saturday Blue group: at the hut on 'blue' weeks (CC2), at CC1 on 'red' weeks",
         "satRed": "Saturday Red group: at the hut on 'red' weeks (CC2), at CC1 on 'blue' weeks",
-        "satGreen": "Saturday Green group: separate committee vessel; uses CC1 courses",
+        "satGreen": "Saturday Green fleet: separate committee vessel near Molly/Merrion (green pennant, VHF 72). Windward/Leeward courses on inflatable orange marks – see SI-G, NOT a CC card.",
         "_notes": "On 'none' (coastal) Saturdays all classes start from a Corinthian-style CV \u2192 CC1. On regatta Saturdays there is no DBSC racing."
     }
 }

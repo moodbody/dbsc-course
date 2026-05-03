@@ -804,7 +804,8 @@ function findRace() {
         }
         const grp = dayInfo.group;
         if (grp === "alwaysHut") slotKey = "sat_hut";
-        else if (grp === "alwaysCorinthian" || grp === "satGreen") slotKey = "sat_corinthian";
+        else if (grp === "satGreen") slotKey = "sat_green";
+        else if (grp === "alwaysCorinthian") slotKey = "sat_corinthian";
         else if (hut === "none") slotKey = "sat_corinthian"; // coastal/special: everyone CV
         else if (grp === "satBlue") slotKey = (hut === "blue") ? "sat_hut" : "sat_corinthian";
         else if (grp === "satRed") slotKey = (hut === "red") ? "sat_hut" : "sat_corinthian";
@@ -818,6 +819,30 @@ function findRace() {
             day: dateLabel,
             big: "Couldn't determine a course card",
             note: "Schedule data is incomplete for this combination — please check the PDFs in the Docs tab.",
+        });
+    }
+
+    // Slots without a course card (e.g. Green Fleet windward/leeward) get a
+    // tailored result that points at the relevant Sailing Instructions PDF
+    // instead of opening a CC card.
+    if (!slot.card) {
+        const noteParts = [];
+        if (slot.format) noteParts.push(slot.format);
+        if (slot.note) noteParts.push(slot.note);
+        if (extraNote) noteParts.push(extraNote);
+        return showRecommend({
+            warn: false,
+            day: dateLabel + " • " + slot.name,
+            big: boat.name,
+            rows: [
+                ["Format", slot.format ? "W/L" : "—"],
+                ["VHF channel", "Ch " + slot.vhf],
+                ["Warning signal", dayInfo.warn || "—"],
+                ["Class flag", dayInfo.flag || "—"],
+            ],
+            note: noteParts.join(" "),
+            openPdf: slot.pdf || null,
+            openPdfLabel: "Open Sailing Instructions →",
         });
     }
 
@@ -836,13 +861,15 @@ function findRace() {
     });
 }
 
-function showRecommend({ warn, day, big, rows, note, openCard }) {
+function showRecommend({ warn, day, big, rows, note, openCard, openPdf, openPdfLabel }) {
     todayResult.classList.toggle("warn", !!warn);
     const rowsHtml = rows
         ? `<div class="grid">${rows.map(([l, v]) => `<div><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join("")}</div>`
         : "";
     const noteHtml = note ? `<div class="note">${note}</div>` : "";
-    const btnHtml = openCard ? `<button id="btnOpenCard" type="button">Open ${openCard} →</button>` : "";
+    const btnHtml = openCard
+        ? `<button id="btnOpenCard" type="button">Open ${openCard} →</button>`
+        : (openPdf ? `<a id="btnOpenPdf" class="pdf-btn" href="${openPdf}" target="_blank" rel="noopener">${openPdfLabel || "Open PDF →"}</a>` : "");
     todayResult.innerHTML = `
         <div class="card">
             <div class="day">${day}</div>

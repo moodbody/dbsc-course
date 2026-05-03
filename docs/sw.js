@@ -6,7 +6,7 @@
  * Bump CACHE_VERSION when index.html / app.js / styles.css / data.js
  * change so installed phones reload the shell.
  */
-const CACHE_VERSION = "dbsc-v5";
+const CACHE_VERSION = "dbsc-v6";
 const CORE = [
     "./",
     "./index.html",
