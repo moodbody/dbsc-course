@@ -489,11 +489,33 @@ function renderChart() {
         ctx.beginPath(); ctx.moveTo(x, margin); ctx.lineTo(x, H - margin); ctx.stroke();
     }
 
-    // North arrow
-    ctx.fillStyle = "#8aa5bf";
-    ctx.font = `${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    ctx.textAlign = "left"; ctx.textBaseline = "top";
-    ctx.fillText("N ?", W - margin - 36, margin + 4);
+    // North arrow (the chart is always drawn north-up)
+    {
+        const ax = W - margin - Math.round(W * 0.025);
+        const ay = margin + Math.round(W * 0.04);
+        const len = Math.round(W * 0.035);
+        const head = Math.round(W * 0.012);
+        ctx.strokeStyle = "#8aa5bf";
+        ctx.fillStyle = "#8aa5bf";
+        ctx.lineWidth = Math.max(2, W * 0.003);
+        // shaft
+        ctx.beginPath();
+        ctx.moveTo(ax, ay + len);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        // arrowhead
+        ctx.beginPath();
+        ctx.moveTo(ax, ay - head * 0.4);
+        ctx.lineTo(ax - head * 0.6, ay + head * 0.4);
+        ctx.lineTo(ax + head * 0.6, ay + head * 0.4);
+        ctx.closePath();
+        ctx.fill();
+        // "N" label
+        ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("N", ax, ay - head * 0.6);
+    }
 
     // Faint background marks (not in this course)
     ctx.fillStyle = "#23496e";
