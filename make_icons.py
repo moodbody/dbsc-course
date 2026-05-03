@@ -5,7 +5,7 @@ Run once after parse_data.py:
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = Path(__file__).resolve().parent / "app" / "icons"
+OUT = Path(__file__).resolve().parent / "docs" / "icons"
 OUT.mkdir(parents=True, exist_ok=True)
 
 BG = (11, 31, 51)        # deep navy (matches app)

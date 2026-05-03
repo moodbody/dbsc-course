@@ -6,8 +6,8 @@ Run:
     python parse_data.py
 
 Outputs:
-    app/data.js   (defines window.DBSC_DATA)
-    data.json     (same data, easier to inspect)
+    docs/data.js   (defines window.DBSC_DATA)
+    data.json      (same data, easier to inspect)
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ import pdfplumber
 
 ROOT = Path(__file__).resolve().parent
 PDF_DIR = ROOT / "Course_information"
-APP_DIR = ROOT / "app"
+APP_DIR = ROOT / "docs"
 APP_DIR.mkdir(exist_ok=True)
 
 # Column order used by the bearings/distances matrix

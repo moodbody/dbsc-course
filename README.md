@@ -27,7 +27,7 @@ Course_information/                  ← original DBSC PDFs (input)
 parse_data.py                        ← extracts data from the PDFs
 make_icons.py                        ← generates the app icon PNGs
 data.json                            ← parsed data (for inspection)
-app/
+docs/
   index.html                         ← the app
   styles.css
   app.js
@@ -47,8 +47,8 @@ If DBSC publishes new PDFs (e.g. for next season), drop the new files into
 "c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" parse_data.py
 ```
 
-This regenerates `data.json` and `app/data.js`. Then bump
-`CACHE_VERSION` in `app/sw.js` (e.g. `dbsc-v2`) so already-installed
+This regenerates `data.json` and `docs/data.js`. Then bump
+`CACHE_VERSION` in `docs/sw.js` (e.g. `dbsc-v2`) so already-installed
 phones fetch the new bundle on next launch. No other code changes
 needed.
 
@@ -57,7 +57,7 @@ needed.
 # Getting it onto your phone (and others' phones)
 
 The app is a **Progressive Web App (PWA)**. That means: you host the
-`app/` folder on the public web, you visit the URL once on a phone, you
+`docs/` folder on the public web, you visit the URL once on a phone, you
 tap **Add to Home Screen**, and from then on it behaves like a native
 app — full screen, with an icon, working offline.
 
@@ -72,7 +72,7 @@ this.
 ### Option A · Netlify Drop (easiest, ~2 minutes)
 
 1. Go to <https://app.netlify.com/drop>.
-2. Drag the **`app/` folder** (the whole folder) onto the page.
+2. Drag the **`docs/` folder** (the whole folder) onto the page.
 3. Netlify gives you a URL like `https://amazing-cliff-1234.netlify.app`.
    Click *Site settings* if you'd like to rename it.
 4. That's your shareable link. Done.
@@ -82,7 +82,7 @@ version, then drag the folder onto Netlify Drop again.
 
 ### Option B · GitHub Pages (free, version-controlled)
 
-1. Create a new GitHub repo, push the contents of the `app/` folder.
+1. Create a new GitHub repo, push the contents of the `docs/` folder.
 2. Repo *Settings → Pages → Build from branch*; choose `main` and
    either `/ (root)` or `/app`.
 3. Wait ~30 seconds; the URL will appear, e.g.
@@ -90,7 +90,7 @@ version, then drag the folder onto Netlify Drop again.
 
 ### Option C · Cloudflare Pages, Vercel, Firebase Hosting
 
-All also free; pick whichever you like. Point them at the `app/`
+All also free; pick whichever you like. Point them at the `docs/`
 folder and they'll serve it as a static site over HTTPS.
 
 > The host **must** serve over HTTPS. Geolocation, service workers and
