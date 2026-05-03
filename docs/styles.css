@@ -51,11 +51,11 @@ section {
 
 .picker {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
 }
 
-/* "Course card" gets the full first row; wind+course share the second */
+/* Legacy class from earlier layout – kept as a no-op so old HTML still works */
 .picker label.full {
     grid-column: 1 / -1;
 }
@@ -66,7 +66,7 @@ section {
     gap: 4px;
     font-size: 12px;
     color: var(--muted);
-    min-width: 0; /* allow flex/grid children to shrink so selects don't overflow */
+    min-width: 0;
 }
 
 .picker select {
