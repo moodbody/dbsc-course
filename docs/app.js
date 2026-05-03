@@ -638,6 +638,8 @@ window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
     if (btnInstall) btnInstall.hidden = false;
+    // Re-render the banner now that we have the native prompt available
+    renderInstallBanner();
 });
 if (btnInstall) {
     btnInstall.addEventListener("click", async () => {
@@ -648,9 +650,117 @@ if (btnInstall) {
         btnInstall.hidden = true;
     });
 }
+
+// ============================================================
+// Install banner (one-time, dismissible, platform-aware)
+// ============================================================
+const installBanner = document.getElementById("installBanner");
+const ibBody = document.getElementById("ibBody");
+const ibClose = document.getElementById("ibClose");
+const lnkInstallHelp = document.getElementById("lnkInstallHelp");
+
+function isStandalone() {
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        // iOS Safari
+        window.navigator.standalone === true
+    );
+}
+
+function detectPlatform() {
+    const ua = navigator.userAgent || "";
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const isIPadOS = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+    const isAndroid = /Android/.test(ua);
+    return {
+        ios: isIOS || isIPadOS,
+        android: isAndroid,
+        desktop: !isIOS && !isIPadOS && !isAndroid,
+    };
+}
+
+function instructionsFor(platform) {
+    if (platform.ios) {
+        return `
+            <div>Add to your home screen for an offline, full-screen app:</div>
+            <ol>
+                <li>Tap the <strong>Share</strong> icon <span class="key">⬆</span> at the bottom of Safari.</li>
+                <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
+                <li>Tap <strong>Add</strong> — the icon appears on your home screen.</li>
+            </ol>`;
+    }
+    if (platform.android) {
+        return `
+            <div>Add to your home screen for an offline, full-screen app:</div>
+            <ol>
+                <li>Tap the <span class="key">⋮</span> menu in Chrome.</li>
+                <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+                <li>Confirm — the app icon will appear on your home screen.</li>
+            </ol>`;
+    }
+    return `
+        <div>You can install this as a desktop app:</div>
+        <ol>
+            <li>In Chrome / Edge, click the <span class="key">⊕</span> install icon in the address bar.</li>
+            <li>Or open the browser menu and choose <strong>Install DBSC Race Course</strong>.</li>
+        </ol>`;
+}
+
+function renderInstallBanner(force) {
+    if (!installBanner || !ibBody) return;
+    if (isStandalone()) { installBanner.hidden = true; return; }
+    const dismissed = localStorage.getItem("dbsc.installDismissed") === "1";
+    if (dismissed && !force) { installBanner.hidden = true; return; }
+
+    const platform = detectPlatform();
+    let html = instructionsFor(platform);
+
+    // On Android we usually have a native prompt too — offer it as a CTA.
+    if (platform.android && deferredPrompt) {
+        html += `<button class="ib-cta" id="ibInstall" type="button">Install now</button>`;
+    }
+
+    ibBody.innerHTML = html;
+    installBanner.hidden = false;
+
+    const ibInstall = document.getElementById("ibInstall");
+    if (ibInstall) {
+        ibInstall.addEventListener("click", async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const choice = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            if (choice && choice.outcome === "accepted") {
+                installBanner.hidden = true;
+                localStorage.setItem("dbsc.installDismissed", "1");
+            }
+        });
+    }
+}
+
+if (ibClose) {
+    ibClose.addEventListener("click", () => {
+        installBanner.hidden = true;
+        localStorage.setItem("dbsc.installDismissed", "1");
+    });
+}
+if (lnkInstallHelp) {
+    lnkInstallHelp.addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.removeItem("dbsc.installDismissed");
+        renderInstallBanner(true);
+        installBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+}
+
+// Hide banner once installed
 window.addEventListener("appinstalled", () => {
+    if (installBanner) installBanner.hidden = true;
     if (btnInstall) btnInstall.hidden = true;
+    localStorage.setItem("dbsc.installDismissed", "1");
 });
+
+renderInstallBanner();
 
 // ============================================================
 // Tabs (Course / Today / Docs)
