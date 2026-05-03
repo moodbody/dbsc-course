@@ -126,6 +126,13 @@ const DALKEY_ISLAND = [
     { lat: 53.273, lon: -6.096 },
 ];
 
+// Tide table + per-mark tidal stream rose, populated asynchronously by
+// fetch("tides.json") later in the file. Declared up here (rather than
+// next to the tide engine functions) so that any early call to
+// renderChart() / hasTideStreamData() at module-load time finds an
+// initialised binding instead of hitting the let-TDZ ReferenceError.
+let TIDES = null;
+
 const $ = (id) => document.getElementById(id);
 
 const cardSel = $("cardSel");
@@ -2138,7 +2145,9 @@ if (countdownPanel) {
 // ============================================================
 // Tide engine (Dún Laoghaire, static table) + tidal streams
 // ============================================================
-let TIDES = null;
+// (TIDES is declared near the top of the file so that early calls to
+// renderChart() at module-load time can safely call hasTideStreamData()
+// without hitting a Temporal Dead Zone reference error.)
 
 // ---- low-level helpers ----------------------------------------------------
 
