@@ -1,11 +1,12 @@
 /* DBSC Race Course – service worker
- * Cache-first strategy for the small set of static files so the app
- * works fully offline once it has been opened with signal at least once.
+ * Cache-first for the static app shell so it works fully offline.
+ * Network-first for data.json so simple data tweaks pushed to GitHub
+ * appear on next online launch without bumping anything.
  *
- * Bump CACHE_VERSION whenever data.js or the app changes so users get the
- * new version. The app also reloads itself when a new SW takes control.
+ * Bump CACHE_VERSION when index.html / app.js / styles.css / data.js
+ * change so installed phones reload the shell.
  */
-const CACHE_VERSION = "dbsc-v1";
+const CACHE_VERSION = "dbsc-v2";
 const CORE = [
     "./",
     "./index.html",
@@ -42,13 +43,32 @@ self.addEventListener("fetch", (event) => {
     const req = event.request;
     if (req.method !== "GET") return;
 
+    const url = new URL(req.url);
+    const isData = url.pathname.endsWith("/data.json") || url.pathname.endsWith("data.json");
+
+    if (isData) {
+        // Network-first: try the network, fall back to cache when offline.
+        event.respondWith(
+            fetch(req, { cache: "no-store" })
+                .then((res) => {
+                    if (res && res.status === 200) {
+                        const clone = res.clone();
+                        caches.open(CACHE_VERSION).then((c) => c.put("./data.json", clone));
+                    }
+                    return res;
+                })
+                .catch(() => caches.match("./data.json"))
+        );
+        return;
+    }
+
+    // Everything else: cache-first.
     event.respondWith(
         caches.match(req).then((cached) => {
             if (cached) return cached;
             return fetch(req)
                 .then((res) => {
-                    // Cache same-origin successful responses opportunistically.
-                    if (res && res.status === 200 && new URL(req.url).origin === self.location.origin) {
+                    if (res && res.status === 200 && url.origin === self.location.origin) {
                         const clone = res.clone();
                         caches.open(CACHE_VERSION).then((c) => c.put(req, clone));
                     }

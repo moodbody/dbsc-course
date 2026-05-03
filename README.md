@@ -40,17 +40,58 @@ README.md
 
 ## Updating the data
 
-If DBSC publishes new PDFs (e.g. for next season), drop the new files into
-`Course_information/` (keeping the same filenames) and run:
+There are **two ways** to change what the app shows. Use whichever
+matches the size of the change.
 
-```powershell
-"c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" parse_data.py
-```
+### A · Quick edit on github.com (no Python, no laptop)
 
-This regenerates `data.json` and `docs/data.js`. Then bump
-`CACHE_VERSION` in `docs/sw.js` (e.g. `dbsc-v2`) so already-installed
-phones fetch the new bundle on next launch. No other code changes
-needed.
+The app fetches `docs/data.json` live on every online launch, so any
+change you commit to that file is picked up automatically.
+
+1. On github.com open the repo → `docs/` → **`data.json`**.
+2. Click the ✏️ pencil icon (top right of the file view).
+3. Edit the JSON. Some examples:
+   - **Move a mark**: find the `"marks"` block, locate (e.g.) `"M"`,
+     change its `lat` / `lon`.
+   - **Fix a bearing or distance**: under `"bearings"` (or
+     `"distances"`), find the row for the *from* mark, then the entry
+     for the *to* mark, and update the number.
+   - **Tweak a course**: under `"cards" → "CC1" → "wind" → "A" →
+     "courses" → "1"` you'll find the list of marks. Each entry is
+     `{ "mark": "E", "side": "p" }` (`p` = port, `s` = starboard).
+4. Click **Commit changes**, write a short message, **Commit directly
+   to the main branch**.
+5. Within ~30 s GitHub Pages redeploys. Next time anyone opens the app
+   online they'll see the new data; offline-cached devices still
+   work and will pick up the change on their next online launch.
+
+> No need to bump the service-worker version for `data.json` edits —
+> the SW is configured to fetch it network-first.
+
+### B · Regenerate from new DBSC PDFs (full season update)
+
+If DBSC publishes new course-card PDFs:
+
+1. Drop the new files into `Course_information/` keeping the same
+   filenames (`CC1_…`, `CC2_…`, etc.).
+2. Run:
+
+   ```powershell
+   "c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" parse_data.py
+   ```
+
+   This rewrites `data.json`, `docs/data.json` and `docs/data.js`.
+3. Bump `CACHE_VERSION` in `docs/sw.js` (e.g. `dbsc-v2` → `dbsc-v3`).
+   This is what tells already-installed phones to refresh the app
+   shell, not just the data.
+4. Commit & push:
+
+   ```powershell
+   cd "c:\Users\maxgo\Desktop\DBSC Courses"
+   git add -A
+   git commit -m "2027 season cards"
+   git push
+   ```
 
 ---
 

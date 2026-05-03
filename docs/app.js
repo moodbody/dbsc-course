@@ -2,13 +2,25 @@
  * Selection: card -> wind -> course
  * Navigation: marks list with bearing/distance per leg + a "current leg" focus
  * GPS (optional): live bearing & distance from current position to next mark
+ *
+ * Data loading order at startup:
+ *   1. window.DBSC_DATA from data.js (loaded synchronously) -> instant boot.
+ *   2. Async fetch data.json with cache-busting -> live updates pulled
+ *      from GitHub on every online launch, no Python/SW-version-bump needed
+ *      for simple data tweaks.
  */
 
-const D = window.DBSC_DATA;
-const MARKS = D.marks;
-const BEARINGS = D.bearings;
-const DISTS = D.distances;
-const CARDS = D.cards;
+let MARKS, BEARINGS, DISTS, CARDS;
+
+function applyData(d) {
+    if (!d) return false;
+    MARKS = d.marks;
+    BEARINGS = d.bearings;
+    DISTS = d.distances;
+    CARDS = d.cards;
+    return true;
+}
+applyData(window.DBSC_DATA);
 
 const $ = (id) => document.getElementById(id);
 
@@ -352,6 +364,28 @@ populateCards();
 populateWinds();
 populateCourses();
 renderAll();
+
+// Try to pull a fresh data.json from the network (GitHub Pages) so simple
+// edits to data.json on github.com show up without re-running parse_data.py.
+// Falls back silently to the inline data if the fetch fails.
+(function refreshDataFromJson() {
+    const url = "data.json?v=" + Date.now();
+    fetch(url, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+            if (!d) return;
+            const oldKey = JSON.stringify(window.DBSC_DATA?.marks?.A || {});
+            const newKey = JSON.stringify(d.marks?.A || {});
+            applyData(d);
+            // Re-validate selections in case wind letters / courses changed.
+            populateCards();
+            populateWinds();
+            populateCourses();
+            renderAll();
+            if (oldKey !== newKey) console.log("[DBSC] live data refreshed from data.json");
+        })
+        .catch(() => { /* offline – stick with bundled data */ });
+})();
 
 // ============================================================
 // Tap-a-leg to jump
