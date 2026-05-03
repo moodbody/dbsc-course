@@ -295,6 +295,18 @@ section {
     border-color: var(--accent);
 }
 
+/* Light-theme overrides: the hard-coded dark green/brown above are
+   illegible in light mode, so use soft tints of the same hues. */
+:root[data-theme="light"] .legs li.start {
+    background: #d6f0e3;
+    border-color: var(--good);
+}
+
+:root[data-theme="light"] .legs li.finish {
+    background: #ffe9c2;
+    border-color: var(--accent);
+}
+
 .legs li .idx {
     color: var(--muted);
     font-variant-numeric: tabular-nums;
