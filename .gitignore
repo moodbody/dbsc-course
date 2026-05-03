@@ -8,3 +8,6 @@ pdf_dump.txt
 pdf_extracted.json
 server.out
 server.err
+
+dump_new.py
+new_dump.txt
