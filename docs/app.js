@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v28";
+const APP_VERSION = "v29";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -612,13 +612,13 @@ function syncTwdInput() {
     if (state.twdOverride != null) {
         twdInput.value = String(state.twdOverride);
         if (twdHint) {
-            twdHint.textContent = "your input";
+            twdHint.textContent = "\u25cf";
             twdHint.classList.add("override");
         }
     } else {
         twdInput.value = String(Math.round(eff));
         if (twdHint) {
-            twdHint.textContent = "default";
+            twdHint.textContent = "";
             twdHint.classList.remove("override");
         }
     }
@@ -656,7 +656,7 @@ if (twdInput) {
         else sessionStorage.removeItem("dbsc.twd");
         // Don't call syncTwdInput() here — we'd fight the user's caret.
         if (twdHint) {
-            twdHint.textContent = state.twdOverride != null ? "your input" : "default";
+            twdHint.textContent = state.twdOverride != null ? "\u25cf" : "";
             twdHint.classList.toggle("override", state.twdOverride != null);
         }
         renderAll();
@@ -1158,9 +1158,9 @@ function drawMapTo(canvas) {
             ctx.beginPath();
             ctx.moveTo(ex + dx * head, ey + dy * head);
             ctx.lineTo(ex - dx * head * 0.3 + px * head * 0.55,
-                       ey - dy * head * 0.3 + py * head * 0.55);
+                ey - dy * head * 0.3 + py * head * 0.55);
             ctx.lineTo(ex - dx * head * 0.3 - px * head * 0.55,
-                       ey - dy * head * 0.3 - py * head * 0.55);
+                ey - dy * head * 0.3 - py * head * 0.55);
             ctx.closePath();
             ctx.fill();
             // Drift label (kn) — small, near the tip

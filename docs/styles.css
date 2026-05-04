@@ -135,6 +135,7 @@ section {
 }
 
 @media (min-width: 560px) {
+
     /* All four items on one row: Card | Wind | # | TWD */
     .picker {
         grid-template-columns: 2fr 1fr 1fr 2fr;
@@ -159,6 +160,17 @@ section {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+/* Short / full picker labels — toggled by landscape media query below */
+.lbl-short { display: none; }
+
+/* TWD override dot — blank at default, accent-coloured when user has edited */
+.twd-hint {
+    color: var(--accent);
+    font-size: 10px;
+    margin-left: 4px;
+    vertical-align: middle;
 }
 
 /* Top row: badge + aside info */
@@ -246,6 +258,11 @@ section {
     font-weight: 400;
     font-size: 12px;
     margin: 0 2px;
+}
+
+/* Light-mode badge: white text on the darker amber reads better than navy */
+:root[data-theme="light"] .sum-badge {
+    color: #fff;
 }
 
 .controls {
@@ -512,43 +529,56 @@ footer {
 }
 
 /* ---------- landscape two-column navigation layout ----------
-   Triggered when the viewport is wider than it is tall AND has enough
-   height to be useful (covers phones rotated landscape AND tablets).
-   .course-left  — sticky panel: pickers, summary, controls, Now
-   .course-right — scrollable panel: chart, legs list                */
+   Lock the body so only the inner panels scroll. This keeps the
+   header (and its tabs) permanently visible in landscape.         */
 @media (orientation: landscape) and (min-width: 600px) {
-    /* Cancel the portrait centering — use full screen width in landscape */
+
+    /* Full-width, no body scroll — header is always accessible */
     body {
         max-width: none;
         margin: 0;
+        height: 100svh;
+        overflow: hidden;
+    }
+
+    /* Each view fills exactly the space below the header */
+    .view {
+        height: calc(100svh - var(--header-h, 88px));
+        overflow: hidden;
     }
 
     .course-columns {
         flex-direction: row;
-        align-items: flex-start;
-        height: calc(100svh - var(--header-h, 88px));
-        /* --header-h is set by JS (see app.js measureHeader); falls back to 88px */
+        height: 100%;
     }
 
+    /* Left panel: pickers, summary, controls, Now — scrollable */
     .course-left {
         width: 320px;
         flex-shrink: 0;
         border-right: 1px solid var(--line);
-        /* Stick the left panel while the right panel scrolls */
-        position: sticky;
-        top: 0;
-        max-height: calc(100svh - var(--header-h, 88px));
+        height: 100%;
         overflow-y: auto;
         overscroll-behavior: contain;
     }
 
+    /* Right panel: chart + legs — scrollable */
     .course-right {
         flex: 1;
         min-width: 0;
+        height: 100%;
         overflow-y: auto;
-        max-height: calc(100svh - var(--header-h, 88px));
         overscroll-behavior: contain;
     }
+
+    /* Footer is irrelevant in landscape — hide it */
+    footer {
+        display: none;
+    }
+
+    /* Use short label text in landscape to prevent wrapping */
+    .lbl-short { display: inline; }
+    .lbl-full  { display: none; }
 
     /* Tighten section padding inside the narrow left panel */
     .course-left section,

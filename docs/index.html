@@ -113,97 +113,103 @@
     <div id="view-course" class="view">
         <div class="course-columns">
 
-        <div class="course-left">
-        <section id="infoStrip" class="info-strip" hidden>
-            <button id="countdownPanel" class="info-card countdown" type="button" hidden>
-                <div class="ic-lbl">Next race</div>
-                <div class="ic-big" id="countdownBig">—</div>
-                <div class="ic-sub" id="countdownSub"></div>
-            </button>
-            <div id="tidePanel" class="info-card tide" hidden>
-                <div class="ic-lbl">Tide · Dún Laoghaire</div>
-                <div class="ic-big" id="tideBig">—</div>
-                <div class="ic-sub" id="tideSub"></div>
-            </div>
-        </section>
+            <div class="course-left">
+                <section id="infoStrip" class="info-strip" hidden>
+                    <button id="countdownPanel" class="info-card countdown" type="button" hidden>
+                        <div class="ic-lbl">Next race</div>
+                        <div class="ic-big" id="countdownBig">—</div>
+                        <div class="ic-sub" id="countdownSub"></div>
+                    </button>
+                    <div id="tidePanel" class="info-card tide" hidden>
+                        <div class="ic-lbl">Tide · Dún Laoghaire</div>
+                        <div class="ic-big" id="tideBig">—</div>
+                        <div class="ic-sub" id="tideSub"></div>
+                    </div>
+                </section>
 
-        <section class="picker">
-            <label class="full">
-                <span>Course card</span>
-                <select id="cardSel"></select>
-            </label>
-            <label>
-                <span>Wind direction</span>
-                <select id="windSel"></select>
-            </label>
-            <label>
-                <span>Course #</span>
-                <select id="courseSel"></select>
-            </label>
-            <label class="full twd-label">
-                <span>True wind direction (°)
-                    <span class="twd-hint" id="twdHint">default</span>
-                </span>
-                <div class="twd-row">
-                    <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
-                        autocomplete="off" />
-                    <button id="btnTwdReset" type="button" class="ghost-sm" title="Reset to course default">↺<span class="twd-btn-text"> default</span></button>
+                <section class="picker">
+                    <label class="full">
+                        <span><span class="lbl-full">Course card</span><span class="lbl-short">Card</span></span>
+                        <select id="cardSel"></select>
+                    </label>
+                    <label>
+                        <span><span class="lbl-full">Wind direction</span><span class="lbl-short">Wind</span></span>
+                        <select id="windSel"></select>
+                    </label>
+                    <label>
+                        <span><span class="lbl-full">Course #</span><span class="lbl-short">#</span></span>
+                        <select id="courseSel"></select>
+                    </label>
+                    <label class="full twd-label">
+                        <span><span class="lbl-full">True wind direction (°)</span><span class="lbl-short">TWD (°)</span>
+                            <span class="twd-hint" id="twdHint"></span>
+                        </span>
+                        <div class="twd-row">
+                            <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
+                                autocomplete="off" />
+                            <button id="btnTwdReset" type="button" class="ghost-sm"
+                                title="Reset to course default">↺<span class="twd-btn-text"> default</span></button>
+                        </div>
+                    </label>
+                </section>
+
+                <section class="summary" id="summary"></section>
+
+                <section class="controls">
+                    <button id="btnGps" class="ghost">📍 Use GPS</button>
+                    <button id="btnAutoRound" class="ghost" type="button" aria-pressed="true"
+                        title="Auto-round next mark when within 30 m">🎯 Auto-round</button>
+                    <button id="btnCompass" class="ghost">🧭 Compass</button>
+                    <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
+                    <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
+                    <button id="btnReset" class="ghost">⟳ Reset</button>
+                </section>
+
+                <div id="gpsExplain" class="modal" hidden role="dialog" aria-modal="true"
+                    aria-labelledby="gpsExplainTitle">
+                    <div class="modal-card">
+                        <h2 id="gpsExplainTitle">Use GPS for live navigation?</h2>
+                        <p>Turning on GPS lets the app show:</p>
+                        <ul>
+                            <li>your boat's position on the chart;</li>
+                            <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
+                            <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
+                            <li><strong>Auto-round</strong>: marks tick off automatically when you're within
+                                30&nbsp;m. Disable any time with the 🎯 button.</li>
+                        </ul>
+                        <p class="modal-note">Your location is used only on this device. It is never sent off your
+                            phone, never
+                            stored, and never shared with anyone — DBSC included. The app has no server and no
+                            analytics.</p>
+                        <p class="modal-note">GPS will <strong>switch off automatically after 30 minutes</strong> to
+                            save your
+                            battery, or when you close the app. You can also turn it off any time by tapping the GPS
+                            button
+                            again.</p>
+                        <div class="modal-row">
+                            <button id="gpsExplainCancel" class="ghost" type="button">Cancel</button>
+                            <button id="gpsExplainOk" class="primary" type="button">Enable GPS</button>
+                        </div>
+                    </div>
                 </div>
-            </label>
-        </section>
 
-        <section class="summary" id="summary"></section>
+                <section class="now" id="now"></section>
+            </div><!-- /.course-left -->
 
-        <section class="controls">
-            <button id="btnGps" class="ghost">📍 Use GPS</button>
-            <button id="btnAutoRound" class="ghost" type="button" aria-pressed="true"
-                title="Auto-round next mark when within 30 m">🎯 Auto-round</button>
-            <button id="btnCompass" class="ghost">🧭 Compass</button>
-            <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
-            <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
-            <button id="btnReset" class="ghost">⟳ Reset</button>
-        </section>
+            <div class="course-right">
+                <section class="chartwrap">
+                    <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
+                        title="Switch view">🧭 Steer</button>
+                    <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+                    <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
+                        title="Expand">⛶</button>
+                </section>
 
-        <div id="gpsExplain" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="gpsExplainTitle">
-            <div class="modal-card">
-                <h2 id="gpsExplainTitle">Use GPS for live navigation?</h2>
-                <p>Turning on GPS lets the app show:</p>
-                <ul>
-                    <li>your boat's position on the chart;</li>
-                    <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
-                    <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
-                    <li><strong>Auto-round</strong>: marks tick off automatically when you're within
-                        30&nbsp;m. Disable any time with the 🎯 button.</li>
-                </ul>
-                <p class="modal-note">Your location is used only on this device. It is never sent off your phone, never
-                    stored, and never shared with anyone — DBSC included. The app has no server and no analytics.</p>
-                <p class="modal-note">GPS will <strong>switch off automatically after 30 minutes</strong> to save your
-                    battery, or when you close the app. You can also turn it off any time by tapping the GPS button
-                    again.</p>
-                <div class="modal-row">
-                    <button id="gpsExplainCancel" class="ghost" type="button">Cancel</button>
-                    <button id="gpsExplainOk" class="primary" type="button">Enable GPS</button>
-                </div>
-            </div>
-        </div>
-
-        <section class="now" id="now"></section>
-        </div><!-- /.course-left -->
-
-        <div class="course-right">
-        <section class="chartwrap">
-            <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
-                title="Switch view">🧭 Steer</button>
-            <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
-            <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
-                title="Expand">⛶</button>
-        </section>
-
-        <section class="legs">
-            <h2>Legs <span class="hint">tap a leg to jump</span></h2>
-            <ol id="legList"></ol>
-        </section>
-        </div><!-- /.course-right -->
+                <section class="legs">
+                    <h2>Legs <span class="hint">tap a leg to jump</span></h2>
+                    <ol id="legList"></ol>
+                </section>
+            </div><!-- /.course-right -->
 
         </div><!-- /.course-columns -->
     </div>
