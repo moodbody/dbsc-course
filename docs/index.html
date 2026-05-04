@@ -110,6 +110,11 @@
         </nav>
     </header>
 
+    <!-- Floating nav button — only visible in landscape -->
+    <button id="btnLsMenu" class="ls-menu-btn" type="button" aria-label="Navigation menu" title="Navigation">☰</button>
+    <!-- Backdrop to dismiss the slide-down header -->
+    <div id="lsBackdrop" class="ls-backdrop" hidden></div>
+
     <div id="view-course" class="view">
         <div class="course-columns">
 
@@ -141,7 +146,8 @@
                         <select id="courseSel"></select>
                     </label>
                     <label class="full twd-label">
-                        <span><span class="lbl-full">True wind direction (°)</span><span class="lbl-short">TWD (°)</span>
+                        <span><span class="lbl-full">True wind direction (°)</span><span class="lbl-short">TWD
+                                (°)</span>
                             <span class="twd-hint" id="twdHint"></span>
                         </span>
                         <div class="twd-row">

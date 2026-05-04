@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v29";
+const APP_VERSION = "v30";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -1648,7 +1648,45 @@ function showTab(name) {
         try { resizeChart(); } catch (_) { }
     }
 }
-tabButtons.forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+tabButtons.forEach((b) => b.addEventListener("click", () => {
+    showTab(b.dataset.tab);
+    // In landscape, close the slide-down nav after picking a tab
+    closeLsNav();
+}));
+
+// ============================================================
+// Landscape floating nav — ☰ button slides the header in/out
+// ============================================================
+const btnLsMenu = document.getElementById("btnLsMenu");
+const lsBackdrop = document.getElementById("lsBackdrop");
+const headerEl = document.querySelector("header");
+
+function openLsNav() {
+    if (!headerEl) return;
+    headerEl.classList.add("ls-open");
+    if (lsBackdrop) lsBackdrop.removeAttribute("hidden");
+}
+
+function closeLsNav() {
+    if (!headerEl) return;
+    headerEl.classList.remove("ls-open");
+    if (lsBackdrop) lsBackdrop.setAttribute("hidden", "");
+}
+
+if (btnLsMenu) {
+    btnLsMenu.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (headerEl && headerEl.classList.contains("ls-open")) {
+            closeLsNav();
+        } else {
+            openLsNav();
+        }
+    });
+}
+
+if (lsBackdrop) {
+    lsBackdrop.addEventListener("click", closeLsNav);
+}
 
 // ============================================================
 // Schedule (Today view) — date + boat -> recommended card

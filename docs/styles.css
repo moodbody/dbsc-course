@@ -163,7 +163,9 @@ section {
 }
 
 /* Short / full picker labels — toggled by landscape media query below */
-.lbl-short { display: none; }
+.lbl-short {
+    display: none;
+}
 
 /* TWD override dot — blank at default, accent-coloured when user has edited */
 .twd-hint {
@@ -528,12 +530,51 @@ footer {
     flex-direction: column;
 }
 
+/* ---------- Floating landscape nav button (hidden in portrait) ---------- */
+.ls-menu-btn {
+    display: none;
+    /* shown only in landscape via media query */
+    position: fixed;
+    top: 10px;
+    right: 12px;
+    z-index: 200;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--card2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.ls-menu-btn:active {
+    transform: scale(0.93);
+}
+
+/* Slide-down backdrop — closes the nav when tapping outside */
+.ls-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: transparent;
+}
+
+.ls-backdrop[hidden] {
+    display: none;
+}
+
 /* ---------- landscape two-column navigation layout ----------
-   Lock the body so only the inner panels scroll. This keeps the
-   header (and its tabs) permanently visible in landscape.         */
+   Body is locked; header floats above, hidden by default,
+   revealed by the ☰ button with a spring slide animation.    */
 @media (orientation: landscape) and (min-width: 600px) {
 
-    /* Full-width, no body scroll — header is always accessible */
     body {
         max-width: none;
         margin: 0;
@@ -541,9 +582,25 @@ footer {
         overflow: hidden;
     }
 
-    /* Each view fills exactly the space below the header */
+    /* Header is fixed, slides in from top when .ls-open */
+    header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        transform: translateY(-100%);
+        transition: transform 0.28s cubic-bezier(0.34, 1.20, 0.64, 1);
+    }
+
+    header.ls-open {
+        transform: translateY(0);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, .45);
+    }
+
+    /* Views fill the full screen (header is out of flow) */
     .view {
-        height: calc(100svh - var(--header-h, 88px));
+        height: 100svh;
         overflow: hidden;
     }
 
@@ -552,7 +609,7 @@ footer {
         height: 100%;
     }
 
-    /* Left panel: pickers, summary, controls, Now — scrollable */
+    /* Left panel: pickers, summary, controls, Now */
     .course-left {
         width: 320px;
         flex-shrink: 0;
@@ -562,7 +619,7 @@ footer {
         overscroll-behavior: contain;
     }
 
-    /* Right panel: chart + legs — scrollable */
+    /* Right panel: chart + legs */
     .course-right {
         flex: 1;
         min-width: 0;
@@ -571,14 +628,24 @@ footer {
         overscroll-behavior: contain;
     }
 
-    /* Footer is irrelevant in landscape — hide it */
+    /* Footer is irrelevant in landscape */
     footer {
         display: none;
     }
 
+    /* Show the floating nav button */
+    .ls-menu-btn {
+        display: flex;
+    }
+
     /* Use short label text in landscape to prevent wrapping */
-    .lbl-short { display: inline; }
-    .lbl-full  { display: none; }
+    .lbl-short {
+        display: inline;
+    }
+
+    .lbl-full {
+        display: none;
+    }
 
     /* Tighten section padding inside the narrow left panel */
     .course-left section,
