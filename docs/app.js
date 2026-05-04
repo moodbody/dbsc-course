@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v35";
+const APP_VERSION = "v36";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -1581,10 +1581,16 @@ if (ibClose) {
 if (lnkInstallHelp) {
     lnkInstallHelp.addEventListener("click", (e) => {
         e.preventDefault();
-        sessionStorage.removeItem("dbsc.installHidden");
-        localStorage.removeItem("dbsc.installed");
-        renderInstallBanner(true);
-        installBanner.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Open the help guide — installation instructions are in section 8
+        const helpModal = document.getElementById("helpModal");
+        if (helpModal) {
+            helpModal.hidden = false;
+            // Scroll to the install section after modal is visible
+            setTimeout(() => {
+                const installSection = helpModal.querySelector("section:last-of-type");
+                if (installSection) installSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 80);
+        }
     });
 }
 
@@ -1600,11 +1606,11 @@ renderInstallBanner();
 // ---------- welcome / how-to-use modal ----------
 (function setupWelcome() {
     const welcomeModal = document.getElementById("welcomeModal");
-    const helpModal    = document.getElementById("helpModal");
-    const welcomeOk    = document.getElementById("welcomeOk");
-    const helpClose    = document.getElementById("helpClose");
-    const helpOk       = document.getElementById("helpOk");
-    const helpBtn      = document.getElementById("btnHelp");
+    const helpModal = document.getElementById("helpModal");
+    const welcomeOk = document.getElementById("welcomeOk");
+    const helpClose = document.getElementById("helpClose");
+    const helpOk = document.getElementById("helpOk");
+    const helpBtn = document.getElementById("btnHelp");
     if (!welcomeModal) return;
 
     const SEEN_KEY = "dbsc.welcomeSeen";
@@ -1615,15 +1621,15 @@ renderInstallBanner();
         try { localStorage.setItem(SEEN_KEY, "1"); } catch (_) { }
     };
 
-    const openHelp  = () => { if (helpModal) helpModal.hidden = false; };
+    const openHelp = () => { if (helpModal) helpModal.hidden = false; };
     const closeHelp = () => { if (helpModal) helpModal.hidden = true; };
 
     if (welcomeOk) welcomeOk.addEventListener("click", closeWelcome);
     welcomeModal.addEventListener("click", (e) => { if (e.target === welcomeModal) closeWelcome(); });
 
-    if (helpBtn)   helpBtn.addEventListener("click", openHelp);
+    if (helpBtn) helpBtn.addEventListener("click", openHelp);
     if (helpClose) helpClose.addEventListener("click", closeHelp);
-    if (helpOk)    helpOk.addEventListener("click", closeHelp);
+    if (helpOk) helpOk.addEventListener("click", closeHelp);
     if (helpModal) {
         helpModal.addEventListener("click", (e) => { if (e.target === helpModal) closeHelp(); });
     }
@@ -1851,26 +1857,26 @@ function setAccordion(id, open) {
 // ============================================================
 (function initStartSequence() {
     // --- DOM refs ---
-    const statusEl    = document.getElementById("startStatus");
-    const clockEl     = document.getElementById("startClock");
-    const labelEl     = document.getElementById("startClockLabel");
-    const adjustEl    = document.getElementById("startAdjust");
-    const btnGo       = document.getElementById("btnStartGo");
-    const btnFinish   = document.getElementById("btnStartFinish");
-    const btnReset    = document.getElementById("btnStartReset");
-    const btnMinus    = document.getElementById("btnStartMinus");
-    const btnPlus     = document.getElementById("btnStartPlus");
-    const btnSync     = document.getElementById("btnStartSync");
-    const signalRows  = document.querySelectorAll("#startSignals .start-signal-row");
+    const statusEl = document.getElementById("startStatus");
+    const clockEl = document.getElementById("startClock");
+    const labelEl = document.getElementById("startClockLabel");
+    const adjustEl = document.getElementById("startAdjust");
+    const btnGo = document.getElementById("btnStartGo");
+    const btnFinish = document.getElementById("btnStartFinish");
+    const btnReset = document.getElementById("btnStartReset");
+    const btnMinus = document.getElementById("btnStartMinus");
+    const btnPlus = document.getElementById("btnStartPlus");
+    const btnSync = document.getElementById("btnStartSync");
+    const signalRows = document.querySelectorAll("#startSignals .start-signal-row");
 
     if (!clockEl) return; // view not in DOM
 
     // --- State ---
     const DEFAULT_SECS = 300; // 5 minutes
-    let phase     = "idle";   // idle | countdown | racing | finished
+    let phase = "idle";   // idle | countdown | racing | finished
     let remaining = DEFAULT_SECS;
-    let elapsed   = 0;
-    let ticker    = null;
+    let elapsed = 0;
+    let ticker = null;
 
     // --- Helpers ---
     function fmtMSS(secs) {
@@ -1933,10 +1939,10 @@ function setAccordion(id, open) {
         if (!statusEl) return;
         statusEl.setAttribute("data-phase", phase);
         const labels = {
-            idle:      "Preparatory",
+            idle: "Preparatory",
             countdown: "Sequence running",
-            racing:    "Racing",
-            finished:  "Finished",
+            racing: "Racing",
+            finished: "Finished",
         };
         statusEl.textContent = labels[phase] || phase;
     }
@@ -1945,27 +1951,33 @@ function setAccordion(id, open) {
         // Switch to Course tab and arrange accordions for racing
         showTab("course");
         setAccordion("ac-overview", true);
-        setAccordion("ac-chart",    true);
-        setAccordion("ac-setup",    false);
-        setAccordion("ac-nav",      false);
-        setAccordion("ac-legs",     false);
+        setAccordion("ac-chart", true);
+        setAccordion("ac-setup", false);
+        setAccordion("ac-nav", false);
+        setAccordion("ac-legs", false);
         showToast("🔫 Gun! Race started — good luck!");
+    }
+
+    function triggerGun() {
+        stopTicker();
+        remaining = 0;
+        phase = "racing";
+        elapsed = 0;
+        setPhaseUI();
+        updateClock();
+        updateSignals();
+        if (adjustEl) adjustEl.hidden = true;
+        if (btnFinish) btnFinish.removeAttribute("hidden");
+        // start elapsed ticker
+        startTicker();
+        applyGun();
     }
 
     function tick() {
         if (phase === "countdown") {
             remaining--;
             if (remaining <= 0) {
-                remaining = 0;
-                phase = "racing";
-                elapsed = 0;
-                setPhaseUI();
-                updateClock();
-                updateSignals();
-                // Hide adjust controls, show Finish
-                if (adjustEl) adjustEl.hidden = true;
-                if (btnFinish) btnFinish.removeAttribute("hidden");
-                applyGun();
+                triggerGun();
                 return;
             }
             updateClock();
@@ -1987,16 +1999,16 @@ function setAccordion(id, open) {
 
     function doReset() {
         stopTicker();
-        phase     = "idle";
+        phase = "idle";
         remaining = DEFAULT_SECS;
-        elapsed   = 0;
+        elapsed = 0;
         setPhaseUI();
         updateClock();
         updateSignals();
-        if (adjustEl)   adjustEl.removeAttribute("hidden");
-        if (btnGo)      btnGo.removeAttribute("hidden");
-        if (btnFinish)  btnFinish.setAttribute("hidden", "");
-        if (btnReset)   btnReset.setAttribute("hidden", "");
+        if (adjustEl) adjustEl.removeAttribute("hidden");
+        if (btnGo) btnGo.removeAttribute("hidden");
+        if (btnFinish) btnFinish.setAttribute("hidden", "");
+        if (btnReset) btnReset.setAttribute("hidden", "");
     }
 
     // --- Button handlers ---
@@ -2013,7 +2025,8 @@ function setAccordion(id, open) {
 
     if (btnMinus) btnMinus.addEventListener("click", () => {
         if (phase !== "countdown") return;
-        remaining = Math.max(60, remaining - 60);
+        remaining = remaining - 60;
+        if (remaining <= 0) { triggerGun(); return; }
         updateClock();
         updateSignals();
     });
@@ -2028,8 +2041,8 @@ function setAccordion(id, open) {
     if (btnSync) btnSync.addEventListener("click", () => {
         if (phase !== "countdown") return;
         remaining = Math.floor(remaining / 60) * 60;
-        // Guard: never sync to 0 — floor to 60 if already under 1 min
-        if (remaining <= 0) remaining = 60;
+        // If already under 1 min, syncing to 0 fires the gun
+        if (remaining <= 0) { triggerGun(); return; }
         updateClock();
         updateSignals();
     });
@@ -2322,24 +2335,24 @@ fetch("schedule.json?v=" + Date.now(), { cache: "no-store" })
 // ============================================================
 // Resolution order:
 //   1. explicit user choice in localStorage ("dbsc.theme" = "light"|"dark")
-//   2. system `prefers-color-scheme: light` -> light
-//   3. dark (default — matches the original design)
+//   2. system `prefers-color-scheme`
+//   3. light (default)
 (function initTheme() {
     const saved = localStorage.getItem("dbsc.theme");
     let theme;
     if (saved === "light" || saved === "dark") {
         theme = saved;
     } else {
-        theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches)
-            ? "light" : "dark";
+        theme = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+            ? "dark" : "light";
     }
     applyTheme(theme);
     // Track system changes when the user has no explicit override.
     if (!saved && window.matchMedia) {
-        const mq = window.matchMedia("(prefers-color-scheme: light)");
+        const mq = window.matchMedia("(prefers-color-scheme: dark)");
         mq.addEventListener && mq.addEventListener("change", (e) => {
             if (!localStorage.getItem("dbsc.theme")) {
-                applyTheme(e.matches ? "light" : "dark");
+                applyTheme(e.matches ? "dark" : "light");
             }
         });
     }
