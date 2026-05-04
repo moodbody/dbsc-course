@@ -1,6 +1,6 @@
 {
-    "name": "DBSC Race Course",
-    "short_name": "DBSC Course",
+    "name": "DBSC Navigator",
+    "short_name": "DBSC Nav",
     "description": "Pick a DBSC course card and follow the marks with bearings, distances and live GPS.",
     "start_url": "./index.html",
     "scope": "./",

@@ -136,8 +136,8 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v32";
-const APP_BUILD_DATE = "2026-05-04";
+const APP_VERSION = "v33";
+const APP_BUILD_DATE = "2026-05-05";
 
 const $ = (id) => document.getElementById(id);
 
@@ -1662,16 +1662,16 @@ const AC_KEY = "ac-state-v1";
 function initAccordions() {
     // Default open/closed for first-ever visit (no localStorage)
     const defaults = {
-        "ac-setup":    true,
+        "ac-setup": true,
         "ac-overview": true,
-        "ac-nav":      false,   // Racing Controls closed until user is ready to race
-        "ac-chart":    true,
-        "ac-legs":     true,
+        "ac-nav": false,   // Racing Controls closed until user is ready to race
+        "ac-chart": true,
+        "ac-legs": true,
     };
 
     // Load any previously saved state
     let saved = {};
-    try { saved = JSON.parse(localStorage.getItem(AC_KEY) || "{}"); } catch (_) {}
+    try { saved = JSON.parse(localStorage.getItem(AC_KEY) || "{}"); } catch (_) { }
 
     const state = Object.assign({}, defaults, saved);
 
@@ -1681,7 +1681,7 @@ function initAccordions() {
             const el = document.getElementById(id);
             if (el) current[id] = el.classList.contains("open");
         }
-        try { localStorage.setItem(AC_KEY, JSON.stringify(current)); } catch (_) {}
+        try { localStorage.setItem(AC_KEY, JSON.stringify(current)); } catch (_) { }
     }
 
     for (const [id, isOpen] of Object.entries(state)) {
@@ -1702,7 +1702,7 @@ function initAccordions() {
                 saveState();
                 // If the chart accordion was just opened, resize the canvas
                 if (id === "ac-chart" && opening) {
-                    try { resizeChart(); } catch (_) {}
+                    try { resizeChart(); } catch (_) { }
                 }
             });
         }
@@ -1712,8 +1712,90 @@ function initAccordions() {
 initAccordions();
 
 // ============================================================
-// Landscape floating nav — ☰ button slides the header in/out
+// Layout settings panel
 // ============================================================
+const LAYOUT_KEY = "layout-v1";
+const LAYOUT_SECTIONS = [
+    { id: "ac-setup",    label: "Select Course",   col: "left",  visible: true },
+    { id: "ac-overview", label: "Race Overview",   col: "left",  visible: true },
+    { id: "ac-nav",      label: "Racing Controls", col: "left",  visible: true },
+    { id: "ac-chart",    label: "Chart",           col: "right", visible: true },
+    { id: "ac-legs",     label: "Legs",            col: "right", visible: true },
+];
+
+function applyLayout(settings) {
+    const left = document.querySelector(".course-left");
+    const right = document.querySelector(".course-right");
+    if (!left || !right) return;
+    for (const s of settings) {
+        const el = document.getElementById(s.id);
+        if (!el) continue;
+        const target = s.col === "right" ? right : left;
+        if (el.parentElement !== target) target.appendChild(el);
+        el.hidden = !s.visible;
+    }
+}
+
+function saveLayout(settings) {
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(settings)); } catch (_) {}
+}
+
+function initLayoutSettings() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(LAYOUT_KEY)); } catch (_) {}
+    const settings = saved || LAYOUT_SECTIONS.map(s => ({ ...s }));
+    applyLayout(settings);
+
+    const panel = document.getElementById("settingsPanel");
+    const rowsEl = document.getElementById("settingsRows");
+    const btnOpen = document.getElementById("btnSettings");
+    const btnClose = document.getElementById("btnSettingsClose");
+    const btnDone = document.getElementById("btnSettingsDone");
+    const btnReset = document.getElementById("btnSettingsReset");
+
+    function buildRows(cfg) {
+        if (!rowsEl) return;
+        rowsEl.innerHTML = "";
+        for (const s of cfg) {
+            const row = document.createElement("div");
+            row.className = "settings-row";
+            row.innerHTML =
+                `<button class="settings-vis${s.visible ? " active" : ""}" data-id="${s.id}" type="button" title="${s.visible ? "Hide section" : "Show section"}">&#x1F441;</button>` +
+                `<span class="settings-label${!s.visible ? " muted" : ""}">${s.label}</span>` +
+                `<div class="settings-cols">` +
+                `<button class="settings-col-btn${s.col === "left" ? " active" : ""}" data-id="${s.id}" data-col="left" type="button">L</button>` +
+                `<button class="settings-col-btn${s.col === "right" ? " active" : ""}" data-id="${s.id}" data-col="right" type="button">R</button>` +
+                `</div>`;
+            rowsEl.appendChild(row);
+        }
+        rowsEl.querySelectorAll(".settings-vis").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const item = cfg.find(s => s.id === btn.dataset.id);
+                if (item) { item.visible = !item.visible; applyLayout(cfg); saveLayout(cfg); buildRows(cfg); }
+            });
+        });
+        rowsEl.querySelectorAll(".settings-col-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const item = cfg.find(s => s.id === btn.dataset.id);
+                if (item) { item.col = btn.dataset.col; applyLayout(cfg); saveLayout(cfg); buildRows(cfg); }
+            });
+        });
+    }
+
+    buildRows(settings);
+
+    if (btnOpen) btnOpen.addEventListener("click", () => { if (panel) panel.removeAttribute("hidden"); });
+    if (btnClose) btnClose.addEventListener("click", () => { if (panel) panel.setAttribute("hidden", ""); });
+    if (btnDone) btnDone.addEventListener("click", () => { if (panel) panel.setAttribute("hidden", ""); });
+    if (btnReset) btnReset.addEventListener("click", () => {
+        const defaults = LAYOUT_SECTIONS.map(s => ({ ...s }));
+        applyLayout(defaults); saveLayout(defaults); buildRows(defaults);
+    });
+}
+
+initLayoutSettings();
+
+
 const btnLsMenu = document.getElementById("btnLsMenu");
 const lsBackdrop = document.getElementById("lsBackdrop");
 const headerEl = document.querySelector("header");
@@ -1804,6 +1886,8 @@ function dayKeyFromDateStr(iso) {
 }
 
 function findRace() {
+    const headerMeta = document.getElementById("headerMeta");
+    if (headerMeta) headerMeta.setAttribute("hidden", "");
     if (!SCHED) {
         todayResult.innerHTML = `<div class="card"><div class="big">Schedule still loading…</div></div>`;
         return;
@@ -1924,11 +2008,17 @@ function findRace() {
         ],
         note: extraNote || (dayKey === "sat" && inCal.hut ? `Saturday hut colour: ${inCal.hut}.` : ""),
         openCard: slot.card,
+        metaText: `${boat.name} · ${dateLabel}`,
     });
 }
 
-function showRecommend({ warn, day, big, rows, note, openCard, openPdf, openPdfLabel }) {
+function showRecommend({ warn, day, big, rows, note, openCard, openPdf, openPdfLabel, metaText }) {
     todayResult.classList.toggle("warn", !!warn);
+    const headerMeta = document.getElementById("headerMeta");
+    if (headerMeta) {
+        if (metaText) { headerMeta.textContent = metaText; headerMeta.removeAttribute("hidden"); }
+        else { headerMeta.setAttribute("hidden", ""); }
+    }
     const rowsHtml = rows
         ? `<div class="grid">${rows.map(([l, v]) => `<div><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join("")}</div>`
         : "";
