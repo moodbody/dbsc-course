@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v33.1";
+const APP_VERSION = "v34";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -1629,6 +1629,7 @@ renderInstallBanner();
 const tabButtons = document.querySelectorAll(".tabs .tab");
 const views = {
     course: document.getElementById("view-course"),
+    start: document.getElementById("view-start"),
     today: document.getElementById("view-today"),
     docs: document.getElementById("view-docs"),
 };
@@ -1814,8 +1815,229 @@ function initLayoutSettings() {
 
 initLayoutSettings();
 
+// ============================================================
+// Accordion helper — programmatic open/close from outside initAccordions
+// ============================================================
+function setAccordion(id, open) {
+    const section = document.getElementById(id);
+    if (!section) return;
+    const btn = section.querySelector(".ac-hd");
+    section.classList.toggle("open", open);
+    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (id === "ac-chart" && open) {
+        try { resizeChart(); } catch (_) { }
+    }
+}
 
-const btnLsMenu = document.getElementById("btnLsMenu");
+// ============================================================
+// Race Start Sequence
+// ============================================================
+(function initStartSequence() {
+    // --- DOM refs ---
+    const statusEl    = document.getElementById("startStatus");
+    const clockEl     = document.getElementById("startClock");
+    const labelEl     = document.getElementById("startClockLabel");
+    const adjustEl    = document.getElementById("startAdjust");
+    const btnGo       = document.getElementById("btnStartGo");
+    const btnFinish   = document.getElementById("btnStartFinish");
+    const btnReset    = document.getElementById("btnStartReset");
+    const btnMinus    = document.getElementById("btnStartMinus");
+    const btnPlus     = document.getElementById("btnStartPlus");
+    const btnSync     = document.getElementById("btnStartSync");
+    const signalRows  = document.querySelectorAll("#startSignals .start-signal-row");
+
+    if (!clockEl) return; // view not in DOM
+
+    // --- State ---
+    const DEFAULT_SECS = 300; // 5 minutes
+    let phase     = "idle";   // idle | countdown | racing | finished
+    let remaining = DEFAULT_SECS;
+    let elapsed   = 0;
+    let ticker    = null;
+
+    // --- Helpers ---
+    function fmtMSS(secs) {
+        const m = Math.floor(Math.abs(secs) / 60);
+        const s = Math.abs(secs) % 60;
+        return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    function updateClock() {
+        if (phase === "countdown" || phase === "idle") {
+            clockEl.textContent = fmtMSS(remaining);
+            clockEl.classList.toggle("warn", phase === "countdown" && remaining < 60);
+            labelEl.textContent = "Time to gun";
+        } else if (phase === "racing") {
+            clockEl.textContent = fmtMSS(elapsed);
+            clockEl.classList.remove("warn");
+            labelEl.textContent = "Race elapsed";
+        } else if (phase === "finished") {
+            clockEl.textContent = fmtMSS(elapsed);
+            clockEl.classList.remove("warn");
+            labelEl.textContent = "Race time";
+        }
+    }
+
+    // Signal strip: mark each row as past / active / upcoming
+    function updateSignals() {
+        signalRows.forEach(row => {
+            const at = parseInt(row.dataset.at, 10);
+            row.classList.remove("active", "past", "gun", "upcoming");
+            if (phase === "idle") {
+                // No styling — all neutral
+            } else if (phase === "racing" || phase === "finished") {
+                // All signals past; gun row gets special colour
+                row.classList.add(at === 0 ? "gun" : "past");
+            } else {
+                // countdown
+                if (remaining <= at) {
+                    row.classList.add(at === 0 ? "gun" : "past");
+                } else if (remaining <= at + 5) {
+                    // just passed — keep as active for a moment (handled by exact tick)
+                    row.classList.add("past");
+                } else {
+                    // upcoming
+                }
+                // The signal that just fired (within ~5 s window)
+                if (remaining <= at && remaining > at - 5 && at > 0) {
+                    row.classList.remove("past");
+                    row.classList.add("active");
+                }
+                // Gun row: active when exactly at 0
+                if (at === 0 && remaining === 0) {
+                    row.classList.remove("past");
+                    row.classList.add("gun");
+                }
+            }
+        });
+    }
+
+    function setPhaseUI() {
+        if (!statusEl) return;
+        statusEl.setAttribute("data-phase", phase);
+        const labels = {
+            idle:      "Preparatory",
+            countdown: "Sequence running",
+            racing:    "Racing",
+            finished:  "Finished",
+        };
+        statusEl.textContent = labels[phase] || phase;
+    }
+
+    function applyGun() {
+        // Switch to Course tab and arrange accordions for racing
+        showTab("course");
+        setAccordion("ac-overview", true);
+        setAccordion("ac-chart",    true);
+        setAccordion("ac-setup",    false);
+        setAccordion("ac-nav",      false);
+        setAccordion("ac-legs",     false);
+        showToast("🔫 Gun! Race started — good luck!");
+    }
+
+    function tick() {
+        if (phase === "countdown") {
+            remaining--;
+            if (remaining <= 0) {
+                remaining = 0;
+                phase = "racing";
+                elapsed = 0;
+                setPhaseUI();
+                updateClock();
+                updateSignals();
+                // Hide adjust controls, show Finish
+                if (adjustEl) adjustEl.hidden = true;
+                if (btnFinish) btnFinish.removeAttribute("hidden");
+                applyGun();
+                return;
+            }
+            updateClock();
+            updateSignals();
+        } else if (phase === "racing") {
+            elapsed++;
+            updateClock();
+        }
+    }
+
+    function startTicker() {
+        if (ticker) clearInterval(ticker);
+        ticker = setInterval(tick, 1000);
+    }
+
+    function stopTicker() {
+        if (ticker) { clearInterval(ticker); ticker = null; }
+    }
+
+    function doReset() {
+        stopTicker();
+        phase     = "idle";
+        remaining = DEFAULT_SECS;
+        elapsed   = 0;
+        setPhaseUI();
+        updateClock();
+        updateSignals();
+        if (adjustEl)   adjustEl.removeAttribute("hidden");
+        if (btnGo)      btnGo.removeAttribute("hidden");
+        if (btnFinish)  btnFinish.setAttribute("hidden", "");
+        if (btnReset)   btnReset.setAttribute("hidden", "");
+    }
+
+    // --- Button handlers ---
+    if (btnGo) btnGo.addEventListener("click", () => {
+        if (phase !== "idle") return;
+        phase = "countdown";
+        setPhaseUI();
+        updateClock();
+        updateSignals();
+        btnGo.setAttribute("hidden", "");
+        if (btnReset) btnReset.removeAttribute("hidden");
+        startTicker();
+    });
+
+    if (btnMinus) btnMinus.addEventListener("click", () => {
+        if (phase !== "countdown") return;
+        remaining = Math.max(60, remaining - 60);
+        updateClock();
+        updateSignals();
+    });
+
+    if (btnPlus) btnPlus.addEventListener("click", () => {
+        if (phase !== "countdown") return;
+        remaining += 60;
+        updateClock();
+        updateSignals();
+    });
+
+    if (btnSync) btnSync.addEventListener("click", () => {
+        if (phase !== "countdown") return;
+        remaining = Math.floor(remaining / 60) * 60;
+        // Guard: never sync to 0 — floor to 60 if already under 1 min
+        if (remaining <= 0) remaining = 60;
+        updateClock();
+        updateSignals();
+    });
+
+    if (btnFinish) btnFinish.addEventListener("click", () => {
+        if (phase !== "racing") return;
+        stopTicker();
+        phase = "finished";
+        setPhaseUI();
+        updateClock();
+        updateSignals();
+        btnFinish.setAttribute("hidden", "");
+        if (btnReset) btnReset.removeAttribute("hidden");
+        showToast(`🏁 Race finished — elapsed time ${fmtMSS(elapsed)}`);
+    });
+
+    if (btnReset) btnReset.addEventListener("click", doReset);
+
+    // Initial render
+    updateClock();
+    updateSignals();
+    setPhaseUI();
+}());
+
+
 const lsBackdrop = document.getElementById("lsBackdrop");
 const headerEl = document.querySelector("header");
 

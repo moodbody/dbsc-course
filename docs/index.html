@@ -107,6 +107,7 @@
         <div class="sub" id="cardSub">Select a course card<span id="headerMeta" class="header-meta" hidden></span></div>
         <nav class="tabs" role="tablist">
             <button class="tab active" data-tab="course" role="tab" aria-selected="true">Course</button>
+            <button class="tab" data-tab="start" role="tab" aria-selected="false">Start</button>
             <button class="tab" data-tab="today" role="tab" aria-selected="false">Race finder</button>
             <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
         </nav>
@@ -118,7 +119,8 @@
     <div id="lsBackdrop" class="ls-backdrop" hidden></div>
 
     <!-- Layout settings panel -->
-    <div id="settingsPanel" class="settings-panel" hidden role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle">
+    <div id="settingsPanel" class="settings-panel" hidden role="dialog" aria-modal="true"
+        aria-labelledby="settingsPanelTitle">
         <div class="settings-card">
             <div class="settings-hd">
                 <span id="settingsPanelTitle" class="settings-title">Layout Settings</span>
@@ -300,6 +302,60 @@
 
         </div><!-- /.course-columns -->
     </div>
+
+    <!-- ============================================================
+         Race Start Sequence
+         ============================================================ -->
+    <div id="view-start" class="view start-view" hidden>
+
+        <!-- Status pill -->
+        <div id="startStatus" class="start-status" data-phase="idle">Preparatory</div>
+
+        <!-- Big countdown / elapsed clock -->
+        <div class="start-clock-wrap">
+            <div id="startClock" class="start-clock">5:00</div>
+            <div id="startClockLabel" class="start-clock-label">Time to gun</div>
+        </div>
+
+        <!-- Minute adjustment (hidden after gun) -->
+        <div id="startAdjust" class="start-adjust">
+            <button id="btnStartMinus" class="start-adj-btn" type="button">−1 min</button>
+            <button id="btnStartSync"  class="start-sync-btn" type="button">⚓ Sync</button>
+            <button id="btnStartPlus"  class="start-adj-btn" type="button">+1 min</button>
+        </div>
+
+        <!-- Primary action buttons -->
+        <div class="start-actions">
+            <button id="btnStartGo"     class="start-go"     type="button">▶ Start sequence</button>
+            <button id="btnStartFinish" class="start-finish"  type="button" hidden>🏁 Finish race</button>
+            <button id="btnStartReset"  class="start-reset"   type="button" hidden>↺ Reset</button>
+        </div>
+
+        <!-- RRS signal strip — all 4 signals always visible, state drives styling -->
+        <div id="startSignals" class="start-signals">
+            <div class="start-signal-row" data-at="300">
+                <span class="sig-time">5:00</span>
+                <span class="sig-name">Warning signal</span>
+                <span class="sig-detail">Class flag hoisted, one sound signal</span>
+            </div>
+            <div class="start-signal-row" data-at="240">
+                <span class="sig-time">4:00</span>
+                <span class="sig-name">Preparatory signal</span>
+                <span class="sig-detail">P-flag (or I / Z / Black flag), one sound signal</span>
+            </div>
+            <div class="start-signal-row" data-at="60">
+                <span class="sig-time">1:00</span>
+                <span class="sig-name">1-minute signal</span>
+                <span class="sig-detail">Long sound — no more general recalls</span>
+            </div>
+            <div class="start-signal-row" data-at="0">
+                <span class="sig-time">0:00</span>
+                <span class="sig-name">Starting signal</span>
+                <span class="sig-detail">🔫 Gun — race started</span>
+            </div>
+        </div>
+
+    </div><!-- /#view-start -->
 
     <div id="view-today" class="view" hidden>
         <section class="docs-intro">

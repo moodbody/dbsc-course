@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = "dbsc-v33.1";
+﻿const CACHE_VERSION = "dbsc-v34";
 
 const CORE = [
     "./",
