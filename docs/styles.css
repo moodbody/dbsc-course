@@ -530,6 +530,104 @@ footer {
     flex-direction: column;
 }
 
+/* ============================================================
+   Accordion sections
+   Uses grid-template-rows 0fr → 1fr for smooth height animation
+   without needing JS to calculate pixel heights.
+   ============================================================ */
+
+.ac-section {
+    border-bottom: 1px solid var(--line);
+}
+
+/* Accordion header button */
+.ac-hd {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 16px;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    text-align: left;
+}
+
+.ac-hd:active {
+    background: var(--hi);
+}
+
+.ac-title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .9px;
+    color: var(--muted);
+}
+
+/* Small hint text inside the header (e.g. "tap a leg to jump") */
+.ac-hint {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    opacity: .7;
+}
+
+/* Chevron: rotates 180° when section is open */
+.ac-chevron {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    transition: transform 0.22s ease;
+}
+
+.ac-chevron::after {
+    content: "▾";
+    font-size: 13px;
+    line-height: 1;
+    display: block;
+}
+
+.ac-section.open .ac-chevron {
+    transform: rotate(-180deg);
+}
+
+/* Collapsible body: grid trick for smooth height animation */
+.ac-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 0.25s ease;
+}
+
+.ac-section.open .ac-body {
+    grid-template-rows: 1fr;
+}
+
+/* Required: inner wrapper must have min-height: 0 for the grid trick */
+.ac-inner {
+    min-height: 0;
+}
+
+/* Remove the old .legs h2 — the accordion header replaces it */
+.legs h2 {
+    display: none;
+}
+
+/* Inside accordion: sections don't need their own top padding since
+   the accordion header already provides visual separation */
+.ac-inner > section,
+.ac-inner > .summary {
+    padding-top: 4px;
+}
+
 /* ---------- portrait reset — explicitly undo any landscape overrides ----------
    iOS Safari sometimes retains stale layout from landscape; this block is an
    insurance policy that forces the correct values back in portrait.            */

@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v31";
+const APP_VERSION = "v32";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -1653,6 +1653,63 @@ tabButtons.forEach((b) => b.addEventListener("click", () => {
     // In landscape, close the slide-down nav after picking a tab
     closeLsNav();
 }));
+
+// ============================================================
+// Accordion sections
+// ============================================================
+const AC_KEY = "ac-state-v1";
+
+function initAccordions() {
+    // Default open/closed for first-ever visit (no localStorage)
+    const defaults = {
+        "ac-setup":    true,
+        "ac-overview": true,
+        "ac-nav":      false,   // Racing Controls closed until user is ready to race
+        "ac-chart":    true,
+        "ac-legs":     true,
+    };
+
+    // Load any previously saved state
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(AC_KEY) || "{}"); } catch (_) {}
+
+    const state = Object.assign({}, defaults, saved);
+
+    function saveState() {
+        const current = {};
+        for (const id of Object.keys(defaults)) {
+            const el = document.getElementById(id);
+            if (el) current[id] = el.classList.contains("open");
+        }
+        try { localStorage.setItem(AC_KEY, JSON.stringify(current)); } catch (_) {}
+    }
+
+    for (const [id, isOpen] of Object.entries(state)) {
+        const section = document.getElementById(id);
+        if (!section) continue;
+        const btn = section.querySelector(".ac-hd");
+
+        // Apply saved/default state
+        section.classList.toggle("open", isOpen);
+        if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+        // Wire toggle on header click
+        if (btn) {
+            btn.addEventListener("click", () => {
+                const opening = !section.classList.contains("open");
+                section.classList.toggle("open", opening);
+                btn.setAttribute("aria-expanded", opening ? "true" : "false");
+                saveState();
+                // If the chart accordion was just opened, resize the canvas
+                if (id === "ac-chart" && opening) {
+                    try { resizeChart(); } catch (_) {}
+                }
+            });
+        }
+    }
+}
+
+initAccordions();
 
 // ============================================================
 // Landscape floating nav — ☰ button slides the header in/out

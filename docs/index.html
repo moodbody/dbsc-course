@@ -132,89 +132,143 @@
                     </div>
                 </section>
 
-                <section class="picker">
-                    <label class="full">
-                        <span><span class="lbl-full">Course card</span><span class="lbl-short">Card</span></span>
-                        <select id="cardSel"></select>
-                    </label>
-                    <label>
-                        <span><span class="lbl-full">Wind direction</span><span class="lbl-short">Wind</span></span>
-                        <select id="windSel"></select>
-                    </label>
-                    <label>
-                        <span><span class="lbl-full">Course #</span><span class="lbl-short">#</span></span>
-                        <select id="courseSel"></select>
-                    </label>
-                    <label class="full twd-label">
-                        <span><span class="lbl-full">True wind direction (°)</span><span class="lbl-short">TWD
-                                (°)</span>
-                            <span class="twd-hint" id="twdHint"></span>
-                        </span>
-                        <div class="twd-row">
-                            <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
-                                autocomplete="off" />
-                            <button id="btnTwdReset" type="button" class="ghost-sm"
-                                title="Reset to course default">↺<span class="twd-btn-text"> default</span></button>
-                        </div>
-                    </label>
-                </section>
-
-                <section class="summary" id="summary"></section>
-
-                <section class="controls">
-                    <button id="btnGps" class="ghost">📍 Use GPS</button>
-                    <button id="btnAutoRound" class="ghost" type="button" aria-pressed="true"
-                        title="Auto-round next mark when within 30 m">🎯 Auto-round</button>
-                    <button id="btnCompass" class="ghost">🧭 Compass</button>
-                    <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
-                    <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
-                    <button id="btnReset" class="ghost">⟳ Reset</button>
-                </section>
-
-                <div id="gpsExplain" class="modal" hidden role="dialog" aria-modal="true"
-                    aria-labelledby="gpsExplainTitle">
-                    <div class="modal-card">
-                        <h2 id="gpsExplainTitle">Use GPS for live navigation?</h2>
-                        <p>Turning on GPS lets the app show:</p>
-                        <ul>
-                            <li>your boat's position on the chart;</li>
-                            <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
-                            <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
-                            <li><strong>Auto-round</strong>: marks tick off automatically when you're within
-                                30&nbsp;m. Disable any time with the 🎯 button.</li>
-                        </ul>
-                        <p class="modal-note">Your location is used only on this device. It is never sent off your
-                            phone, never
-                            stored, and never shared with anyone — DBSC included. The app has no server and no
-                            analytics.</p>
-                        <p class="modal-note">GPS will <strong>switch off automatically after 30 minutes</strong> to
-                            save your
-                            battery, or when you close the app. You can also turn it off any time by tapping the GPS
-                            button
-                            again.</p>
-                        <div class="modal-row">
-                            <button id="gpsExplainCancel" class="ghost" type="button">Cancel</button>
-                            <button id="gpsExplainOk" class="primary" type="button">Enable GPS</button>
+                <!-- Accordion: Select Course -->
+                <div class="ac-section open" id="ac-setup">
+                    <button class="ac-hd" type="button" aria-expanded="true" aria-controls="ac-setup-body">
+                        <span class="ac-title">Select Course</span>
+                        <span class="ac-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ac-body" id="ac-setup-body" role="region">
+                        <div class="ac-inner">
+                            <section class="picker">
+                                <label class="full">
+                                    <span><span class="lbl-full">Course card</span><span class="lbl-short">Card</span></span>
+                                    <select id="cardSel"></select>
+                                </label>
+                                <label>
+                                    <span><span class="lbl-full">Wind direction</span><span class="lbl-short">Wind</span></span>
+                                    <select id="windSel"></select>
+                                </label>
+                                <label>
+                                    <span><span class="lbl-full">Course #</span><span class="lbl-short">#</span></span>
+                                    <select id="courseSel"></select>
+                                </label>
+                                <label class="full twd-label">
+                                    <span><span class="lbl-full">True wind direction (°)</span><span class="lbl-short">TWD
+                                            (°)</span>
+                                        <span class="twd-hint" id="twdHint"></span>
+                                    </span>
+                                    <div class="twd-row">
+                                        <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
+                                            autocomplete="off" />
+                                        <button id="btnTwdReset" type="button" class="ghost-sm"
+                                            title="Reset to course default">↺<span class="twd-btn-text"> default</span></button>
+                                    </div>
+                                </label>
+                            </section>
                         </div>
                     </div>
-                </div>
+                </div><!-- /#ac-setup -->
 
-                <section class="now" id="now"></section>
+                <!-- Accordion: Race Overview -->
+                <div class="ac-section open" id="ac-overview">
+                    <button class="ac-hd" type="button" aria-expanded="true" aria-controls="ac-overview-body">
+                        <span class="ac-title">Race Overview</span>
+                        <span class="ac-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ac-body" id="ac-overview-body" role="region">
+                        <div class="ac-inner">
+                            <section class="summary" id="summary"></section>
+                        </div>
+                    </div>
+                </div><!-- /#ac-overview -->
+
+                <!-- Accordion: Racing Controls (closed by default) -->
+                <div class="ac-section" id="ac-nav">
+                    <button class="ac-hd" type="button" aria-expanded="false" aria-controls="ac-nav-body">
+                        <span class="ac-title">Racing Controls</span>
+                        <span class="ac-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ac-body" id="ac-nav-body" role="region">
+                        <div class="ac-inner">
+                            <section class="controls">
+                                <button id="btnGps" class="ghost">📍 Use GPS</button>
+                                <button id="btnAutoRound" class="ghost" type="button" aria-pressed="true"
+                                    title="Auto-round next mark when within 30 m">🎯 Auto-round</button>
+                                <button id="btnCompass" class="ghost">🧭 Compass</button>
+                                <button id="btnUndo" class="ghost" disabled>↶ Undo</button>
+                                <button id="btnNext" class="primary" disabled>✓ Mark rounded</button>
+                                <button id="btnReset" class="ghost">⟳ Reset</button>
+                            </section>
+
+                            <div id="gpsExplain" class="modal" hidden role="dialog" aria-modal="true"
+                                aria-labelledby="gpsExplainTitle">
+                                <div class="modal-card">
+                                    <h2 id="gpsExplainTitle">Use GPS for live navigation?</h2>
+                                    <p>Turning on GPS lets the app show:</p>
+                                    <ul>
+                                        <li>your boat's position on the chart;</li>
+                                        <li>live <strong>bearing &amp; distance</strong> to the next mark;</li>
+                                        <li>a "<strong>Steer X° port/stbd</strong>" cue when paired with the compass.</li>
+                                        <li><strong>Auto-round</strong>: marks tick off automatically when you're within
+                                            30&nbsp;m. Disable any time with the 🎯 button.</li>
+                                    </ul>
+                                    <p class="modal-note">Your location is used only on this device. It is never sent off your
+                                        phone, never stored, and never shared with anyone — DBSC included. The app has no server and no
+                                        analytics.</p>
+                                    <p class="modal-note">GPS will <strong>switch off automatically after 30 minutes</strong> to
+                                        save your battery, or when you close the app. You can also turn it off any time by tapping the GPS
+                                        button again.</p>
+                                    <div class="modal-row">
+                                        <button id="gpsExplainCancel" class="ghost" type="button">Cancel</button>
+                                        <button id="gpsExplainOk" class="primary" type="button">Enable GPS</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <section class="now" id="now"></section>
+                        </div>
+                    </div>
+                </div><!-- /#ac-nav -->
+
             </div><!-- /.course-left -->
 
             <div class="course-right">
-                <section class="chartwrap">
-                    <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
-                        title="Switch view">🧭 Steer</button>
-                    <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
-                    <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
-                        title="Expand">⛶</button>
-                </section>
+                <!-- Accordion: Chart -->
+                <div class="ac-section open" id="ac-chart">
+                    <button class="ac-hd" type="button" aria-expanded="true" aria-controls="ac-chart-body">
+                        <span class="ac-title">Chart</span>
+                        <span class="ac-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ac-body" id="ac-chart-body" role="region">
+                        <div class="ac-inner">
+                            <section class="chartwrap">
+                                <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
+                                    title="Switch view">🧭 Steer</button>
+                                <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+                                <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
+                                    title="Expand">⛶</button>
+                            </section>
+                        </div>
+                    </div>
+                </div><!-- /#ac-chart -->
 
-                <section class="legs">
-                    <h2>Legs <span class="hint">tap a leg to jump</span></h2>
-                    <ol id="legList"></ol>
-                </section>
+                <!-- Accordion: Legs -->
+                <div class="ac-section open" id="ac-legs">
+                    <button class="ac-hd" type="button" aria-expanded="true" aria-controls="ac-legs-body">
+                        <span class="ac-title">Legs</span>
+                        <span class="ac-hint">tap a leg to jump</span>
+                        <span class="ac-chevron" aria-hidden="true"></span>
+                    </button>
+                    <div class="ac-body" id="ac-legs-body" role="region">
+                        <div class="ac-inner">
+                            <section class="legs">
+                                <ol id="legList"></ol>
+                            </section>
+                        </div>
+                    </div>
+                </div><!-- /#ac-legs -->
+
             </div><!-- /.course-right -->
 
         </div><!-- /.course-columns -->
