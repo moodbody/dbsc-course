@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v34";
+const APP_VERSION = "v35";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -1599,28 +1599,45 @@ renderInstallBanner();
 
 // ---------- welcome / how-to-use modal ----------
 (function setupWelcome() {
-    const modal = document.getElementById("welcomeModal");
-    const okBtn = document.getElementById("welcomeOk");
-    const helpBtn = document.getElementById("btnHelp");
-    if (!modal) return;
+    const welcomeModal = document.getElementById("welcomeModal");
+    const helpModal    = document.getElementById("helpModal");
+    const welcomeOk    = document.getElementById("welcomeOk");
+    const helpClose    = document.getElementById("helpClose");
+    const helpOk       = document.getElementById("helpOk");
+    const helpBtn      = document.getElementById("btnHelp");
+    if (!welcomeModal) return;
 
     const SEEN_KEY = "dbsc.welcomeSeen";
-    const open = () => { modal.hidden = false; };
-    const close = () => {
-        modal.hidden = true;
+
+    const openWelcome = () => { welcomeModal.hidden = false; };
+    const closeWelcome = () => {
+        welcomeModal.hidden = true;
         try { localStorage.setItem(SEEN_KEY, "1"); } catch (_) { }
     };
 
-    if (okBtn) okBtn.addEventListener("click", close);
-    if (helpBtn) helpBtn.addEventListener("click", open);
-    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    const openHelp  = () => { if (helpModal) helpModal.hidden = false; };
+    const closeHelp = () => { if (helpModal) helpModal.hidden = true; };
+
+    if (welcomeOk) welcomeOk.addEventListener("click", closeWelcome);
+    welcomeModal.addEventListener("click", (e) => { if (e.target === welcomeModal) closeWelcome(); });
+
+    if (helpBtn)   helpBtn.addEventListener("click", openHelp);
+    if (helpClose) helpClose.addEventListener("click", closeHelp);
+    if (helpOk)    helpOk.addEventListener("click", closeHelp);
+    if (helpModal) {
+        helpModal.addEventListener("click", (e) => { if (e.target === helpModal) closeHelp(); });
+    }
+
     document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape" && !modal.hidden) close();
+        if (e.key === "Escape") {
+            if (helpModal && !helpModal.hidden) { closeHelp(); return; }
+            if (!welcomeModal.hidden) closeWelcome();
+        }
     });
 
     let seen = false;
     try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch (_) { }
-    if (!seen) open();
+    if (!seen) openWelcome();
 })();
 
 // ============================================================
