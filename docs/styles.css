@@ -530,6 +530,29 @@ footer {
     flex-direction: column;
 }
 
+/* ---------- portrait reset — explicitly undo any landscape overrides ----------
+   iOS Safari sometimes retains stale layout from landscape; this block is an
+   insurance policy that forces the correct values back in portrait.            */
+@media (orientation: portrait) {
+    body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+    }
+
+    header {
+        position: static;
+        transform: none;
+        box-shadow: none;
+        transition: none;
+    }
+
+    .view {
+        height: auto;
+        overflow: visible;
+    }
+}
+
 /* ---------- Floating landscape nav button (hidden in portrait) ---------- */
 .ls-menu-btn {
     display: none;

@@ -136,7 +136,7 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v30";
+const APP_VERSION = "v31";
 const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
@@ -2409,4 +2409,21 @@ function measureHeader() {
 }
 measureHeader();
 window.addEventListener("resize", measureHeader, { passive: true });
+
+// ---------- iOS Safari orientation-change zoom fix ----------
+// iOS retains the zoom level when rotating landscape → portrait.
+// Briefly pinning maximum-scale=1 snaps it back to 1× zoom, then
+// we restore the original content so pinch-zoom still works.
+(function () {
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (!viewportMeta) return;
+    const original = viewportMeta.getAttribute("content");
+    window.addEventListener("orientationchange", () => {
+        // After the rotation settles, snap zoom to 1×, then restore
+        setTimeout(() => {
+            viewportMeta.setAttribute("content", original + ", maximum-scale=1");
+            setTimeout(() => viewportMeta.setAttribute("content", original), 300);
+        }, 100);
+    });
+}());
 
