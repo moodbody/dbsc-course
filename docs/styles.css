@@ -100,11 +100,13 @@ section {
 
 .picker {
     display: grid;
-    grid-template-columns: 1fr;
+    /* Mobile: card spans full width; wind + course# share a row below it;
+       TWD spans full width on its own row beneath those. */
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
 }
 
-/* Legacy class from earlier layout – kept as a no-op so old HTML still works */
+/* Course card and TWD span both columns on mobile */
 .picker label.full {
     grid-column: 1 / -1;
 }
@@ -133,12 +135,18 @@ section {
 }
 
 @media (min-width: 560px) {
+    /* All four items on one row: Card | Wind | # | TWD */
     .picker {
-        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-columns: 2fr 1fr 1fr 2fr;
     }
 
     .picker label.full {
         grid-column: auto;
+    }
+
+    /* Shrink the TWD reset button to just the icon at this width */
+    .twd-btn-text {
+        display: none;
     }
 }
 
@@ -148,25 +156,96 @@ section {
     border-radius: 12px;
     padding: 12px 14px;
     margin: 12px 16px;
-    display: grid;
-    grid-template-columns: auto auto;
-    gap: 4px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.summary .k {
-    color: var(--muted);
-    font-size: 12px;
+/* Top row: badge + aside info */
+.sum-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.summary .v {
+/* "A1" badge — large, bold, instant orientation */
+.sum-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    height: 52px;
+    background: var(--accent);
+    color: #07223a;
+    border-radius: 10px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.sum-aside {
+    flex: 1;
+    min-width: 0;
+}
+
+.sum-wind {
+    font-size: 14px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.summary .raw {
-    grid-column: 1 / -1;
-    font-family: ui-monospace, Menlo, Consolas, monospace;
+.sum-override {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.sum-dist {
+    font-size: 12px;
     color: var(--muted);
-    font-size: 13px;
+    margin-top: 2px;
+}
+
+/* Mark sequence row */
+.sum-route {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 2px;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    row-gap: 4px;
+}
+
+.sum-mark {
+    white-space: nowrap;
+}
+
+.sm-side {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .3px;
+    vertical-align: super;
+    margin-left: 1px;
+}
+
+.sm-side.p {
+    color: var(--port);
+}
+
+.sm-side.s {
+    color: var(--stbd);
+}
+
+.sum-sep {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 12px;
+    margin: 0 2px;
 }
 
 .controls {
@@ -423,6 +502,79 @@ footer {
     body {
         max-width: 760px;
         margin: 0 auto;
+    }
+}
+
+/* ---------- portrait: course-columns is a simple single column ---------- */
+.course-columns {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---------- landscape two-column navigation layout ----------
+   Triggered when the viewport is wider than it is tall AND has enough
+   height to be useful (covers phones rotated landscape AND tablets).
+   .course-left  — sticky panel: pickers, summary, controls, Now
+   .course-right — scrollable panel: chart, legs list                */
+@media (orientation: landscape) and (min-width: 600px) {
+    /* Cancel the portrait centering — use full screen width in landscape */
+    body {
+        max-width: none;
+        margin: 0;
+    }
+
+    .course-columns {
+        flex-direction: row;
+        align-items: flex-start;
+        height: calc(100svh - var(--header-h, 88px));
+        /* --header-h is set by JS (see app.js measureHeader); falls back to 88px */
+    }
+
+    .course-left {
+        width: 320px;
+        flex-shrink: 0;
+        border-right: 1px solid var(--line);
+        /* Stick the left panel while the right panel scrolls */
+        position: sticky;
+        top: 0;
+        max-height: calc(100svh - var(--header-h, 88px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+
+    .course-right {
+        flex: 1;
+        min-width: 0;
+        overflow-y: auto;
+        max-height: calc(100svh - var(--header-h, 88px));
+        overscroll-behavior: contain;
+    }
+
+    /* Tighten section padding inside the narrow left panel */
+    .course-left section,
+    .course-left .summary {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    /* The chart should fill the available right-panel width */
+    .course-right .chartwrap {
+        margin: 12px 12px 0;
+    }
+
+    .course-right .legs {
+        padding: 12px;
+    }
+
+    /* Controls grid: tighter in the narrow left panel */
+    .course-left .controls {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+
+    .course-left .controls button {
+        padding: 11px 8px;
+        font-size: 14px;
     }
 }
 

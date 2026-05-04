@@ -111,6 +111,9 @@
     </header>
 
     <div id="view-course" class="view">
+        <div class="course-columns">
+
+        <div class="course-left">
         <section id="infoStrip" class="info-strip" hidden>
             <button id="countdownPanel" class="info-card countdown" type="button" hidden>
                 <div class="ic-lbl">Next race</div>
@@ -144,21 +147,12 @@
                 <div class="twd-row">
                     <input id="twdInput" type="number" inputmode="numeric" min="0" max="359" step="1"
                         autocomplete="off" />
-                    <button id="btnTwdReset" type="button" class="ghost-sm" title="Reset to course default">↺
-                        default</button>
+                    <button id="btnTwdReset" type="button" class="ghost-sm" title="Reset to course default">↺<span class="twd-btn-text"> default</span></button>
                 </div>
             </label>
         </section>
 
         <section class="summary" id="summary"></section>
-
-        <section class="chartwrap">
-            <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
-                title="Switch view">🧭 Steer</button>
-            <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
-            <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
-                title="Expand">⛶</button>
-        </section>
 
         <section class="controls">
             <button id="btnGps" class="ghost">📍 Use GPS</button>
@@ -194,11 +188,24 @@
         </div>
 
         <section class="now" id="now"></section>
+        </div><!-- /.course-left -->
+
+        <div class="course-right">
+        <section class="chartwrap">
+            <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
+                title="Switch view">🧭 Steer</button>
+            <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+            <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
+                title="Expand">⛶</button>
+        </section>
 
         <section class="legs">
             <h2>Legs <span class="hint">tap a leg to jump</span></h2>
             <ol id="legList"></ol>
         </section>
+        </div><!-- /.course-right -->
+
+        </div><!-- /.course-columns -->
     </div>
 
     <div id="view-today" class="view" hidden>

@@ -136,8 +136,8 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v27";
-const APP_BUILD_DATE = "2026-05-03";
+const APP_VERSION = "v28";
+const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
 
@@ -350,21 +350,46 @@ function twaHtml(t) {
 function renderSummary() {
     const c = currentCourse();
     cardSub.textContent = `${c.card.id} – ${c.card.name}  •  VHF ${c.card.vhf}`;
-    const rawStr = c.tokens.map(t => `${t.mark}${t.side || (c.card.all_port ? "p" : "")}`).join(" ");
 
-    // Total table-based distance from "start" (assumed boat position) is unknown,
-    // so only sum mark-to-mark distances.
+    // Badge: wind letter + course number (e.g. "A1", "B3")
+    const badge = `${state.windKey}${state.courseN}`;
+
+    // Wind bearing line — show TWD override in accent if active
+    const refBearing = fmtBearing(c.bearing);
+    const twdLine = state.twdOverride != null
+        ? `${refBearing} <span class="sum-override">→ using ${fmtBearing(state.twdOverride)}</span>`
+        : refBearing;
+
+    // Race distance
     let total = 0;
     for (let i = 1; i < c.tokens.length; i++) {
         const L = leg(c.tokens[i - 1].mark, c.tokens[i].mark);
         if (L.distance != null) total += L.distance;
     }
+    const distStr = total ? total.toFixed(2) + " NM" : "—";
+    const markCount = c.tokens.length;
+
+    // Mark sequence with coloured port/stbd superscripts
+    const routeHtml = c.tokens.map((tok, i) => {
+        const sideKey = tok.side || (c.card.all_port ? "p" : "");
+        const sideTag = sideKey === "p"
+            ? `<sup class="sm-side p">P</sup>`
+            : sideKey === "s"
+                ? `<sup class="sm-side s">S</sup>`
+                : "";
+        const sep = i > 0 ? `<span class="sum-sep">→</span>` : "";
+        return `${sep}<span class="sum-mark">${tok.mark}${sideTag}</span>`;
+    }).join("");
 
     summaryEl.innerHTML = `
-    <div class="k">Wind</div><div class="v">${c.windKey || state.windKey} – ${fmtBearing(c.bearing)}${state.twdOverride != null ? ` <span style="color:var(--accent)">(using ${fmtBearing(state.twdOverride)})</span>` : ""}</div>
-    <div class="k">Course</div><div class="v">#${state.courseN} – ${c.tokens.length} marks</div>
-    <div class="k">Mark-to-mark</div><div class="v">${total ? total.toFixed(2) + " NM" : "—"}</div>
-    <div class="raw">${rawStr || "(no marks)"}</div>
+    <div class="sum-top">
+      <span class="sum-badge">${badge}</span>
+      <div class="sum-aside">
+        <div class="sum-wind">Wind ref. ${twdLine}</div>
+        <div class="sum-dist">Race distance: ${distStr} &middot; ${markCount} marks</div>
+      </div>
+    </div>
+    <div class="sum-route">${routeHtml}</div>
   `;
 }
 
@@ -2335,4 +2360,15 @@ setInterval(() => {
     renderTides();
     if (typeof renderChart === "function" && hasTideStreamData()) renderChart();
 }, 60 * 1000);
+
+// ---------- Header height measurement for landscape sticky panels ----------
+// Sets --header-h on <html> so the two-column layout can calc() correct heights.
+function measureHeader() {
+    const h = document.querySelector("header");
+    if (h) {
+        document.documentElement.style.setProperty("--header-h", h.offsetHeight + "px");
+    }
+}
+measureHeader();
+window.addEventListener("resize", measureHeader, { passive: true });
 
