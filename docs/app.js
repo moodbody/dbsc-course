@@ -136,8 +136,8 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v33";
-const APP_BUILD_DATE = "2026-05-05";
+const APP_VERSION = "v33.1";
+const APP_BUILD_DATE = "2026-05-04";
 
 const $ = (id) => document.getElementById(id);
 
@@ -1716,33 +1716,35 @@ initAccordions();
 // ============================================================
 const LAYOUT_KEY = "layout-v1";
 const LAYOUT_SECTIONS = [
-    { id: "ac-setup",    label: "Select Course",   col: "left",  visible: true },
-    { id: "ac-overview", label: "Race Overview",   col: "left",  visible: true },
-    { id: "ac-nav",      label: "Racing Controls", col: "left",  visible: true },
-    { id: "ac-chart",    label: "Chart",           col: "right", visible: true },
-    { id: "ac-legs",     label: "Legs",            col: "right", visible: true },
+    { id: "ac-setup", label: "Select Course", col: "left", visible: true },
+    { id: "ac-overview", label: "Race Overview", col: "left", visible: true },
+    { id: "ac-nav", label: "Racing Controls", col: "left", visible: true },
+    { id: "ac-chart", label: "Chart", col: "right", visible: true },
+    { id: "ac-legs", label: "Legs", col: "right", visible: true },
 ];
 
 function applyLayout(settings) {
     const left = document.querySelector(".course-left");
     const right = document.querySelector(".course-right");
     if (!left || !right) return;
+    // Always appendChild in settings-array order so DOM order within each
+    // column is always correct, regardless of previous L/R toggles.
     for (const s of settings) {
         const el = document.getElementById(s.id);
         if (!el) continue;
         const target = s.col === "right" ? right : left;
-        if (el.parentElement !== target) target.appendChild(el);
+        target.appendChild(el);
         el.hidden = !s.visible;
     }
 }
 
 function saveLayout(settings) {
-    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(settings)); } catch (_) {}
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(settings)); } catch (_) { }
 }
 
 function initLayoutSettings() {
     let saved = null;
-    try { saved = JSON.parse(localStorage.getItem(LAYOUT_KEY)); } catch (_) {}
+    try { saved = JSON.parse(localStorage.getItem(LAYOUT_KEY)); } catch (_) { }
     const settings = saved || LAYOUT_SECTIONS.map(s => ({ ...s }));
     applyLayout(settings);
 
@@ -1756,12 +1758,17 @@ function initLayoutSettings() {
     function buildRows(cfg) {
         if (!rowsEl) return;
         rowsEl.innerHTML = "";
-        for (const s of cfg) {
+        for (let i = 0; i < cfg.length; i++) {
+            const s = cfg[i];
             const row = document.createElement("div");
             row.className = "settings-row";
             row.innerHTML =
                 `<button class="settings-vis${s.visible ? " active" : ""}" data-id="${s.id}" type="button" title="${s.visible ? "Hide section" : "Show section"}">&#x1F441;</button>` +
                 `<span class="settings-label${!s.visible ? " muted" : ""}">${s.label}</span>` +
+                `<div class="settings-order">` +
+                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="up" type="button" aria-label="Move up"${i === 0 ? " disabled" : ""}>↑</button>` +
+                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="down" type="button" aria-label="Move down"${i === cfg.length - 1 ? " disabled" : ""}>↓</button>` +
+                `</div>` +
                 `<div class="settings-cols">` +
                 `<button class="settings-col-btn${s.col === "left" ? " active" : ""}" data-id="${s.id}" data-col="left" type="button">L</button>` +
                 `<button class="settings-col-btn${s.col === "right" ? " active" : ""}" data-id="${s.id}" data-col="right" type="button">R</button>` +
@@ -1772,6 +1779,18 @@ function initLayoutSettings() {
             btn.addEventListener("click", () => {
                 const item = cfg.find(s => s.id === btn.dataset.id);
                 if (item) { item.visible = !item.visible; applyLayout(cfg); saveLayout(cfg); buildRows(cfg); }
+            });
+        });
+        rowsEl.querySelectorAll(".settings-ord-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const idx = cfg.findIndex(s => s.id === btn.dataset.id);
+                if (idx < 0) return;
+                if (btn.dataset.dir === "up" && idx > 0) {
+                    [cfg[idx - 1], cfg[idx]] = [cfg[idx], cfg[idx - 1]];
+                } else if (btn.dataset.dir === "down" && idx < cfg.length - 1) {
+                    [cfg[idx], cfg[idx + 1]] = [cfg[idx + 1], cfg[idx]];
+                }
+                applyLayout(cfg); saveLayout(cfg); buildRows(cfg);
             });
         });
         rowsEl.querySelectorAll(".settings-col-btn").forEach(btn => {

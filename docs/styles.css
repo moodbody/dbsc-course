@@ -628,6 +628,12 @@ footer {
     padding-top: 4px;
 }
 
+/* .now is a self-contained card with its own full padding — restore symmetry */
+.ac-inner>.now {
+    padding-top: 14px;
+    margin-bottom: 8px;
+}
+
 /* ---------- portrait reset — explicitly undo any landscape overrides ----------
    iOS Safari sometimes retains stale layout from landscape; this block is an
    insurance policy that forces the correct values back in portrait.            */
@@ -680,7 +686,7 @@ footer {
 }
 
 /* Hide the ☰ button while the header is slid open */
-header.ls-open ~ .ls-menu-btn {
+header.ls-open~.ls-menu-btn {
     opacity: 0;
     pointer-events: none;
     transform: scale(0.8);
@@ -1787,6 +1793,27 @@ footer .app-version {
     background: var(--accent);
     border-color: var(--accent);
     color: #07223a;
+}
+
+.settings-order {
+    display: flex;
+    gap: 2px;
+}
+
+.settings-ord-btn {
+    width: 28px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--card2);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.settings-ord-btn:disabled {
+    opacity: .25;
+    cursor: default;
 }
 
 .settings-footer {
