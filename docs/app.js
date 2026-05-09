@@ -672,7 +672,7 @@ if (btnTwdReset) {
 }
 
 // ---------- GPS ----------
-const GPS_AUTO_OFF_MS = 30 * 60 * 1000; // 30 minutes
+const GPS_AUTO_OFF_MS = 150 * 60 * 1000; // 150 minutes (2 h 30 min)
 const gpsExplain = $("gpsExplain");
 const gpsExplainOk = $("gpsExplainOk");
 const gpsExplainCancel = $("gpsExplainCancel");
