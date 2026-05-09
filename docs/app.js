@@ -178,6 +178,8 @@ const state = {
     gpsOn: false,
     gpsWatch: null,
     gpsPos: null,          // {lat, lon, accuracy, heading?, speed?}
+    gpsTimer: null,
+    gpsEndTime: null,      // absolute ms timestamp when GPS auto-off fires
     headingOn: false,      // device-orientation compass active
     heading: null,         // degrees true (or magnetic if true unavailable)
     headingTrue: false,    // whether `heading` is true-north (vs magnetic)
@@ -688,11 +690,12 @@ function stopGps(reason) {
     state.gpsOn = false;
     state.gpsWatch = null;
     state.gpsPos = null;
+    state.gpsEndTime = null;
     btnGps.textContent = "📍 Use GPS";
     btnGps.classList.remove("primary");
     renderNow();
     if (reason === "timeout") {
-        showToast("GPS switched off after 30 min to save battery.");
+        showToast("GPS switched off after 2 h 30 min to save battery.");
     }
 }
 
@@ -700,6 +703,11 @@ function startGps() {
     if (!("geolocation" in navigator)) {
         alert("Geolocation not available in this browser.");
         return;
+    }
+    // Cancel any stale watch before starting a new one
+    if (state.gpsWatch != null) {
+        navigator.geolocation.clearWatch(state.gpsWatch);
+        state.gpsWatch = null;
     }
     state.gpsWatch = navigator.geolocation.watchPosition(
         (pos) => {
@@ -716,13 +724,24 @@ function startGps() {
             renderNow();
         },
         (err) => {
-            alert("GPS error: " + err.message);
-            stopGps();
+            // Only stop GPS on permanent permission errors.
+            // Transient errors (TIMEOUT, POSITION_UNAVAILABLE) happen when
+            // the phone screen wakes up — ignore them so GPS survives.
+            if (err.code === err.PERMISSION_DENIED) {
+                alert("GPS permission denied.");
+                stopGps();
+            }
         },
-        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+        { enableHighAccuracy: true, maximumAge: 1000 }
     );
+    // Use an absolute end-time so the countdown survives the screen locking.
+    // On resume, startGps() is called again but reuses the existing end-time.
+    if (!state.gpsEndTime) {
+        state.gpsEndTime = Date.now() + GPS_AUTO_OFF_MS;
+    }
     if (state.gpsTimer) clearTimeout(state.gpsTimer);
-    state.gpsTimer = setTimeout(() => stopGps("timeout"), GPS_AUTO_OFF_MS);
+    const remaining = state.gpsEndTime - Date.now();
+    state.gpsTimer = setTimeout(() => stopGps("timeout"), remaining);
 }
 
 function showToast(msg) {
@@ -795,6 +814,21 @@ if (gpsExplain) {
         if (e.target === gpsExplain) gpsExplain.hidden = true;
     });
 }
+
+// ---------- GPS resume on screen-wake ----------
+// Browsers (especially iOS) kill watchPosition when the screen locks.
+// When the page becomes visible again, restart the watch — but only if
+// the 150-minute timer hasn't expired while the screen was off.
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!state.gpsOn) return;
+    if (Date.now() >= state.gpsEndTime) {
+        stopGps("timeout");
+        return;
+    }
+    // Restart watchPosition and reschedule the timer for the remaining time.
+    startGps();
+});
 
 // ---------- init ----------
 populateCards();
