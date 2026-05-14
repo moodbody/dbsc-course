@@ -816,17 +816,41 @@ if (gpsExplain) {
 }
 
 // ---------- GPS resume on screen-wake ----------
-// Browsers (especially iOS) kill watchPosition when the screen locks.
-// When the page becomes visible again, restart the watch — but only if
-// the 150-minute timer hasn't expired while the screen was off.
+// Browsers (especially iOS/Android) kill watchPosition when the screen locks.
+// When the page becomes visible again:
+//  - If hidden for >= 2 min, prompt the user to reload so stale data isn't trusted.
+//  - Restart the GPS watch if the 150-minute timer hasn't expired.
+const WAKE_RELOAD_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+let hiddenAt = null;
+
+const wakeReloadModal = document.getElementById("wakeReloadModal");
+const wakeReloadOk = document.getElementById("wakeReloadOk");
+const wakeReloadDismiss = document.getElementById("wakeReloadDismiss");
+if (wakeReloadOk) wakeReloadOk.addEventListener("click", () => { window.location.reload(); });
+if (wakeReloadDismiss) wakeReloadDismiss.addEventListener("click", () => {
+    if (wakeReloadModal) wakeReloadModal.hidden = true;
+});
+
 document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+        return;
+    }
+    // Page is becoming visible again
+    const awayMs = hiddenAt ? Date.now() - hiddenAt : 0;
+    hiddenAt = null;
+
+    // Show reload prompt if away long enough to have stale data
+    if (awayMs >= WAKE_RELOAD_THRESHOLD_MS && wakeReloadModal) {
+        wakeReloadModal.hidden = false;
+    }
+
+    // GPS resume: restart watch if timer hasn't expired
     if (!state.gpsOn) return;
     if (Date.now() >= state.gpsEndTime) {
         stopGps("timeout");
         return;
     }
-    // Restart watchPosition and reschedule the timer for the remaining time.
     startGps();
 });
 

@@ -39,6 +39,19 @@
 
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
+    <!-- Wake-up reload prompt — shown when the device was locked/off for a while -->
+    <div id="wakeReloadModal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="wakeReloadTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="wakeReloadTitle">⚠️ App was in background</h2>
+            <p>Your device was off or the app was closed for a while. The GPS position and race data shown may be out of date.</p>
+            <p style="margin-top:10px;">Reload now to make sure everything is current before continuing.</p>
+            <div class="modal-row" style="margin-top:18px;gap:10px;">
+                <button id="wakeReloadOk" class="primary" type="button">Reload now</button>
+                <button id="wakeReloadDismiss" type="button">Continue anyway</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Short welcome popup — shown once on first visit -->
     <div id="welcomeModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <div class="modal-card welcome-card">
@@ -602,7 +615,8 @@
     </div>
 
     <footer>
-        <small>Created by <a href="https://www.linkedin.com/in/maxgoodbody" target="_blank" rel="noopener">Max Goodbody</a>
+        <small>Created by <a href="https://www.linkedin.com/in/maxgoodbody" target="_blank" rel="noopener">Max
+                Goodbody</a>
             &nbsp;·&nbsp; <a href="mailto:maxgoodbody@gmail.com">Feedback &amp; ideas</a>
             &nbsp;·&nbsp; <a href="#" id="lnkInstallHelp">How to install</a></small>
         <small class="app-version"><button id="btnVersion" type="button" class="version-btn"
