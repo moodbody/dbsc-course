@@ -435,8 +435,9 @@
                                 <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
                                     title="Switch view">🧭 Steer</button>
                                 <div class="chart-layer-bar" id="chartLayerBar">
-                                    <button class="chart-layer-btn" id="btnOvTides" type="button" aria-pressed="true"
-                                        title="Toggle tide arrows">🌊</button>
+                                    <!-- 🌊 tide button hidden: stream data not yet accurate enough to publish -->
+                                    <button class="chart-layer-btn" id="btnOvTides" type="button" aria-pressed="false"
+                                        title="Toggle tide arrows" hidden>🌊</button>
                                     <button class="chart-layer-btn" id="btnOvMarks" type="button" aria-pressed="false"
                                         title="Show all DBSC marks">⚓</button>
                                 </div>
@@ -684,8 +685,9 @@
     <div id="chartModal" class="chart-modal" hidden role="dialog" aria-label="Course chart fullscreen">
         <button class="cm-close" id="cmClose" type="button" aria-label="Close">×</button>
         <div class="chart-layer-bar cm-layer-bar" id="chartLayerBarBig">
-            <button class="chart-layer-btn" id="btnOvTidesBig" type="button" aria-pressed="true"
-                title="Toggle tide arrows">🌊</button>
+            <!-- 🌊 tide button hidden: stream data not yet accurate enough to publish -->
+            <button class="chart-layer-btn" id="btnOvTidesBig" type="button" aria-pressed="false"
+                title="Toggle tide arrows" hidden>🌊</button>
             <button class="chart-layer-btn" id="btnOvMarksBig" type="button" aria-pressed="false"
                 title="Show all DBSC marks">⚓</button>
         </div>

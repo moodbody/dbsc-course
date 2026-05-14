@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.2.1";
+const APP_VERSION = "v42.2.2";
 const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
@@ -203,7 +203,11 @@ const state = {
     // Chart overlay toggles — which layers are drawn on the map.
     // Persisted individually in localStorage so they survive refresh.
     chartOverlays: {
-        tides: localStorage.getItem("dbsc.ov.tides") !== "0",  // default ON
+        // tides intentionally disabled — stream data uses a constant vector,
+        // not accurate enough to publish. Re-enable by restoring the line below
+        // and unhiding #btnOvTides / #btnOvTidesBig in index.html.
+        // tides: localStorage.getItem("dbsc.ov.tides") === "1",
+        tides: false,
         allMarks: localStorage.getItem("dbsc.ov.allMarks") === "1",  // default OFF
     },
     twdOverride: (() => {
@@ -917,6 +921,9 @@ document.addEventListener("visibilitychange", () => {
 });
 
 // ---------- init ----------
+// Force-clear any stored tide overlay preference so returning users who had
+// it enabled don't see it either. Remove this line when re-enabling tides.
+try { localStorage.removeItem("dbsc.ov.tides"); } catch (_) {}
 populateCards();
 populateWinds();
 populateCourses();
@@ -2913,9 +2920,9 @@ window.addEventListener("resize", () => {
         });
         apply();
     }
-    wire("btnOvTides", "tides");
+    // wire("btnOvTides", "tides");
     wire("btnOvMarks", "allMarks");
-    wire("btnOvTidesBig", "tides");
+    // wire("btnOvTidesBig", "tides");
     wire("btnOvMarksBig", "allMarks");
 })();
 
