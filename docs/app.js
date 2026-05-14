@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.0.0";
+const APP_VERSION = "v42.1.0";
 const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
@@ -228,7 +228,7 @@ function sidePill(side) {
 }
 function fmtBearing(b) {
     if (b == null || isNaN(b)) return "—";
-    return String(Math.round(((b % 360) + 360) % 360)).padStart(3, "0") + "°";
+    return String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, "0") + "°";
 }
 function fmtDist(d) {
     if (d == null || isNaN(d)) return "—";
@@ -1194,6 +1194,131 @@ function drawMapTo(canvas) {
         return { ...t, x: project(m.lat, m.lon)[0], y: project(m.lat, m.lon)[1], mark: t.mark };
     });
 
+    // ---- Tidal stream grid overlay (drawn before marks so marks stay on top) ----
+    // Distributes arrows evenly across the visible chart area rather than
+    // attaching them to individual marks. Arrows are larger and clearer than
+    // the old per-mark labels.
+    if (state.chartOverlays.tides && typeof tideStreamAt === "function" && hasTideStreamData()) {
+        const nowMs = Date.now();
+        const tideCol = cssVar("--chart-tide", "#5fc0ff");
+
+        // Build a representative tide vector for the grid.
+        // Use the default rose first; if per-mark data exists pick the first.
+        let gridTs = null;
+        if (TIDES && Array.isArray(TIDES.defaultTideRose) && TIDES.defaultTideRose.length > 0) {
+            gridTs = tideStreamAt(null, nowMs);
+        }
+        if (!gridTs && TIDES && TIDES.marksTideRose) {
+            const firstMark = Object.keys(TIDES.marksTideRose)[0];
+            if (firstMark) gridTs = tideStreamAt(firstMark, nowMs);
+        }
+        // Also try course marks for a local vector
+        if (!gridTs) {
+            for (const p of pts) {
+                if (!p) continue;
+                const ts = tideStreamAt(p.mark, nowMs);
+                if (ts && ts.drift >= 0.05) { gridTs = ts; break; }
+            }
+        }
+
+        if (gridTs && gridTs.drift >= 0.05) {
+            // Grid spacing: ~5 columns × 4 rows regardless of canvas size.
+            const COLS = 5, ROWS = 4;
+            const cellW = W / COLS;
+            const cellH = H / ROWS;
+
+            // Arrow length: 1 kn → 1/4 of cell width; clamped to reasonable range
+            const lenPer1kn = cellW * 0.28;
+            const arrowLen = Math.max(cellW * 0.14, Math.min(cellW * 0.48, gridTs.drift * lenPer1kn));
+            const headLen = arrowLen * 0.35;
+            const lineW = Math.max(2, W * 0.004);
+            const fontSize = Math.max(11, Math.round(W * 0.022));
+
+            // Exclusion radius around course marks and GPS dot
+            const excludeR = Math.max(markR + 12, W * 0.055);
+            const exclusionPts = pts.filter(Boolean).map((p) => ({ x: p.x, y: p.y }));
+            if (state.gpsPos) {
+                const [gx, gy] = project(state.gpsPos.lat, state.gpsPos.lon);
+                exclusionPts.push({ x: gx, y: gy });
+            }
+
+            // Screen angle: compass set 0°=north → canvas 0°=east, so subtract 90°
+            const rad = (gridTs.set - 90) * Math.PI / 180;
+            const dx = Math.cos(rad), dy = Math.sin(rad);
+            const px = -dy, py = dx; // perpendicular for arrowhead
+
+            ctx.strokeStyle = tideCol;
+            ctx.fillStyle = tideCol;
+            ctx.lineWidth = lineW;
+            ctx.font = `600 ${fontSize}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    // Centre of this grid cell
+                    const cx = cellW * (col + 0.5);
+                    const cy = cellH * (row + 0.5);
+
+                    // Skip if too close to any mark or GPS dot
+                    let tooClose = false;
+                    for (const ep of exclusionPts) {
+                        const d2 = (cx - ep.x) ** 2 + (cy - ep.y) ** 2;
+                        if (d2 < excludeR * excludeR) { tooClose = true; break; }
+                    }
+                    if (tooClose) continue;
+
+                    // Draw shaft from tail to tip
+                    const tailX = cx - dx * arrowLen * 0.5;
+                    const tailY = cy - dy * arrowLen * 0.5;
+                    const tipX  = cx + dx * arrowLen * 0.5;
+                    const tipY  = cy + dy * arrowLen * 0.5;
+
+                    // Subtle background halo for outdoor legibility
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+                    ctx.lineWidth = lineW + 3;
+                    ctx.beginPath();
+                    ctx.moveTo(tailX, tailY);
+                    ctx.lineTo(tipX - dx * headLen * 0.5, tipY - dy * headLen * 0.5);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.strokeStyle = tideCol;
+                    ctx.lineWidth = lineW;
+                    ctx.beginPath();
+                    ctx.moveTo(tailX, tailY);
+                    ctx.lineTo(tipX - dx * headLen * 0.5, tipY - dy * headLen * 0.5);
+                    ctx.stroke();
+
+                    // Filled arrowhead
+                    ctx.fillStyle = tideCol;
+                    ctx.beginPath();
+                    ctx.moveTo(tipX + dx * headLen * 0.6, tipY + dy * headLen * 0.6);
+                    ctx.lineTo(tipX - dx * headLen * 0.4 + px * headLen * 0.55,
+                               tipY - dy * headLen * 0.4 + py * headLen * 0.55);
+                    ctx.lineTo(tipX - dx * headLen * 0.4 - px * headLen * 0.55,
+                               tipY - dy * headLen * 0.4 - py * headLen * 0.55);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Drift label — placed at the tail end so it doesn't cover the tip
+                    ctx.fillStyle = tideCol;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    const labelX = tailX - dx * (fontSize * 0.6);
+                    const labelY = tailY - dy * (fontSize * 0.6);
+                    // Dark outline for outdoor contrast
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+                    ctx.lineWidth = Math.max(3, fontSize * 0.25);
+                    ctx.lineJoin = "round";
+                    ctx.strokeText(`${gridTs.drift.toFixed(1)}kn`, labelX, labelY);
+                    ctx.restore();
+                    ctx.fillText(`${gridTs.drift.toFixed(1)}kn`, labelX, labelY);
+                }
+            }
+        }
+    }
+
     // Draw legs
     for (let i = 0; i < pts.length - 1; i++) {
         const a = pts[i], b = pts[i + 1];
@@ -1258,55 +1383,6 @@ function drawMapTo(canvas) {
         ctx.textAlign = "left"; ctx.textBaseline = "top";
         ctx.fillText(`${i + 1}`, p.x + markR + 4, p.y - markR - 2);
     });
-
-    // ---- Tidal stream arrows at each course mark ---- (only when overlay on)
-    if (state.chartOverlays.tides && typeof tideStreamAt === "function" && hasTideStreamData()) {
-        const nowMs = Date.now();
-        const tideCol = cssVar("--chart-tide", "#5fc0ff");
-        for (const p of pts) {
-            if (!p) continue;
-            const ts = tideStreamAt(p.mark, nowMs);
-            if (!ts || ts.drift < 0.05) continue;
-            // 1 kn ≈ 24 px, clamped 10..52
-            const len = Math.max(10, Math.min(52, ts.drift * 24));
-            const head = Math.max(5, len * 0.28);
-            // Arrow starts on the mark's edge, offset by markR + a gap,
-            // so it doesn't sit underneath the dot.
-            const rad = (ts.set - 90) * Math.PI / 180;     // 0° = up (north)
-            const dx = Math.cos(rad), dy = Math.sin(rad);
-            const startGap = markR + 4;
-            const sx = p.x + dx * startGap;
-            const sy = p.y + dy * startGap;
-            const ex = sx + dx * len;
-            const ey = sy + dy * len;
-            ctx.strokeStyle = tideCol;
-            ctx.fillStyle = tideCol;
-            ctx.lineWidth = Math.max(1.5, W * 0.0028);
-            ctx.beginPath();
-            ctx.moveTo(sx, sy);
-            ctx.lineTo(ex, ey);
-            ctx.stroke();
-            // Arrowhead at the tip
-            const px = -dy, py = dx;
-            ctx.beginPath();
-            ctx.moveTo(ex + dx * head, ey + dy * head);
-            ctx.lineTo(ex - dx * head * 0.3 + px * head * 0.55,
-                ey - dy * head * 0.3 + py * head * 0.55);
-            ctx.lineTo(ex - dx * head * 0.3 - px * head * 0.55,
-                ey - dy * head * 0.3 - py * head * 0.55);
-            ctx.closePath();
-            ctx.fill();
-            // Drift label (kn) — small, near the tip
-            if (ts.drift >= 0.2) {
-                ctx.font = `600 ${Math.round(W * 0.014)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-                ctx.textAlign = "left"; ctx.textBaseline = "middle";
-                ctx.fillStyle = tideCol;
-                ctx.fillText(`${ts.drift.toFixed(1)}kn`,
-                    ex + dx * (head + 3) + 2,
-                    ey + dy * (head + 3));
-            }
-        }
-    }
 
     // GPS position
     if (state.gpsPos) {
