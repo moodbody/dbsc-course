@@ -1303,12 +1303,22 @@ function drawSteerTo(canvas) {
         }
     }
 
-    // North label / cardinal markers (small, top of canvas)
+    // Determine boat heading for relative arrow (prefer GPS COG, then compass)
+    const gpsHeading = state.gpsPos && state.gpsPos.heading != null && state.gpsPos.speed != null && state.gpsPos.speed > 0.2
+        ? state.gpsPos.heading : null;
+    const boatHeading = gpsHeading !== null ? gpsHeading
+        : (state.headingOn && state.heading != null ? state.heading : null);
+    const headingRelative = boatHeading !== null;
+
+    // Top orientation label
     ctx.font = `700 ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillStyle = muted;
-    ctx.fillText("N ↑", W / 2, Math.round(H * 0.025));
+    const orientLabel = headingRelative
+        ? (gpsHeading !== null ? "↑ Bow  (GPS COG)" : "↑ Bow  (compass)")
+        : "N ↑";
+    ctx.fillText(orientLabel, W / 2, Math.round(H * 0.025));
 
     // Layout: top text block, big arrow centred, bottom text block
     const topBlockH = Math.round(H * 0.10);
@@ -1342,9 +1352,16 @@ function drawSteerTo(canvas) {
     const headH = arrowLen * 0.32;
     const halfL = arrowLen / 2;
 
+    // When we have a boat heading, rotate the arrow relative to the bow so
+    // that "up" = the direction the boat is moving. E.g. heading 090, bearing
+    // 000 → arrow points left (9 o'clock).
+    const arrowAngle = headingRelative
+        ? ((bearingToMark - boatHeading + 360) % 360)
+        : bearingToMark;
+
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(((bearingToMark - 0) * Math.PI) / 180); // 0° = up = North
+    ctx.rotate((arrowAngle * Math.PI) / 180); // 0° = up
     // arrow shape pointing up before rotation
     ctx.beginPath();
     ctx.moveTo(0, -halfL);                      // tip
