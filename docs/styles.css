@@ -1587,9 +1587,18 @@ footer .app-version {
     color: var(--muted);
     min-width: 84px;
 }
-.rts-status[data-phase="countdown"] { color: var(--accent); }
-.rts-status[data-phase="racing"] { color: var(--good, #2bb673); }
-.rts-status[data-phase="finished"] { color: var(--muted); }
+
+.rts-status[data-phase="countdown"] {
+    color: var(--accent);
+}
+
+.rts-status[data-phase="racing"] {
+    color: var(--good, #2bb673);
+}
+
+.rts-status[data-phase="finished"] {
+    color: var(--muted);
+}
 
 .rts-clock {
     font-size: 30px;
@@ -1599,7 +1608,10 @@ footer .app-version {
     color: var(--text);
     min-width: 72px;
 }
-.rts-clock.warn { color: #e53e3e; }
+
+.rts-clock.warn {
+    color: #e53e3e;
+}
 
 .rts-label {
     font-size: 11px;
@@ -1616,7 +1628,10 @@ footer .app-version {
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
 }
-.rts-link:active { background: var(--card2); }
+
+.rts-link:active {
+    background: var(--card2);
+}
 
 /* ----- two-column layout ----- */
 .race-columns {
@@ -1644,6 +1659,7 @@ footer .app-version {
     padding: 10px 0 6px;
     flex-wrap: wrap;
 }
+
 .race-ctrl-btn {
     flex: 1;
     min-width: 80px;
@@ -1668,10 +1684,12 @@ footer .app-version {
         flex-direction: row;
         overflow-y: hidden;
     }
+
     .race-col-chart {
         width: 55%;
         overflow: hidden;
     }
+
     .race-col-info {
         width: 45%;
         overflow-y: auto;
@@ -1843,6 +1861,15 @@ footer .app-version {
     color: var(--muted);
     font-size: 12.5px;
     line-height: 1.45;
+}
+
+.modal .modal-card .modal-error {
+    color: #d32f2f;
+    font-size: 13px;
+    margin-top: 8px;
+    padding: 6px 10px;
+    background: rgba(211, 47, 47, 0.08);
+    border-radius: 6px;
 }
 
 .modal .modal-row {

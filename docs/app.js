@@ -684,6 +684,8 @@ const GPS_AUTO_OFF_MS = 150 * 60 * 1000; // 150 minutes (2 h 30 min)
 const gpsExplain = $("gpsExplain");
 const gpsExplainOk = $("gpsExplainOk");
 const gpsExplainCancel = $("gpsExplainCancel");
+const gpsPermissionModal = document.getElementById("gpsPermissionModal");
+const gpsPermissionClose = document.getElementById("gpsPermissionClose");
 
 function stopGps(reason) {
     if (state.gpsWatch != null && "geolocation" in navigator) {
@@ -734,8 +736,8 @@ function startGps() {
             // Transient errors (TIMEOUT, POSITION_UNAVAILABLE) happen when
             // the phone screen wakes up — ignore them so GPS survives.
             if (err.code === err.PERMISSION_DENIED) {
-                alert("GPS permission denied.");
                 stopGps();
+                if (gpsPermissionModal) gpsPermissionModal.hidden = false;
             }
         },
         { enableHighAccuracy: true, maximumAge: 1000 }
@@ -791,10 +793,16 @@ function checkAutoRound() {
     }
 }
 
+if (gpsPermissionClose) {
+    gpsPermissionClose.addEventListener("click", () => {
+        if (gpsPermissionModal) gpsPermissionModal.hidden = true;
+    });
+}
+
 btnGps.addEventListener("click", () => {
     if (state.gpsOn) { stopGps(); return; }
     if (!("geolocation" in navigator)) {
-        alert("Geolocation not available in this browser.");
+        if (gpsPermissionModal) gpsPermissionModal.hidden = false;
         return;
     }
     if (gpsExplain) {
@@ -831,11 +839,45 @@ let hiddenAt = null;
 
 const wakeReloadModal = document.getElementById("wakeReloadModal");
 const wakeReloadOk = document.getElementById("wakeReloadOk");
-const wakeReloadDismiss = document.getElementById("wakeReloadDismiss");
-if (wakeReloadOk) wakeReloadOk.addEventListener("click", () => { window.location.reload(); });
-if (wakeReloadDismiss) wakeReloadDismiss.addEventListener("click", () => {
-    if (wakeReloadModal) wakeReloadModal.hidden = true;
-});
+const wakeReloadError = document.getElementById("wakeReloadError");
+if (wakeReloadOk) {
+    wakeReloadOk.addEventListener("click", () => {
+        wakeReloadOk.textContent = "Locating\u2026";
+        wakeReloadOk.disabled = true;
+        if (wakeReloadError) wakeReloadError.hidden = true;
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // Fresh fix obtained — update GPS state and resume watch
+                state.gpsPos = {
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy,
+                    heading: pos.coords.heading,
+                    speed: pos.coords.speed,
+                };
+                state.gpsOn = true;
+                wakeReloadModal.hidden = true;
+                wakeReloadOk.textContent = "\ud83d\udccd Reload GPS";
+                wakeReloadOk.disabled = false;
+                startGps();
+                renderNow();
+            },
+            (err) => {
+                wakeReloadOk.textContent = "\ud83d\udccd Reload GPS";
+                wakeReloadOk.disabled = false;
+                if (wakeReloadError) {
+                    wakeReloadError.textContent = err.code === err.PERMISSION_DENIED
+                        ? "Location access is blocked. Please enable GPS in your device settings."
+                        : err.code === err.TIMEOUT
+                        ? "GPS timed out. Check you\u2019re outdoors with a clear sky view and try again."
+                        : "Could not get GPS position. Please try again.";
+                    wakeReloadError.hidden = false;
+                }
+            },
+            { enableHighAccuracy: true, timeout: 15000 }
+        );
+    });
+}
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
@@ -846,17 +888,26 @@ document.addEventListener("visibilitychange", () => {
     const awayMs = hiddenAt ? Date.now() - hiddenAt : 0;
     hiddenAt = null;
 
-    // Show reload prompt if away long enough to have stale data
-    if (awayMs >= WAKE_RELOAD_THRESHOLD_MS && wakeReloadModal) {
-        wakeReloadModal.hidden = false;
-    }
-
-    // GPS resume: restart watch if timer hasn't expired
-    if (!state.gpsOn) return;
-    if (Date.now() >= state.gpsEndTime) {
+    // If GPS auto-off timer expired while screen was locked, stop cleanly
+    if (state.gpsOn && state.gpsEndTime && Date.now() >= state.gpsEndTime) {
         stopGps("timeout");
         return;
     }
+
+    // If GPS was active and we've been away long enough, show the stale-GPS
+    // prompt. Pause the active watch so the stale position isn't used; the
+    // user must get a fresh fix before GPS features resume.
+    if (awayMs >= WAKE_RELOAD_THRESHOLD_MS && state.gpsOn && wakeReloadModal) {
+        if (state.gpsWatch != null) {
+            navigator.geolocation.clearWatch(state.gpsWatch);
+            state.gpsWatch = null;
+        }
+        wakeReloadModal.hidden = false;
+        return;
+    }
+
+    // Short absence: just restart the GPS watch so the phone-lock gap is covered
+    if (!state.gpsOn) return;
     startGps();
 });
 
@@ -866,6 +917,21 @@ populateWinds();
 populateCourses();
 syncTwdInput();
 renderAll();
+
+// Check GPS permission on load: prompt if not yet granted, warn if blocked.
+(function checkGpsPermissionOnLoad() {
+    if (!("permissions" in navigator)) return; // API unavailable (old browsers)
+    navigator.permissions.query({ name: "geolocation" }).then((result) => {
+        if (result.state === "denied") {
+            // Permission permanently blocked — show info modal
+            if (gpsPermissionModal) gpsPermissionModal.hidden = false;
+        } else if (result.state === "prompt") {
+            // User hasn't been asked yet — show the GPS explain/invite modal
+            if (gpsExplain) gpsExplain.hidden = false;
+        }
+        // "granted": GPS button works as normal; no action needed on load
+    }).catch(() => { /* permissions API rejected silently */ });
+})();
 
 // Try to pull a fresh data.json from the network (GitHub Pages) so simple
 // edits to data.json on github.com show up without re-running parse_data.py.
@@ -1104,16 +1170,16 @@ function drawMapTo(canvas) {
 
     // Faint background marks (not in this course) — shown when "all marks" overlay is on
     if (state.chartOverlays.allMarks) {
-    ctx.fillStyle = cssVar("--chart-mark-faint", "#23496e");
-    const dotR = Math.max(2, Math.round(W * 0.006));
-    for (const letter of allLetters) {
-        if (courseLetters.includes(letter)) continue;
-        const m = MARKS[letter];
-        if (!m) continue;
-        if (m.lat < minLat || m.lat > maxLat || m.lon < minLon || m.lon > maxLon) continue;
-        const [x, y] = project(m.lat, m.lon);
-        ctx.beginPath(); ctx.arc(x, y, dotR, 0, Math.PI * 2); ctx.fill();
-    }
+        ctx.fillStyle = cssVar("--chart-mark-faint", "#23496e");
+        const dotR = Math.max(2, Math.round(W * 0.006));
+        for (const letter of allLetters) {
+            if (courseLetters.includes(letter)) continue;
+            const m = MARKS[letter];
+            if (!m) continue;
+            if (m.lat < minLat || m.lat > maxLat || m.lon < minLon || m.lon > maxLon) continue;
+            const [x, y] = project(m.lat, m.lon);
+            ctx.beginPath(); ctx.arc(x, y, dotR, 0, Math.PI * 2); ctx.fill();
+        }
     }
 
     // Project course points
@@ -1452,9 +1518,9 @@ function drawSteerTo(canvas) {
             // Relative angle: 0° = tide running same direction as mark bearing (with you)
             const relDeg = ((ts.set - bearingToMark + 360) % 360);
             const relRad = (relDeg - 90) * Math.PI / 180; // screen: 0rad = east
-            const tArrowLen  = Math.round(W * 0.07);
+            const tArrowLen = Math.round(W * 0.07);
             const tArrowHead = Math.round(W * 0.022);
-            const tShaftW    = Math.round(W * 0.015);
+            const tShaftW = Math.round(W * 0.015);
             // Position: bottom-right of the bottom block
             const tax = W - Math.round(W * 0.10);
             const tay = baseY + Math.round(H * 0.12);
@@ -1478,9 +1544,9 @@ function drawSteerTo(canvas) {
             ctx.beginPath();
             ctx.moveTo(tex + tdx * tArrowHead, tey + tdy * tArrowHead);
             ctx.lineTo(tex - tdx * tArrowHead * 0.35 + tpx * tArrowHead * 0.6,
-                       tey - tdy * tArrowHead * 0.35 + tpy * tArrowHead * 0.6);
+                tey - tdy * tArrowHead * 0.35 + tpy * tArrowHead * 0.6);
             ctx.lineTo(tex - tdx * tArrowHead * 0.35 - tpx * tArrowHead * 0.6,
-                       tey - tdy * tArrowHead * 0.35 - tpy * tArrowHead * 0.6);
+                tey - tdy * tArrowHead * 0.35 - tpy * tArrowHead * 0.6);
             ctx.closePath();
             ctx.fill();
             // drift label next to the arrow
@@ -2672,8 +2738,8 @@ window.addEventListener("resize", () => {
         });
         apply();
     }
-    wire("btnOvTides",    "tides");
-    wire("btnOvMarks",    "allMarks");
+    wire("btnOvTides", "tides");
+    wire("btnOvMarks", "allMarks");
     wire("btnOvTidesBig", "tides");
     wire("btnOvMarksBig", "allMarks");
 })();
@@ -2682,17 +2748,17 @@ window.addEventListener("resize", () => {
 // Race combined view (timer strip + chart + overview + legs)
 // ============================================================
 (function setupRaceView() {
-    const raceChartCanvas   = document.getElementById("raceChart");
-    const raceSummaryEl     = document.getElementById("raceSummary");
-    const raceNowEl         = document.getElementById("raceNow");
-    const raceLegListEl     = document.getElementById("raceLegList");
-    const raceTimerClock    = document.getElementById("raceTimerClock");
-    const raceTimerLabel    = document.getElementById("raceTimerLabel");
-    const raceTimerStatus   = document.getElementById("raceTimerStatus");
+    const raceChartCanvas = document.getElementById("raceChart");
+    const raceSummaryEl = document.getElementById("raceSummary");
+    const raceNowEl = document.getElementById("raceNow");
+    const raceLegListEl = document.getElementById("raceLegList");
+    const raceTimerClock = document.getElementById("raceTimerClock");
+    const raceTimerLabel = document.getElementById("raceTimerLabel");
+    const raceTimerStatus = document.getElementById("raceTimerStatus");
     const btnRaceViewToggle = document.getElementById("btnRaceViewToggle");
-    const raceGpsBtn        = document.getElementById("raceGpsBtn");
-    const raceBtnNext       = document.getElementById("raceBtnNext");
-    const raceBtnUndo       = document.getElementById("raceBtnUndo");
+    const raceGpsBtn = document.getElementById("raceGpsBtn");
+    const raceBtnNext = document.getElementById("raceBtnNext");
+    const raceBtnUndo = document.getElementById("raceBtnUndo");
 
     // ---- 1. Register the view so showTab can show/hide it ----
     views.race = document.getElementById("view-race");
@@ -2700,12 +2766,12 @@ window.addEventListener("resize", () => {
     // ---- 2. Race chart sizing ----
     function resizeRaceChart() {
         if (!raceChartCanvas) return;
-        const dpr  = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio || 1;
         const cssW = raceChartCanvas.clientWidth;
         if (!cssW) return;
         const cssH = Math.round(cssW * 0.65);
         raceChartCanvas.style.height = cssH + "px";
-        raceChartCanvas.width  = Math.round(cssW * dpr);
+        raceChartCanvas.width = Math.round(cssW * dpr);
         raceChartCanvas.height = Math.round(cssH * dpr);
     }
     window.addEventListener("resize", () => {
@@ -2723,8 +2789,8 @@ window.addEventListener("resize", () => {
     // ---- 4. Mirror summary / now / legs into race view ----
     function syncRaceContent() {
         if (raceSummaryEl) raceSummaryEl.innerHTML = summaryEl.innerHTML;
-        if (raceNowEl)     raceNowEl.innerHTML     = nowEl.innerHTML;
-        if (raceLegListEl) raceLegListEl.innerHTML  = legListEl.innerHTML;
+        if (raceNowEl) raceNowEl.innerHTML = nowEl.innerHTML;
+        if (raceLegListEl) raceLegListEl.innerHTML = legListEl.innerHTML;
         // Keep the race control buttons in sync
         if (raceBtnNext) raceBtnNext.disabled = btnNext.disabled;
         if (raceBtnUndo) raceBtnUndo.disabled = btnUndo.disabled;
@@ -2736,16 +2802,16 @@ window.addEventListener("resize", () => {
 
     // ---- 5. Timer sync: poll start-timer DOM every 500 ms ----
     setInterval(() => {
-        const srcClock  = document.getElementById("startClock");
-        const srcLabel  = document.getElementById("startClockLabel");
+        const srcClock = document.getElementById("startClock");
+        const srcLabel = document.getElementById("startClockLabel");
         const srcStatus = document.getElementById("startStatus");
         if (raceTimerClock && srcClock) {
             raceTimerClock.textContent = srcClock.textContent;
             raceTimerClock.classList.toggle("warn", srcClock.classList.contains("warn"));
         }
-        if (raceTimerLabel  && srcLabel)  raceTimerLabel.textContent       = srcLabel.textContent;
+        if (raceTimerLabel && srcLabel) raceTimerLabel.textContent = srcLabel.textContent;
         if (raceTimerStatus && srcStatus) {
-            raceTimerStatus.textContent   = srcStatus.textContent;
+            raceTimerStatus.textContent = srcStatus.textContent;
             raceTimerStatus.dataset.phase = srcStatus.dataset.phase || "idle";
         }
     }, 500);

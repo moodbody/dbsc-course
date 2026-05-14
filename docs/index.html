@@ -39,17 +39,33 @@
 
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
-    <!-- Wake-up reload prompt — shown when the device was locked/off for a while -->
+    <!-- GPS stale prompt — shown when the device was locked/off for a while.
+         No “Continue anyway” — a fresh fix is required to resume GPS features. -->
     <div id="wakeReloadModal" class="modal" hidden role="alertdialog" aria-modal="true"
         aria-labelledby="wakeReloadTitle">
         <div class="modal-card welcome-card">
-            <h2 id="wakeReloadTitle">⚠️ App was in background</h2>
-            <p>Your device was off or the app was closed for a while. The GPS position and race data shown may be out of
-                date.</p>
-            <p style="margin-top:10px;">Reload now to make sure everything is current before continuing.</p>
-            <div class="modal-row" style="margin-top:18px;gap:10px;">
-                <button id="wakeReloadOk" class="primary" type="button">Reload now</button>
-                <button id="wakeReloadDismiss" type="button">Continue anyway</button>
+            <h2 id="wakeReloadTitle">📍 GPS Location May Be Out of Date</h2>
+            <p>Your GPS location may be out of date. For accurate sailing navigation, please reload your GPS position
+                before continuing.</p>
+            <p id="wakeReloadError" class="modal-error" hidden></p>
+            <div class="modal-row" style="margin-top:18px;">
+                <button id="wakeReloadOk" class="primary" type="button">📍 Reload GPS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPS permission denied — shown on load or on permission error -->
+    <div id="gpsPermissionModal" class="modal" hidden role="alertdialog" aria-modal="true"
+        aria-labelledby="gpsPermissionTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="gpsPermissionTitle">📍 Location Access Blocked</h2>
+            <p>This app uses your GPS position for live sailing navigation — bearing and distance to the next mark,
+                auto-rounding, and the steer chart.</p>
+            <p style="margin-top:10px;">Location access has been <strong>blocked</strong> by your device or browser.
+                To enable it, open your device Settings, find this browser, and allow Location access, then reload
+                the app.</p>
+            <div class="modal-row" style="margin-top:18px;">
+                <button id="gpsPermissionClose" class="ghost" type="button">Continue without GPS</button>
             </div>
         </div>
     </div>
@@ -385,9 +401,9 @@
                                         phone, never stored, and never shared with anyone — DBSC included. The app has
                                         no server and no
                                         analytics.</p>
-                                    <p class="modal-note">GPS will <strong>switch off automatically after 30
-                                            minutes</strong> to
-                                        save your battery, or when you close the app. You can also turn it off any time
+                                    <p class="modal-note">GPS will <strong>switch off automatically after
+                                            2 hours 30 minutes</strong> to
+                                        save your battery. You can also turn it off any time
                                         by tapping the GPS
                                         button again.</p>
                                     <div class="modal-row">
