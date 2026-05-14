@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.2.0";
+const APP_VERSION = "v42.2.1";
 const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
@@ -1020,7 +1020,7 @@ window.addEventListener("resize", resizeChart);
     function applyWidth(px) {
         const clamped = Math.max(MIN_LEFT, Math.min(px, Math.round(window.innerWidth * MAX_LEFT_FRAC)));
         courseLeft.style.width = clamped + "px";
-        try { localStorage.setItem(LS_KEY, String(clamped)); } catch (_) {}
+        try { localStorage.setItem(LS_KEY, String(clamped)); } catch (_) { }
         resizeChart();
     }
 
@@ -1293,6 +1293,8 @@ function drawMapTo(canvas) {
     if (state.chartOverlays.tides && typeof tideStreamAt === "function" && hasTideStreamData()) {
         const nowMs = Date.now();
         const tideCol = cssVar("--chart-tide", "#5fc0ff");
+        // markR is declared later for mark drawing; compute the same value here
+        const tideMarkR = Math.max(5, Math.round(W * 0.012));
 
         // Build a representative tide vector for the grid.
         // Use the default rose first; if per-mark data exists pick the first.
@@ -1327,7 +1329,7 @@ function drawMapTo(canvas) {
             const fontSize = Math.max(11, Math.round(W * 0.022));
 
             // Exclusion radius around course marks and GPS dot
-            const excludeR = Math.max(markR + 12, W * 0.055);
+            const excludeR = Math.max(tideMarkR + 12, W * 0.055);
             const exclusionPts = pts.filter(Boolean).map((p) => ({ x: p.x, y: p.y }));
             if (state.gpsPos) {
                 const [gx, gy] = project(state.gpsPos.lat, state.gpsPos.lon);
