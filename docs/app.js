@@ -136,8 +136,13 @@ let TIDES = null;
 // Build identifier — visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
-const APP_VERSION = "v37";
-const APP_BUILD_DATE = "2026-05-04";
+//
+// Versioning scheme: MAJOR.MINOR.PATCH
+//   MAJOR — bump when the SW cache version increments (breaking cache change)
+//   MINOR — bump for new features or significant UI additions
+//   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
+const APP_VERSION = "v42.0.0";
+const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
 
@@ -869,8 +874,8 @@ if (wakeReloadOk) {
                     wakeReloadError.textContent = err.code === err.PERMISSION_DENIED
                         ? "Location access is blocked. Please enable GPS in your device settings."
                         : err.code === err.TIMEOUT
-                        ? "GPS timed out. Check you\u2019re outdoors with a clear sky view and try again."
-                        : "Could not get GPS position. Please try again.";
+                            ? "GPS timed out. Check you\u2019re outdoors with a clear sky view and try again."
+                            : "Could not get GPS position. Please try again.";
                     wakeReloadError.hidden = false;
                 }
             },
