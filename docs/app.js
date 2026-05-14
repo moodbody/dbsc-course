@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.1.1";
+const APP_VERSION = "v42.2.0";
 const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
@@ -1001,6 +1001,88 @@ function resizeChart() {
 }
 window.addEventListener("resize", resizeChart);
 
+// ---------- Draggable panel splitter ----------
+// Only active in landscape (min-width 600px, width > height).
+// Persists the chosen left-panel width to localStorage.
+(function setupPanelSplitter() {
+    const splitter = document.getElementById("panelSplitter");
+    const courseLeft = document.querySelector(".course-left");
+    if (!splitter || !courseLeft) return;
+
+    const LS_KEY = "dbsc.panelWidth";
+    const MIN_LEFT = 180;   // px — left panel never narrower than this
+    const MAX_LEFT_FRAC = 0.70; // never more than 70% of viewport width
+
+    function isLandscapeMode() {
+        return window.innerWidth >= 600 && window.innerWidth > window.innerHeight;
+    }
+
+    function applyWidth(px) {
+        const clamped = Math.max(MIN_LEFT, Math.min(px, Math.round(window.innerWidth * MAX_LEFT_FRAC)));
+        courseLeft.style.width = clamped + "px";
+        try { localStorage.setItem(LS_KEY, String(clamped)); } catch (_) {}
+        resizeChart();
+    }
+
+    // Restore saved width on load
+    (function restoreWidth() {
+        const saved = parseInt(localStorage.getItem(LS_KEY), 10);
+        if (saved && isLandscapeMode()) applyWidth(saved);
+    })();
+
+    // Also restore on orientation change
+    window.addEventListener("resize", () => {
+        if (!isLandscapeMode()) {
+            // Reset inline width so portrait layout is unaffected
+            courseLeft.style.width = "";
+            return;
+        }
+        const saved = parseInt(localStorage.getItem(LS_KEY), 10);
+        if (saved) applyWidth(saved);
+    });
+
+    // --- Mouse drag ---
+    splitter.addEventListener("mousedown", (e) => {
+        if (!isLandscapeMode()) return;
+        e.preventDefault();
+        splitter.classList.add("dragging");
+        const startX = e.clientX;
+        const startW = courseLeft.getBoundingClientRect().width;
+
+        function onMove(ev) {
+            applyWidth(startW + (ev.clientX - startX));
+        }
+        function onUp() {
+            splitter.classList.remove("dragging");
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+        }
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+    });
+
+    // --- Touch drag ---
+    splitter.addEventListener("touchstart", (e) => {
+        if (!isLandscapeMode()) return;
+        const touch = e.touches[0];
+        splitter.classList.add("dragging");
+        const startX = touch.clientX;
+        const startW = courseLeft.getBoundingClientRect().width;
+
+        function onMove(ev) {
+            ev.preventDefault();
+            applyWidth(startW + (ev.touches[0].clientX - startX));
+        }
+        function onEnd() {
+            splitter.classList.remove("dragging");
+            splitter.removeEventListener("touchmove", onMove);
+            splitter.removeEventListener("touchend", onEnd);
+        }
+        splitter.addEventListener("touchmove", onMove, { passive: false });
+        splitter.addEventListener("touchend", onEnd);
+    }, { passive: true });
+})();
+
 // Read a CSS custom property (e.g. --bg) from <html>. Used so the canvas
 // drawing follows the active light/dark theme.
 function cssVar(name, fallback) {
@@ -1279,8 +1361,8 @@ function drawMapTo(canvas) {
                     // Draw shaft from tail to tip
                     const tailX = cx - dx * arrowLen * 0.5;
                     const tailY = cy - dy * arrowLen * 0.5;
-                    const tipX  = cx + dx * arrowLen * 0.5;
-                    const tipY  = cy + dy * arrowLen * 0.5;
+                    const tipX = cx + dx * arrowLen * 0.5;
+                    const tipY = cy + dy * arrowLen * 0.5;
 
                     // Subtle background halo for outdoor legibility
                     ctx.save();
@@ -1304,9 +1386,9 @@ function drawMapTo(canvas) {
                     ctx.beginPath();
                     ctx.moveTo(tipX + dx * headLen * 0.6, tipY + dy * headLen * 0.6);
                     ctx.lineTo(tipX - dx * headLen * 0.4 + px * headLen * 0.55,
-                               tipY - dy * headLen * 0.4 + py * headLen * 0.55);
+                        tipY - dy * headLen * 0.4 + py * headLen * 0.55);
                     ctx.lineTo(tipX - dx * headLen * 0.4 - px * headLen * 0.55,
-                               tipY - dy * headLen * 0.4 - py * headLen * 0.55);
+                        tipY - dy * headLen * 0.4 - py * headLen * 0.55);
                     ctx.closePath();
                     ctx.fill();
 
