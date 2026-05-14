@@ -791,9 +791,14 @@ header.ls-open~.ls-menu-btn {
         margin-right: 0;
     }
 
-    /* The chart should fill the available right-panel width */
+    /* The chart should fill the available right-panel width but must not
+       overflow the viewport height — JS also enforces this, but belt-and-braces */
     .course-right .chartwrap {
         margin: 12px 12px 0;
+    }
+
+    .course-right .chartwrap canvas {
+        max-height: calc(100svh - 140px);
     }
 
     .course-right .legs {

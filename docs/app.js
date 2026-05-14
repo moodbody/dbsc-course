@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.1.0";
+const APP_VERSION = "v42.1.1";
 const APP_BUILD_DATE = "2026-05-14";
 
 const $ = (id) => document.getElementById(id);
@@ -983,7 +983,17 @@ function resizeChart() {
     if (!chartCanvas) return;
     const dpr = window.devicePixelRatio || 1;
     const cssW = chartCanvas.clientWidth;
-    const cssH = Math.round(cssW * 0.65);
+    // In landscape the canvas must not exceed the viewport height (minus a
+    // small margin for the legs strip below it). In portrait keep the
+    // existing 65%-of-width aspect ratio.
+    let cssH;
+    const isLandscape = window.innerWidth > window.innerHeight && window.innerWidth >= 600;
+    if (isLandscape) {
+        // Leave ~140px for legs list + chartwrap margin
+        cssH = Math.max(120, Math.min(Math.round(cssW * 0.65), window.innerHeight - 140));
+    } else {
+        cssH = Math.round(cssW * 0.65);
+    }
     chartCanvas.style.height = cssH + "px";
     chartCanvas.width = Math.round(cssW * dpr);
     chartCanvas.height = Math.round(cssH * dpr);
