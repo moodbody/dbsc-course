@@ -195,6 +195,12 @@ const state = {
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
     //         real wind shifts hour-by-hour.
+    // Chart overlay toggles — which layers are drawn on the map.
+    // Persisted individually in localStorage so they survive refresh.
+    chartOverlays: {
+        tides: localStorage.getItem("dbsc.ov.tides") !== "0",  // default ON
+        allMarks: localStorage.getItem("dbsc.ov.allMarks") === "1",  // default OFF
+    },
     twdOverride: (() => {
         const v = sessionStorage.getItem("dbsc.twd");
         const n = v == null ? NaN : parseInt(v, 10);
@@ -1096,7 +1102,8 @@ function drawMapTo(canvas) {
             margin, wy + Math.round(W * 0.06));
     }
 
-    // Faint background marks (not in this course)
+    // Faint background marks (not in this course) — shown when "all marks" overlay is on
+    if (state.chartOverlays.allMarks) {
     ctx.fillStyle = cssVar("--chart-mark-faint", "#23496e");
     const dotR = Math.max(2, Math.round(W * 0.006));
     for (const letter of allLetters) {
@@ -1106,6 +1113,7 @@ function drawMapTo(canvas) {
         if (m.lat < minLat || m.lat > maxLat || m.lon < minLon || m.lon > maxLon) continue;
         const [x, y] = project(m.lat, m.lon);
         ctx.beginPath(); ctx.arc(x, y, dotR, 0, Math.PI * 2); ctx.fill();
+    }
     }
 
     // Project course points
@@ -1180,12 +1188,8 @@ function drawMapTo(canvas) {
         ctx.fillText(`${i + 1}`, p.x + markR + 4, p.y - markR - 2);
     });
 
-    // ---- Tidal stream arrows at each course mark ----
-    // Only drawn if tides.json has rose data. Arrow points in the
-    // direction the stream is SETTING (i.e. flowing towards). Length
-    // scales with drift in knots. Drawn under the mark dots have
-    // already been rendered above so the arrow start is offset.
-    if (typeof tideStreamAt === "function" && hasTideStreamData()) {
+    // ---- Tidal stream arrows at each course mark ---- (only when overlay on)
+    if (state.chartOverlays.tides && typeof tideStreamAt === "function" && hasTideStreamData()) {
         const nowMs = Date.now();
         const tideCol = cssVar("--chart-tide", "#5fc0ff");
         for (const p of pts) {
@@ -1436,27 +1440,55 @@ function drawSteerTo(canvas) {
     const srcStr = src === "gps" ? " · from GPS" : src === "leg" ? " · leg bearing" : "";
     ctx.fillText(`${distStr}${srcStr}`, cx, baseY + Math.round(H * 0.155));
 
-    // ---- Tide-push cue (relative to the next leg) ----
+    // ---- Tide-push arrow (relative to the next leg) ----
+    // Draws a small tide arrow inside the bottom info block. The arrow points
+    // in the direction the tide is SETTING relative to the bearing to the mark,
+    // so "straight up" = tide is helping you, "straight down" = tide against you,
+    // "left/right" = tide pushing you off the rhumb line.
     if (typeof tideStreamAt === "function" && hasTideStreamData() && bearingToMark != null) {
         const ts = tideStreamAt(nextMarkLetter, Date.now());
         if (ts && ts.drift >= 0.1) {
-            // Relative angle of the stream vs the bearing to the mark.
-            // 0 = pushing you onto the mark (lift), 180 = head-on,
-            // +90 = pushing you to STBD of the rhumb, -90 = to PORT.
-            let rel = ((ts.set - bearingToMark + 540) % 360) - 180;
-            const absRel = Math.abs(rel);
-            let cue;
-            if (absRel < 25) {
-                cue = `Tide ${ts.drift.toFixed(1)} kn with you`;
-            } else if (absRel > 155) {
-                cue = `Tide ${ts.drift.toFixed(1)} kn against you`;
-            } else {
-                const side = rel > 0 ? "STBD" : "PORT";
-                cue = `Tide ${ts.drift.toFixed(1)} kn pushing ${Math.round(absRel)}° ${side}`;
-            }
-            ctx.fillStyle = cssVar("--chart-tide", "#5fc0ff");
-            ctx.font = `600 ${Math.round(W * 0.024)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-            ctx.fillText(cue, cx, baseY + Math.round(H * 0.195));
+            const tideCol = cssVar("--chart-tide", "#5fc0ff");
+            // Relative angle: 0° = tide running same direction as mark bearing (with you)
+            const relDeg = ((ts.set - bearingToMark + 360) % 360);
+            const relRad = (relDeg - 90) * Math.PI / 180; // screen: 0rad = east
+            const tArrowLen  = Math.round(W * 0.07);
+            const tArrowHead = Math.round(W * 0.022);
+            const tShaftW    = Math.round(W * 0.015);
+            // Position: bottom-right of the bottom block
+            const tax = W - Math.round(W * 0.10);
+            const tay = baseY + Math.round(H * 0.12);
+            const tdx = Math.cos(relRad), tdy = Math.sin(relRad);
+            const tsx = tax - tdx * tArrowLen / 2;
+            const tsy = tay - tdy * tArrowLen / 2;
+            const tex = tax + tdx * tArrowLen / 2;
+            const tey = tay + tdy * tArrowLen / 2;
+            // shaft
+            ctx.strokeStyle = tideCol;
+            ctx.lineWidth = tShaftW;
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(tsx, tsy);
+            ctx.lineTo(tex, tey);
+            ctx.stroke();
+            ctx.lineCap = "butt";
+            // arrowhead
+            ctx.fillStyle = tideCol;
+            const tpx = -tdy, tpy = tdx;
+            ctx.beginPath();
+            ctx.moveTo(tex + tdx * tArrowHead, tey + tdy * tArrowHead);
+            ctx.lineTo(tex - tdx * tArrowHead * 0.35 + tpx * tArrowHead * 0.6,
+                       tey - tdy * tArrowHead * 0.35 + tpy * tArrowHead * 0.6);
+            ctx.lineTo(tex - tdx * tArrowHead * 0.35 - tpx * tArrowHead * 0.6,
+                       tey - tdy * tArrowHead * 0.35 - tpy * tArrowHead * 0.6);
+            ctx.closePath();
+            ctx.fill();
+            // drift label next to the arrow
+            ctx.fillStyle = tideCol;
+            ctx.font = `600 ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+            ctx.textAlign = "right";
+            ctx.textBaseline = "top";
+            ctx.fillText(`${ts.drift.toFixed(1)} kn`, tax - tArrowLen / 2 - 4, tay + Math.round(W * 0.005));
         }
     }
 }
@@ -2620,6 +2652,156 @@ window.addEventListener("resize", () => {
         drawChartTo(chartBig);
     }
 });
+
+// ============================================================
+// Chart layer overlay toggles (🌊 tide / ⚓ all-marks)
+// ============================================================
+(function setupChartLayers() {
+    function wire(btnId, key) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        function apply() {
+            const on = state.chartOverlays[key];
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+        }
+        btn.addEventListener("click", () => {
+            state.chartOverlays[key] = !state.chartOverlays[key];
+            try { localStorage.setItem("dbsc.ov." + key, state.chartOverlays[key] ? "1" : "0"); } catch (_) { }
+            apply();
+            renderChart();
+        });
+        apply();
+    }
+    wire("btnOvTides",    "tides");
+    wire("btnOvMarks",    "allMarks");
+    wire("btnOvTidesBig", "tides");
+    wire("btnOvMarksBig", "allMarks");
+})();
+
+// ============================================================
+// Race combined view (timer strip + chart + overview + legs)
+// ============================================================
+(function setupRaceView() {
+    const raceChartCanvas   = document.getElementById("raceChart");
+    const raceSummaryEl     = document.getElementById("raceSummary");
+    const raceNowEl         = document.getElementById("raceNow");
+    const raceLegListEl     = document.getElementById("raceLegList");
+    const raceTimerClock    = document.getElementById("raceTimerClock");
+    const raceTimerLabel    = document.getElementById("raceTimerLabel");
+    const raceTimerStatus   = document.getElementById("raceTimerStatus");
+    const btnRaceViewToggle = document.getElementById("btnRaceViewToggle");
+    const raceGpsBtn        = document.getElementById("raceGpsBtn");
+    const raceBtnNext       = document.getElementById("raceBtnNext");
+    const raceBtnUndo       = document.getElementById("raceBtnUndo");
+
+    // ---- 1. Register the view so showTab can show/hide it ----
+    views.race = document.getElementById("view-race");
+
+    // ---- 2. Race chart sizing ----
+    function resizeRaceChart() {
+        if (!raceChartCanvas) return;
+        const dpr  = window.devicePixelRatio || 1;
+        const cssW = raceChartCanvas.clientWidth;
+        if (!cssW) return;
+        const cssH = Math.round(cssW * 0.65);
+        raceChartCanvas.style.height = cssH + "px";
+        raceChartCanvas.width  = Math.round(cssW * dpr);
+        raceChartCanvas.height = Math.round(cssH * dpr);
+    }
+    window.addEventListener("resize", () => {
+        resizeRaceChart();
+        if (raceChartCanvas) drawChartTo(raceChartCanvas);
+    });
+
+    // ---- 3. Include race canvas in every renderChart call ----
+    const _rcOrig = renderChart;
+    renderChart = function () {
+        _rcOrig();
+        if (raceChartCanvas) drawChartTo(raceChartCanvas);
+    };
+
+    // ---- 4. Mirror summary / now / legs into race view ----
+    function syncRaceContent() {
+        if (raceSummaryEl) raceSummaryEl.innerHTML = summaryEl.innerHTML;
+        if (raceNowEl)     raceNowEl.innerHTML     = nowEl.innerHTML;
+        if (raceLegListEl) raceLegListEl.innerHTML  = legListEl.innerHTML;
+        // Keep the race control buttons in sync
+        if (raceBtnNext) raceBtnNext.disabled = btnNext.disabled;
+        if (raceBtnUndo) raceBtnUndo.disabled = btnUndo.disabled;
+    }
+    const _raOrig = renderAll;
+    renderAll = function () { _raOrig(); syncRaceContent(); };
+    const _rnOrig = renderNow;
+    renderNow = function () { _rnOrig(); syncRaceContent(); };
+
+    // ---- 5. Timer sync: poll start-timer DOM every 500 ms ----
+    setInterval(() => {
+        const srcClock  = document.getElementById("startClock");
+        const srcLabel  = document.getElementById("startClockLabel");
+        const srcStatus = document.getElementById("startStatus");
+        if (raceTimerClock && srcClock) {
+            raceTimerClock.textContent = srcClock.textContent;
+            raceTimerClock.classList.toggle("warn", srcClock.classList.contains("warn"));
+        }
+        if (raceTimerLabel  && srcLabel)  raceTimerLabel.textContent       = srcLabel.textContent;
+        if (raceTimerStatus && srcStatus) {
+            raceTimerStatus.textContent   = srcStatus.textContent;
+            raceTimerStatus.dataset.phase = srcStatus.dataset.phase || "idle";
+        }
+    }, 500);
+
+    // ---- 6. Steer/chart toggle (syncs with main chart toggle button) ----
+    function applyRaceToggle() {
+        if (!btnRaceViewToggle) return;
+        const isSteer = state.viewMode === "steer";
+        btnRaceViewToggle.setAttribute("aria-pressed", isSteer ? "true" : "false");
+        btnRaceViewToggle.textContent = isSteer ? "🗺 Chart" : "🧭 Steer";
+    }
+    if (btnRaceViewToggle) {
+        btnRaceViewToggle.addEventListener("click", () => {
+            state.viewMode = state.viewMode === "steer" ? "chart" : "steer";
+            try { localStorage.setItem("dbsc.viewMode", state.viewMode); } catch (_) { }
+            // Keep main toggle in sync too
+            const mainToggle = document.getElementById("btnViewToggle");
+            if (mainToggle) {
+                mainToggle.setAttribute("aria-pressed", state.viewMode === "steer" ? "true" : "false");
+                mainToggle.textContent = state.viewMode === "steer" ? "🗺 Chart" : "🧭 Steer";
+            }
+            renderChart();
+            applyRaceToggle();
+        });
+        applyRaceToggle();
+    }
+
+    // ---- 7. Proxy GPS / next / undo buttons ----
+    if (raceGpsBtn) {
+        raceGpsBtn.addEventListener("click", () => btnGps.click());
+        // Keep label in sync
+        const obs = new MutationObserver(() => { raceGpsBtn.textContent = btnGps.textContent; });
+        obs.observe(btnGps, { characterData: true, childList: true, subtree: true });
+    }
+    if (raceBtnNext) raceBtnNext.addEventListener("click", () => btnNext.click());
+    if (raceBtnUndo) raceBtnUndo.addEventListener("click", () => btnUndo.click());
+
+    // ---- 8. Timer strip "⏱" link jumps to Start tab ----
+    const rtsLink = document.querySelector(".rts-link[data-tab='start']");
+    if (rtsLink) rtsLink.addEventListener("click", (e) => { e.preventDefault(); showTab("start"); });
+
+    // ---- 9. Patch showTab to initialise race view on first show ----
+    const _stOrig = showTab;
+    showTab = function (name) {
+        _stOrig(name);
+        if (name === "race") {
+            resizeRaceChart();
+            if (raceChartCanvas) drawChartTo(raceChartCanvas);
+            syncRaceContent();
+        }
+    };
+
+    // ---- 10. Initial pass ----
+    resizeRaceChart();
+    syncRaceContent();
+})();
 
 // ============================================================
 // Next-race countdown (Course tab info strip)

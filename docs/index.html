@@ -40,10 +40,12 @@
     <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 
     <!-- Wake-up reload prompt — shown when the device was locked/off for a while -->
-    <div id="wakeReloadModal" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="wakeReloadTitle">
+    <div id="wakeReloadModal" class="modal" hidden role="alertdialog" aria-modal="true"
+        aria-labelledby="wakeReloadTitle">
         <div class="modal-card welcome-card">
             <h2 id="wakeReloadTitle">⚠️ App was in background</h2>
-            <p>Your device was off or the app was closed for a while. The GPS position and race data shown may be out of date.</p>
+            <p>Your device was off or the app was closed for a while. The GPS position and race data shown may be out of
+                date.</p>
             <p style="margin-top:10px;">Reload now to make sure everything is current before continuing.</p>
             <div class="modal-row" style="margin-top:18px;gap:10px;">
                 <button id="wakeReloadOk" class="primary" type="button">Reload now</button>
@@ -246,6 +248,7 @@
         <nav class="tabs" role="tablist">
             <button class="tab active" data-tab="course" role="tab" aria-selected="true">Course</button>
             <button class="tab" data-tab="start" role="tab" aria-selected="false">Start</button>
+            <button class="tab" data-tab="race" role="tab" aria-selected="false">Race</button>
             <button class="tab" data-tab="today" role="tab" aria-selected="false">Race finder</button>
             <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
         </nav>
@@ -412,6 +415,12 @@
                             <section class="chartwrap">
                                 <button id="btnViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
                                     title="Switch view">🧭 Steer</button>
+                                <div class="chart-layer-bar" id="chartLayerBar">
+                                    <button class="chart-layer-btn" id="btnOvTides" type="button" aria-pressed="true"
+                                        title="Toggle tide arrows">🌊</button>
+                                    <button class="chart-layer-btn" id="btnOvMarks" type="button" aria-pressed="false"
+                                        title="Show all DBSC marks">⚓</button>
+                                </div>
                                 <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
                                 <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                                     title="Expand">⛶</button>
@@ -500,6 +509,50 @@
         </div>
 
     </div><!-- /#view-start -->
+
+    <!-- ============================================================
+         Race — combined live race view (timer + chart + overview + legs)
+         ============================================================ -->
+    <div id="view-race" class="view race-view" hidden>
+
+        <!-- Compact timer strip across the top -->
+        <div class="race-timer-strip">
+            <div class="rts-status" id="raceTimerStatus" data-phase="idle">Preparatory</div>
+            <div class="rts-clock" id="raceTimerClock">5:00</div>
+            <div class="rts-label" id="raceTimerLabel">Time to gun</div>
+            <a class="rts-link" data-tab="start" href="#start" role="button" title="Open Start timer">⏱</a>
+        </div>
+
+        <!-- Chart (left/top) + info panel (right/bottom) -->
+        <div class="race-columns">
+
+            <div class="race-col-chart">
+                <section class="chartwrap">
+                    <button id="btnRaceViewToggle" class="view-toggle-single" type="button" aria-pressed="false"
+                        title="Switch view">🧭 Steer</button>
+                    <canvas id="raceChart" width="800" height="520" aria-label="Race chart"></canvas>
+                </section>
+            </div>
+
+            <div class="race-col-info">
+                <!-- Racing controls (GPS / next mark) — mirrored for convenience -->
+                <div class="race-controls">
+                    <button id="raceGpsBtn" class="ghost race-ctrl-btn" type="button">📍 GPS</button>
+                    <button id="raceBtnNext" class="primary race-ctrl-btn" type="button" disabled>✓ Rounded</button>
+                    <button id="raceBtnUndo" class="ghost race-ctrl-btn" type="button" disabled>↶ Undo</button>
+                </div>
+                <!-- Race Overview (summary + now) -->
+                <section class="summary" id="raceSummary"></section>
+                <section class="now" id="raceNow"></section>
+                <!-- Legs list -->
+                <div class="race-legs-hd">Legs</div>
+                <section class="legs">
+                    <ol id="raceLegList"></ol>
+                </section>
+            </div>
+
+        </div>
+    </div><!-- /#view-race -->
 
     <div id="view-today" class="view" hidden>
         <section class="docs-intro">
@@ -611,6 +664,12 @@
 
     <div id="chartModal" class="chart-modal" hidden role="dialog" aria-label="Course chart fullscreen">
         <button class="cm-close" id="cmClose" type="button" aria-label="Close">×</button>
+        <div class="chart-layer-bar cm-layer-bar" id="chartLayerBarBig">
+            <button class="chart-layer-btn" id="btnOvTidesBig" type="button" aria-pressed="true"
+                title="Toggle tide arrows">🌊</button>
+            <button class="chart-layer-btn" id="btnOvMarksBig" type="button" aria-pressed="false"
+                title="Show all DBSC marks">⚓</button>
+        </div>
         <canvas id="chartBig" class="cm-canvas" aria-label="Course chart fullscreen"></canvas>
     </div>
 
