@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.3.0";
+const APP_VERSION = "v42.4.0";
 const APP_BUILD_DATE = "2026-05-19";
 
 const $ = (id) => document.getElementById(id);
@@ -519,15 +519,16 @@ function renderNow() {
             sideKey === "s" ? `<span class="pill s">STBD</span>` :
                 `<span class="pill x">—</span>`;
 
-    let prevMarkHtml = "";
+    let prevColHtml;
     if (idx > 0) {
         const prev = c.tokens[idx - 1];
         const prevSideKey = prev.side || (c.card.all_port ? "p" : "");
         const prevSidePill =
             prevSideKey === "p" ? `<span class="pill p">PORT</span>` :
-                prevSideKey === "s" ? `<span class="pill s">STBD</span>` :
-                    `<span class="pill x">—</span>`;
-        prevMarkHtml = `<div class="prev-mark">&#8592; Last rounded: ${prev.mark} \u2013 ${markName(prev.mark)} ${prevSidePill}</div>`;
+                prevSideKey === "s" ? `<span class="pill s">STBD</span>` : "";
+        prevColHtml = `<div class="now-col-name">${prev.mark} \u2013 ${markName(prev.mark)}</div>${prevSidePill ? `<div class="now-col-sub">${prevSidePill}</div>` : ""}`;
+    } else {
+        prevColHtml = `<div class="now-col-name">\u2014</div>`;
     }
 
     // True wind angle for the upcoming leg (uses chart bearing if we have it,
@@ -545,9 +546,17 @@ function renderNow() {
         : `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc})</div>`;
 
     nowEl.innerHTML = `
-    <h3>Next mark — ${idx + 1} of ${c.tokens.length}</h3>
-    <div class="name">${target.mark} – ${markName(target.mark)} ${sidePillHtml}</div>
-    ${prevMarkHtml}
+    <div class="now-split">
+      <div class="now-col prev-col">
+        <div class="now-col-lbl">Previous Mark</div>
+        ${prevColHtml}
+      </div>
+      <div class="now-split-div"></div>
+      <div class="now-col next-col">
+        <div class="now-col-lbl">Next Mark &mdash; ${idx + 1} of ${c.tokens.length}</div>
+        <div class="now-col-name">${target.mark} \u2013 ${markName(target.mark)} ${sidePillHtml}</div>
+      </div>
+    </div>
     <div class="row">
       <div class="cell">
         <div class="lbl">Bearing (chart)</div>
