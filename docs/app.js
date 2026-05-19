@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.4.1";
+const APP_VERSION = "v42.5.0";
 const APP_BUILD_DATE = "2026-05-19";
 
 const $ = (id) => document.getElementById(id);
@@ -467,50 +467,68 @@ function renderNow() {
     let tableNav = { bearing: null, distance: null, src: "" };
     if (idx > 0) tableNav = leg(c.tokens[idx - 1].mark, target.mark);
 
-    let gpsHtml = "";
-    if (state.gpsPos) {
-        const m = MARKS[target.mark];
-        if (m) {
-            const g = geo(state.gpsPos.lat, state.gpsPos.lon, m.lat, m.lon);
-            // If we have a compass heading, compute "steer X° port/stbd" so the
-            // helm can just turn until that number reaches 0°.
-            let steerHtml = "";
-            if (state.headingOn && state.heading != null) {
-                let off = ((g.bearing - state.heading + 540) % 360) - 180; // -180..+180
-                const offAbs = Math.abs(off).toFixed(0);
-                const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "—");
-                const steerText = (dir === "—") ? "on bearing" : `${offAbs}° ${dir === "stbd" ? "↻" : "↺"}`;
-                steerHtml = `
-                    <div class="gps-cell">
-                        <div class="lbl">Steer</div>
-                        <div class="val steer">${steerText}</div>
-                    </div>`;
-            } else {
-                steerHtml = `
-                    <div class="gps-cell">
-                        <div class="lbl">Heading</div>
-                        <div class="val" style="font-size:13px; color:var(--muted)">tap 🧭</div>
-                    </div>`;
-            }
-            gpsHtml = `<div class="gps live">
-                <div class="gps-row">
-                    <div class="gps-cell">
-                        <div class="lbl">Bearing (live)</div>
-                        <div class="val">${fmtBearing(g.bearing)}</div>
-                    </div>
-                    <div class="gps-cell">
-                        <div class="lbl">Distance</div>
-                        <div class="val">${fmtDist(g.distance)}</div>
-                    </div>
-                    ${steerHtml}
-                </div>
-                <div style="font-size:11px; color:var(--muted); margin-top:4px">
-                    GPS ±${Math.round(state.gpsPos.accuracy)} m${state.headingOn && state.heading != null ? ` · heading ${Math.round(state.heading)}°${state.headingTrue ? "T" : "M"}` : ""}
-                </div>
-            </div>`;
+    // Build main row and GPS-related lines.
+    // When GPS is live the live values take the prominent position; chart values
+    // are shown as small grey sub-labels beneath them.  When GPS is off, chart
+    // values remain the primary figures.
+    let rowHtml, steerRowHtml = "", gpsFooterHtml = "";
+
+    if (state.gpsPos && MARKS[target.mark]) {
+        const g = geo(state.gpsPos.lat, state.gpsPos.lon, MARKS[target.mark].lat, MARKS[target.mark].lon);
+
+        const chartBearingSub = (idx > 0 && tableNav.bearing != null)
+            ? `<div class="cell-sub">Chart ${fmtBearing(tableNav.bearing)}</div>` : "";
+        const chartDistSub = (idx > 0 && tableNav.distance != null)
+            ? `<div class="cell-sub">Chart ${fmtDist(tableNav.distance)}${tableNav.src === "calc" ? " ≈" : ""}</div>` : "";
+
+        rowHtml = `
+    <div class="row">
+      <div class="cell">
+        <div class="lbl">Bearing</div>
+        <div class="val">${fmtBearing(g.bearing)}</div>
+        ${chartBearingSub}
+      </div>
+      <div class="cell">
+        <div class="lbl">Distance</div>
+        <div class="val">${fmtDist(g.distance)}</div>
+        ${chartDistSub}
+      </div>
+      <div class="cell">
+        <div class="lbl">Colour</div>
+        <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
+      </div>
+    </div>`;
+
+        if (state.headingOn && state.heading != null) {
+            let off = ((g.bearing - state.heading + 540) % 360) - 180;
+            const offAbs = Math.abs(off).toFixed(0);
+            const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "—");
+            const steerText = (dir === "—") ? "on bearing" : `${offAbs}° ${dir === "stbd" ? "↻" : "↺"}`;
+            steerRowHtml = `<div class="steer-row"><span class="steer-lbl">Steer</span><span class="steer">${steerText}</span></div>`;
         }
+
+        const headingStr = (state.headingOn && state.heading != null)
+            ? ` · heading ${Math.round(state.heading)}°${state.headingTrue ? "T" : "M"}`
+            : ` · tap 🧭 for steer`;
+        gpsFooterHtml = `<div class="gps-footer">GPS ±${Math.round(state.gpsPos.accuracy)} m${headingStr}</div>`;
+
     } else {
-        gpsHtml = `<div class="gps">Tap “Use GPS” for live bearing &amp; distance from your boat.</div>`;
+        rowHtml = `
+    <div class="row">
+      <div class="cell">
+        <div class="lbl">Bearing (chart)</div>
+        <div class="val">${idx === 0 ? "START" : fmtBearing(tableNav.bearing)}</div>
+      </div>
+      <div class="cell">
+        <div class="lbl">Distance (chart)</div>
+        <div class="val">${idx === 0 ? "—" : fmtDist(tableNav.distance) + (tableNav.src === "calc" ? " ≈" : "")}</div>
+      </div>
+      <div class="cell">
+        <div class="lbl">Colour</div>
+        <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
+      </div>
+    </div>`;
+        gpsFooterHtml = `<div class="gps">Tap “Use GPS” for live bearing &amp; distance from your boat.</div>`;
     }
 
     const sideKey = target.side || (c.card.all_port ? "p" : "");
@@ -540,7 +558,7 @@ function renderNow() {
         twaForLeg = twa(g.bearing);
     }
     const twdNow = effectiveTWD();
-    const twdSrc = state.twdOverride != null ? "your input" : "course default";
+    const twdSrc = state.twdOverride != null ? "actual" : "default";
     const twaLineHtml = twaForLeg
         ? `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc}) · TWA ${twaHtml(twaForLeg)}</div>`
         : `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc})</div>`;
@@ -557,22 +575,10 @@ function renderNow() {
         <div class="now-col-name">${target.mark} \u2013 ${markName(target.mark)} ${sidePillHtml}</div>
       </div>
     </div>
-    <div class="row">
-      <div class="cell">
-        <div class="lbl">Bearing (chart)</div>
-        <div class="val">${idx === 0 ? "START" : fmtBearing(tableNav.bearing)}</div>
-      </div>
-      <div class="cell">
-        <div class="lbl">Distance (chart)</div>
-        <div class="val">${idx === 0 ? "—" : fmtDist(tableNav.distance) + (tableNav.src === "calc" ? " ≈" : "")}</div>
-      </div>
-      <div class="cell">
-        <div class="lbl">Colour</div>
-        <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
-      </div>
-    </div>
+    ${rowHtml}
+    ${steerRowHtml}
     ${twaLineHtml}
-    ${gpsHtml}
+    ${gpsFooterHtml}
   `;
 
     btnNext.disabled = false;
