@@ -1815,9 +1815,9 @@ footer .app-version {
 
 /* ---------- TWA chips on legs ---------- */
 .legs li .twa {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
+    font-size: 13px;
+    color: var(--text);
+    margin-top: 3px;
     font-variant-numeric: tabular-nums;
 }
 

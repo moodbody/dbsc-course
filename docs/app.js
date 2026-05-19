@@ -141,8 +141,8 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.2.2";
-const APP_BUILD_DATE = "2026-05-14";
+const APP_VERSION = "v42.2.3";
+const APP_BUILD_DATE = "2026-05-19";
 
 const $ = (id) => document.getElementById(id);
 
@@ -923,7 +923,7 @@ document.addEventListener("visibilitychange", () => {
 // ---------- init ----------
 // Force-clear any stored tide overlay preference so returning users who had
 // it enabled don't see it either. Remove this line when re-enabling tides.
-try { localStorage.removeItem("dbsc.ov.tides"); } catch (_) {}
+try { localStorage.removeItem("dbsc.ov.tides"); } catch (_) { }
 populateCards();
 populateWinds();
 populateCourses();
