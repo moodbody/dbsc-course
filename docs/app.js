@@ -141,7 +141,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v42.5.0";
+const APP_VERSION = "v43.0.0";
 const APP_BUILD_DATE = "2026-05-19";
 
 const $ = (id) => document.getElementById(id);
@@ -275,6 +275,117 @@ function saveSelection() {
     localStorage.setItem("dbsc.wind", state.windKey);
     localStorage.setItem("dbsc.course", String(state.courseN));
 }
+// ============================================================
+// Race State Persistence
+// Saves the full active race state to localStorage so the app
+// can survive page reloads, screen-off events, and accidental
+// refreshes during a race.
+// ============================================================
+const RACE_STATE_KEY = "sailingRaceApp.activeRaceState";
+const RACE_STATE_VERSION = 1;
+const RACE_STATE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 h
+
+// Throttle GPS saves — one write per 5 fixes (never on every fix)
+let _gpsSaveThrottle = 0;
+
+// Set by _applyShallowRaceRestore(); consumed at end of file once all
+// IIFEs (incl. initStartSequence) have run and _restoreStartSeqState is live.
+let _pendingRaceRestore = null;
+
+/** Serialise the current race state to localStorage. Safe to call often. */
+function saveRaceState() {
+    const seq = typeof _getStartSeqState === "function" ? _getStartSeqState() : null;
+    const obj = {
+        v: RACE_STATE_VERSION,
+        savedAt: Date.now(),
+        cardId:  state.cardId,
+        windKey: state.windKey,
+        courseN: state.courseN,
+        rounded: state.rounded,
+        twdOverride: state.twdOverride,
+        startLine: state.startLine,
+        startSeq: seq ? {
+            phase:      seq.phase,
+            remaining:  seq.remaining,
+            elapsed:    seq.elapsed,
+            raceStartMs: seq.raceStartMs,
+        } : null,
+        gpsLastKnown: state.gpsPos ? {
+            lat:      state.gpsPos.lat,
+            lon:      state.gpsPos.lon,
+            accuracy: state.gpsPos.accuracy,
+            ts:       Date.now(),
+        } : null,
+    };
+    try { localStorage.setItem(RACE_STATE_KEY, JSON.stringify(obj)); } catch (_) {}
+}
+
+/** Read saved race state from localStorage. Returns null on any problem. */
+function loadRaceState() {
+    try {
+        const raw = localStorage.getItem(RACE_STATE_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        if (!obj || typeof obj !== "object") return null;
+        if (obj.v !== RACE_STATE_VERSION) return null;
+        return obj;
+    } catch (_) {
+        clearRaceState();
+        return null;
+    }
+}
+
+/** Wipe the saved race state key. */
+function clearRaceState() {
+    try { localStorage.removeItem(RACE_STATE_KEY); } catch (_) {}
+}
+
+/** Basic sanity checks before attempting a restore. */
+function isSavedRaceStateValid(saved) {
+    if (!saved) return false;
+    if (typeof saved.savedAt !== "number") return false;
+    if (!saved.cardId) return false;
+    return true;
+}
+
+/**
+ * Apply the easy fields (rounded, GPS, startLine) to state before the
+ * first renderAll so the opening frame already shows the correct state.
+ * Start-sequence restore is deferred — see bottom of file.
+ */
+function _applyShallowRaceRestore() {
+    const saved = loadRaceState();
+    if (!saved || !isSavedRaceStateValid(saved)) return;
+
+    // rounded marks
+    if (typeof saved.rounded === "number") state.rounded = saved.rounded;
+
+    // start line ends
+    if (saved.startLine && (saved.startLine.pinSet || saved.startLine.cbSet)) {
+        state.startLine = saved.startLine;
+    }
+
+    // TWD override (normally session-scoped; promote to persisted on restore)
+    if (saved.twdOverride != null) {
+        state.twdOverride = saved.twdOverride;
+        try { sessionStorage.setItem("dbsc.twd", String(saved.twdOverride)); } catch (_) {}
+    }
+
+    // Last known GPS position (shown as a stale dot until a real fix arrives)
+    if (saved.gpsLastKnown && typeof saved.gpsLastKnown.lat === "number") {
+        state.gpsPos = {
+            lat:      saved.gpsLastKnown.lat,
+            lon:      saved.gpsLastKnown.lon,
+            accuracy: saved.gpsLastKnown.accuracy,
+            heading:  null,
+            speed:    null,
+        };
+    }
+
+    _pendingRaceRestore = saved;
+}
+
+
 
 function populateCards() {
     cardSel.innerHTML = "";
@@ -608,6 +719,7 @@ cardSel.addEventListener("change", () => {
     if (state.twdOverride === oldDefault) clearTwdOverride();
     syncTwdInput();
     renderAll();
+    saveRaceState();
 });
 windSel.addEventListener("change", () => {
     const oldDefault = currentCourse().bearing;
@@ -617,11 +729,13 @@ windSel.addEventListener("change", () => {
     if (state.twdOverride === oldDefault) clearTwdOverride();
     syncTwdInput();
     renderAll();
+    saveRaceState();
 });
 courseSel.addEventListener("change", () => {
     state.courseN = +courseSel.value;
     state.rounded = 0;
     saveSelection(); renderAll();
+    saveRaceState();
 });
 
 btnNext.addEventListener("click", () => {
@@ -629,16 +743,19 @@ btnNext.addEventListener("click", () => {
     if (state.rounded < c.tokens.length) state.rounded += 1;
     state.autoRoundHits = 0;
     renderAll();
+    saveRaceState();
 });
 btnUndo.addEventListener("click", () => {
     if (state.rounded > 0) state.rounded -= 1;
     state.autoRoundHits = 0;
     renderAll();
+    saveRaceState();
 });
 btnReset.addEventListener("click", () => {
     state.rounded = 0;
     state.autoRoundHits = 0;
     renderAll();
+    saveRaceState();
 });
 
 // ---------- True wind direction input ----------
@@ -951,6 +1068,9 @@ document.addEventListener("visibilitychange", () => {
 // Force-clear any stored tide overlay preference so returning users who had
 // it enabled don't see it either. Remove this line when re-enabling tides.
 try { localStorage.removeItem("dbsc.ov.tides"); } catch (_) { }
+// Restore rounded marks + last-known GPS before the first render so
+// the opening frame already reflects the saved race position.
+_applyShallowRaceRestore();
 populateCards();
 populateWinds();
 populateCourses();
@@ -2237,6 +2357,12 @@ function setAccordion(id, open) {
 // ============================================================
 // Race Start Sequence
 // ============================================================
+// Module-level handles set by the initStartSequence IIFE below.
+// Declared here so saveRaceState() (defined earlier) can call
+// _getStartSeqState before the IIFE runs (returns null safely).
+let _getStartSeqState = null;
+let _restoreStartSeqState = null;
+
 (function initStartSequence() {
     // --- DOM refs ---
     const statusEl = document.getElementById("startStatus");
@@ -2258,6 +2384,7 @@ function setAccordion(id, open) {
     let phase = "idle";   // idle | countdown | racing | finished
     let remaining = DEFAULT_SECS;
     let elapsed = 0;
+    let raceStartMs = null;  // absolute ms when gun fired; drives elapsed on restore
     let ticker = null;
 
     // --- Helpers ---
@@ -2345,6 +2472,7 @@ function setAccordion(id, open) {
         remaining = 0;
         phase = "racing";
         elapsed = 0;
+        raceStartMs = Date.now();
         setPhaseUI();
         updateClock();
         updateSignals();
@@ -2353,6 +2481,7 @@ function setAccordion(id, open) {
         // start elapsed ticker
         startTicker();
         applyGun();
+        saveRaceState();
     }
 
     function tick() {
@@ -2364,9 +2493,11 @@ function setAccordion(id, open) {
             }
             updateClock();
             updateSignals();
+            if (remaining % 30 === 0) saveRaceState(); // every 30 s during countdown
         } else if (phase === "racing") {
             elapsed++;
             updateClock();
+            if (elapsed % 30 === 0) saveRaceState(); // every 30 s during racing
         }
     }
 
@@ -2384,6 +2515,7 @@ function setAccordion(id, open) {
         phase = "idle";
         remaining = DEFAULT_SECS;
         elapsed = 0;
+        raceStartMs = null;
         setPhaseUI();
         updateClock();
         updateSignals();
@@ -2391,6 +2523,7 @@ function setAccordion(id, open) {
         if (btnGo) btnGo.removeAttribute("hidden");
         if (btnFinish) btnFinish.setAttribute("hidden", "");
         if (btnReset) btnReset.setAttribute("hidden", "");
+        clearRaceState(); // user explicitly reset — wipe the saved state
     }
 
     // --- Button handlers ---
@@ -2403,6 +2536,7 @@ function setAccordion(id, open) {
         btnGo.setAttribute("hidden", "");
         if (btnReset) btnReset.removeAttribute("hidden");
         startTicker();
+        saveRaceState();
     });
 
     if (btnMinus) btnMinus.addEventListener("click", () => {
@@ -2439,6 +2573,7 @@ function setAccordion(id, open) {
         btnFinish.setAttribute("hidden", "");
         if (btnReset) btnReset.removeAttribute("hidden");
         showToast(`🏁 Race finished — elapsed time ${fmtMSS(elapsed)}`);
+        saveRaceState();
     });
 
     if (btnReset) btnReset.addEventListener("click", doReset);
@@ -2447,6 +2582,42 @@ function setAccordion(id, open) {
     updateClock();
     updateSignals();
     setPhaseUI();
+
+    // Expose state and restore hook to module scope
+    _getStartSeqState = () => ({ phase, remaining, elapsed, raceStartMs });
+
+    _restoreStartSeqState = function(saved) {
+        stopTicker();
+        phase       = saved.phase       || "idle";
+        remaining   = saved.remaining  !== undefined ? saved.remaining  : DEFAULT_SECS;
+        elapsed     = saved.elapsed    !== undefined ? saved.elapsed    : 0;
+        raceStartMs = saved.raceStartMs || null;
+
+        // Advance time-sensitive values for the gap while the app was closed
+        const dt = Math.floor((Date.now() - (saved.savedAt || Date.now())) / 1000);
+        if (phase === "countdown") {
+            remaining = Math.max(0, remaining - dt);
+            if (remaining <= 0) {
+                // Gun would have fired during the gap
+                phase = "racing";
+                raceStartMs = raceStartMs || ((saved.savedAt || Date.now()) + (saved.remaining || 0) * 1000);
+            }
+        }
+        if (phase === "racing" && raceStartMs) {
+            elapsed = Math.max(0, Math.floor((Date.now() - raceStartMs) / 1000));
+        }
+
+        setPhaseUI();
+        updateClock();
+        updateSignals();
+
+        const inProgress = phase !== "idle";
+        if (adjustEl)  { if (!inProgress) adjustEl.removeAttribute("hidden");  else adjustEl.hidden = true; }
+        if (btnGo)     { if (!inProgress) btnGo.removeAttribute("hidden");    else btnGo.setAttribute("hidden", ""); }
+        if (btnFinish) { if (phase === "racing")  btnFinish.removeAttribute("hidden"); else btnFinish.setAttribute("hidden", ""); }
+        if (btnReset)  { if (inProgress)  btnReset.removeAttribute("hidden");  else btnReset.setAttribute("hidden", ""); }
+        if (phase === "countdown" || phase === "racing") startTicker();
+    };
 }());
 
 
@@ -3364,6 +3535,65 @@ window.addEventListener("resize", measureHeader, { passive: true });
 // iOS retains the zoom level when rotating landscape → portrait.
 // Briefly pinning maximum-scale=1 snaps it back to 1× zoom, then
 // we restore the original content so pinch-zoom still works.
+
+// ============================================================
+// Deferred race state restore — runs after all IIFEs have set
+// _restoreStartSeqState, so the start sequence can be resumed.
+// ============================================================
+(function completeDeferredRaceRestore() {
+    if (!_pendingRaceRestore) return;
+    const saved = _pendingRaceRestore;
+    _pendingRaceRestore = null;
+
+    const ageMs = Date.now() - (saved.savedAt || 0);
+
+    if (ageMs > RACE_STATE_MAX_AGE_MS) {
+        // Too old — ask the user before restoring
+        const ageH   = Math.floor(ageMs / 3600000);
+        const ageMin = Math.floor((ageMs % 3600000) / 60000);
+        const ageLabel = ageH > 0
+            ? `${ageH}h ${ageMin}m ago`
+            : `${ageMin} minutes ago`;
+        const ageEl = document.getElementById("restoreRaceAge");
+        if (ageEl) ageEl.textContent = ageLabel;
+        const m = document.getElementById("restoreRaceModal");
+        if (m) m.hidden = false;
+    } else {
+        // Fresh save — restore silently
+        if (saved.startSeq && typeof _restoreStartSeqState === "function") {
+            _restoreStartSeqState({ ...saved.startSeq, savedAt: saved.savedAt });
+        }
+        showToast("Race state restored \u2713");
+    }
+}());
+
+// --- Restore / discard modal handlers ---
+(function wireRestoreModal() {
+    const modal = document.getElementById("restoreRaceModal");
+    const btnYes = document.getElementById("restoreRaceYes");
+    const btnNo  = document.getElementById("restoreRaceNo");
+
+    if (btnYes) btnYes.addEventListener("click", () => {
+        if (modal) modal.hidden = true;
+        const saved = loadRaceState();
+        if (saved && saved.startSeq && typeof _restoreStartSeqState === "function") {
+            _restoreStartSeqState({ ...saved.startSeq, savedAt: saved.savedAt });
+        }
+        showToast("Race state restored \u2713");
+    });
+
+    if (btnNo) btnNo.addEventListener("click", () => {
+        if (modal) modal.hidden = true;
+        clearRaceState();
+        state.rounded = 0;
+        state.startLine = { pinSet: false, cbSet: false, pin: null, cb: null };
+        state.gpsPos    = null;
+        renderAll();
+        if (typeof renderStartLinePanel === "function") renderStartLinePanel();
+        showToast("Previous race discarded.");
+    });
+}());
+
 (function () {
     const viewportMeta = document.querySelector('meta[name="viewport"]');
     if (!viewportMeta) return;

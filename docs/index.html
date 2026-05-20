@@ -70,6 +70,20 @@
         </div>
     </div>
 
+    <!-- Race state restore prompt — shown when a saved race session is found -->
+    <div id="restoreRaceModal" class="modal" hidden role="alertdialog" aria-modal="true"
+        aria-labelledby="restoreRaceTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="restoreRaceTitle">&#9935; Race In Progress</h2>
+            <p>A race session saved <strong><span id="restoreRaceAge">some time</span></strong> ago was found.</p>
+            <p style="margin-top:10px;">Would you like to restore it, or start fresh?</p>
+            <div class="modal-row" style="margin-top:18px;">
+                <button id="restoreRaceYes" class="primary" type="button">Restore Race</button>
+                <button id="restoreRaceNo" class="ghost" type="button">Start Fresh</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Short welcome popup — shown once on first visit -->
     <div id="welcomeModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <div class="modal-card welcome-card">
