@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.0.0";
+const APP_VERSION = "v44.0.1";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -411,6 +411,14 @@ function showLanding() {
 }
 
 function selectRegatta(id) {
+    // Hide landing immediately — gives instant click feedback and ensures
+    // view-course is visible before renderAll() / resizeChart() run.
+    const landingEl = document.getElementById("view-landing");
+    if (landingEl) landingEl.setAttribute("hidden", "");
+    const btnCR = document.getElementById("btnChangeRegatta");
+    if (btnCR) btnCR.removeAttribute("hidden");
+    showTab("course");
+
     try { localStorage.setItem(REGATTA_LS_KEY, id); } catch (_) { }
     state.regatta = id;
     const d = (id === "club-regattas" && window.REGATTA_DATA) ? window.REGATTA_DATA : window.DBSC_DATA;
@@ -420,12 +428,6 @@ function selectRegatta(id) {
     populateCourses();
     syncTwdInput();
     renderAll();
-    // Hide landing and reveal normal app
-    const landingEl = document.getElementById("view-landing");
-    if (landingEl) landingEl.setAttribute("hidden", "");
-    const btnCR = document.getElementById("btnChangeRegatta");
-    if (btnCR) btnCR.removeAttribute("hidden");
-    showTab("course");
     // Trigger first-visit welcome modal now that a regatta is chosen
     if (typeof _triggerWelcomeIfNeeded === "function") _triggerWelcomeIfNeeded();
     // Resume any in-progress race session
