@@ -2543,7 +2543,7 @@ footer .app-version {
 #view-landing {
     position: fixed;
     inset: 0;
-    z-index: 200;
+    z-index: 2000;
     background: var(--bg);
     display: flex;
     align-items: center;
@@ -2664,10 +2664,12 @@ footer .app-version {
     transition: opacity 0.15s, transform 0.12s, box-shadow 0.12s;
     font-family: inherit;
 }
+
 .landing-continue:disabled {
     opacity: 0.35;
     cursor: not-allowed;
 }
+
 .landing-continue:not(:disabled):hover,
 .landing-continue:not(:disabled):focus-visible {
     transform: translateY(-2px);

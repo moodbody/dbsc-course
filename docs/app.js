@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.1.0";
+const APP_VERSION = "v44.1.1";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -3677,24 +3677,29 @@ completeDeferredRaceRestore();
     });
 }());
 
-// ---------- Regatta landing — wire click handlers ----------
-// Card click = select only; Continue button = enter app
-document.querySelectorAll(".regatta-card").forEach(card => {
-    card.addEventListener("click", () => {
-        _pendingRegatta = card.dataset.regatta;
-        document.querySelectorAll(".regatta-card").forEach(c => {
-            c.classList.toggle("selected", c === card);
-        });
-        const continueBtn = document.getElementById("btnLandingContinue");
-        if (continueBtn) continueBtn.removeAttribute("disabled");
+// ---------- Regatta landing — event delegation on the overlay ----------
+// Single listener on the container is more reliable than per-button listeners.
+(function wireLandingHandlers() {
+    const overlay = document.getElementById("view-landing");
+    if (!overlay) return;
+    overlay.addEventListener("click", (e) => {
+        // Card selection
+        const card = e.target.closest(".regatta-card");
+        if (card) {
+            _pendingRegatta = card.dataset.regatta;
+            overlay.querySelectorAll(".regatta-card").forEach(c => {
+                c.classList.toggle("selected", c === card);
+            });
+            const continueBtn = document.getElementById("btnLandingContinue");
+            if (continueBtn) continueBtn.removeAttribute("disabled");
+            return;
+        }
+        // Continue button
+        if (e.target.closest("#btnLandingContinue") && _pendingRegatta) {
+            selectRegatta(_pendingRegatta);
+        }
     });
-});
-const btnLandingContinue = document.getElementById("btnLandingContinue");
-if (btnLandingContinue) {
-    btnLandingContinue.addEventListener("click", () => {
-        if (_pendingRegatta) selectRegatta(_pendingRegatta);
-    });
-}
+}());
 const btnChangeRegatta = document.getElementById("btnChangeRegatta");
 if (btnChangeRegatta) {
     btnChangeRegatta.addEventListener("click", showLanding);
