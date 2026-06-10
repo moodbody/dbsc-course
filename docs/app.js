@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.2.0";
+const APP_VERSION = "v44.3.0";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -201,6 +201,10 @@ const state = {
     // True when the most-recently-rounded mark was GPS-auto-confirmed.
     // Triggers an undo confirmation dialog to prevent accidental leg regression.
     lastWasAutoRound: false,
+    // Chart zoom level (1 = auto-fit, 2 = 2× zoom in, 0.5 = zoom out)
+    chartZoom: 1,
+    // Map orientation: 'north' = North up (default), 'cog' = Course-over-ground up
+    mapUp: localStorage.getItem("dbsc.mapUp") || "north",
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
@@ -1382,6 +1386,16 @@ function drawMapTo(canvas) {
     minLat -= dLat * padFrac; maxLat += dLat * padFrac;
     minLon -= dLon * padFrac; maxLon += dLon * padFrac;
 
+    // User zoom: shrink (>1) or expand (<1) bounds around the midpoint
+    if (state.chartZoom !== 1) {
+        const zLatMid = (minLat + maxLat) / 2;
+        const zLonMid = (minLon + maxLon) / 2;
+        const halfLat = (maxLat - minLat) / 2 / state.chartZoom;
+        const halfLon = (maxLon - minLon) / 2 / state.chartZoom;
+        minLat = zLatMid - halfLat; maxLat = zLatMid + halfLat;
+        minLon = zLonMid - halfLon; maxLon = zLonMid + halfLon;
+    }
+
     // Equirectangular: scale longitude by cos(mid lat) for aspect.
     const midLat = (minLat + maxLat) / 2;
     const cosLat = Math.cos((midLat * Math.PI) / 180);
@@ -1411,6 +1425,18 @@ function drawMapTo(canvas) {
     // ---- sea fill (entire visible area) ----
     ctx.fillStyle = cssVar("--chart-sea", "#1d4a73");
     ctx.fillRect(0, 0, W, H);
+
+    // COG-up mode: rotate the entire geographic canvas around its centre so the
+    // direction-of-travel points screen-up. All map content goes inside this
+    // transform; UI overlays (COG text, N indicator) are drawn after restore().
+    const cogDeg = state.gpsPos && state.gpsPos.heading != null ? state.gpsPos.heading : null;
+    const cogMode = state.mapUp === "cog" && cogDeg != null;
+    if (cogMode) {
+        ctx.save();
+        ctx.translate(W / 2, H / 2);
+        ctx.rotate(-cogDeg * Math.PI / 180);
+        ctx.translate(-W / 2, -H / 2);
+    }
 
     // ---- land polygons (Dublin Bay coast + Dalkey Island) ----
     function fillLand(coords) {
@@ -1442,8 +1468,9 @@ function drawMapTo(canvas) {
         ctx.beginPath(); ctx.moveTo(x, margin); ctx.lineTo(x, H - margin); ctx.stroke();
     }
 
-    // North arrow (the chart is always drawn north-up)
-    {
+    // North arrow — only in North-up mode. In COG-up mode a rotated N indicator
+    // is drawn after restore() so it always appears in the correct screen corner.
+    if (!cogMode) {
         const ax = W - margin - Math.round(W * 0.025);
         const ay = margin + Math.round(W * 0.04);
         const len = Math.round(W * 0.035);
@@ -1743,11 +1770,30 @@ function drawMapTo(canvas) {
             ctx.fill();
         }
 
-        // ring
-        ctx.beginPath();
-        ctx.arc(gx, gy, Math.max(6, W * 0.013), 0, Math.PI * 2);
-        ctx.fillStyle = "#3aa0ff"; ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = "#fff"; ctx.stroke();
+        // Boat icon — pointed hull silhouette oriented in the COG direction
+        {
+            const bSize = Math.max(8, W * 0.018);
+            // In COG-up mode the canvas is already rotated so COG = up; no
+            // additional rotation needed for the boat shape.
+            // In North-up mode, rotate the shape so the bow points in cogDeg.
+            const bRot = cogMode ? 0 : (cogDeg != null ? (cogDeg - 90) * Math.PI / 180 : 0);
+            ctx.save();
+            ctx.translate(gx, gy);
+            ctx.rotate(bRot);
+            ctx.beginPath();
+            ctx.moveTo(0, -bSize * 1.7);           // bow
+            ctx.lineTo(bSize * 0.65, bSize * 0.4);  // starboard beam
+            ctx.lineTo(bSize * 0.3, bSize * 1.1);   // stern-stbd
+            ctx.lineTo(-bSize * 0.3, bSize * 1.1);  // stern-port
+            ctx.lineTo(-bSize * 0.65, bSize * 0.4); // port beam
+            ctx.closePath();
+            ctx.fillStyle = "#3aa0ff";
+            ctx.fill();
+            ctx.lineWidth = Math.max(1.5, W * 0.003);
+            ctx.strokeStyle = "#fff";
+            ctx.stroke();
+            ctx.restore();
+        }
 
         // line to next mark
         const nextIdx = state.rounded;
@@ -1756,6 +1802,72 @@ function drawMapTo(canvas) {
             ctx.lineWidth = 2; ctx.strokeStyle = "#3aa0ff";
             ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(pts[nextIdx].x, pts[nextIdx].y); ctx.stroke();
             ctx.setLineDash([]);
+        }
+    }
+
+    // === Screen-space overlays (drawn in unrotated canvas coords) ===
+
+    // Restore COG-up rotation, then draw the N direction indicator
+    if (cogMode) {
+        ctx.restore();
+        const r = Math.round(W * 0.035);
+        const head = Math.round(W * 0.012);
+        const ix = W - margin - Math.round(W * 0.025);
+        const iy = margin + Math.round(W * 0.04);
+        // After rotating the canvas by -cogDeg, North appears at screen angle
+        // (-cogDeg - 90)° from east (canvas convention: 0 = east, CW positive).
+        const northAng = (-cogDeg - 90) * Math.PI / 180;
+        const nx = Math.cos(northAng), ny = Math.sin(northAng);
+        const aColor = cssVar("--chart-arrow", "#8aa5bf");
+        const perpX = -ny, perpY = nx;
+        ctx.strokeStyle = aColor; ctx.fillStyle = aColor;
+        ctx.lineWidth = Math.max(2, W * 0.003);
+        // shaft from tail to head
+        ctx.beginPath();
+        ctx.moveTo(ix - nx * r * 0.4, iy - ny * r * 0.4);
+        ctx.lineTo(ix + nx * r * 0.6, iy + ny * r * 0.6);
+        ctx.stroke();
+        // arrowhead at head end
+        const tipX = ix + nx * r * 0.6, tipY = iy + ny * r * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(tipX + nx * head, tipY + ny * head);
+        ctx.lineTo(tipX - nx * head * 0.5 + perpX * head * 0.6,
+                   tipY - ny * head * 0.5 + perpY * head * 0.6);
+        ctx.lineTo(tipX - nx * head * 0.5 - perpX * head * 0.6,
+                   tipY - ny * head * 0.5 - perpY * head * 0.6);
+        ctx.closePath(); ctx.fill();
+        // "N" label near the tail
+        ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("N", ix - nx * r * 0.5, iy - ny * r * 0.5);
+    }
+
+    // COG overlay: large amber bearing + speed at the bottom of the chart
+    if (cogDeg != null) {
+        const spd = state.gpsPos && state.gpsPos.speed != null
+            ? state.gpsPos.speed * 1.94384 : null; // m/s → knots
+        const cogStr = `COG ${String(Math.round(cogDeg)).padStart(3, "0")}°`;
+        const spdStr = spd != null && spd >= 0.3 ? `${spd.toFixed(1)} kn` : null;
+        const bx = W / 2;
+        const cogFontSz = Math.round(W * 0.044);
+        const cogY = H - margin * 0.3;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.font = `bold ${cogFontSz}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+        // Dark halo for outdoor legibility against any background
+        ctx.save();
+        ctx.strokeStyle = "rgba(0,0,0,0.55)";
+        ctx.lineWidth = Math.max(4, W * 0.009);
+        ctx.lineJoin = "round";
+        ctx.strokeText(cogStr, bx, cogY);
+        ctx.restore();
+        ctx.fillStyle = cssVar("--accent", "#ffb000");
+        ctx.fillText(cogStr, bx, cogY);
+        if (spdStr) {
+            ctx.font = `600 ${Math.round(W * 0.03)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+            ctx.textBaseline = "top";
+            ctx.fillStyle = cssVar("--text", "#f5f7fa");
+            ctx.fillText(spdStr, bx, cogY + Math.round(W * 0.004));
         }
     }
 }
@@ -3220,6 +3332,45 @@ window.addEventListener("resize", () => {
     wire("btnOvMarks", "allMarks");
     // wire("btnOvTidesBig", "tides");
     wire("btnOvMarksBig", "allMarks");
+})();
+
+// ============================================================
+// Chart zoom buttons and map orientation toggle
+// ============================================================
+(function setupChartControls() {
+    // Zoom in
+    const btnZoomIn = document.getElementById("btnZoomIn");
+    if (btnZoomIn) {
+        btnZoomIn.addEventListener("click", () => {
+            state.chartZoom = Math.min(8, state.chartZoom * 2);
+            renderChart();
+        });
+    }
+    // Zoom out
+    const btnZoomOut = document.getElementById("btnZoomOut");
+    if (btnZoomOut) {
+        btnZoomOut.addEventListener("click", () => {
+            state.chartZoom = Math.max(0.25, state.chartZoom / 2);
+            renderChart();
+        });
+    }
+    // Map orientation toggle: N↑ (north-up) ↔ ↑COG (course-up)
+    const btnMapUp = document.getElementById("btnMapUp");
+    function applyMapUp() {
+        if (!btnMapUp) return;
+        const isCog = state.mapUp === "cog";
+        btnMapUp.textContent = isCog ? "↑COG" : "N↑";
+        btnMapUp.setAttribute("aria-pressed", isCog ? "true" : "false");
+    }
+    if (btnMapUp) {
+        btnMapUp.addEventListener("click", () => {
+            state.mapUp = state.mapUp === "cog" ? "north" : "cog";
+            try { localStorage.setItem("dbsc.mapUp", state.mapUp); } catch (_) { }
+            applyMapUp();
+            renderChart();
+        });
+        applyMapUp();
+    }
 })();
 
 // ============================================================

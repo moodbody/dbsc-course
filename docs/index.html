@@ -497,8 +497,14 @@
                                         title="Toggle tide arrows" hidden>🌊</button>
                                     <button class="chart-layer-btn" id="btnOvMarks" type="button" aria-pressed="false"
                                         title="Show all DBSC marks">⚓</button>
+                                    <button class="chart-layer-btn" id="btnMapUp" type="button" aria-pressed="false"
+                                        title="Toggle map orientation: North up / Course-over-ground up">N↑</button>
                                 </div>
                                 <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
+                                <div class="chart-zoom-bar">
+                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                                </div>
                                 <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                                     title="Expand">⛶</button>
                             </section>
