@@ -261,6 +261,29 @@
         </div>
     </div>
 
+    <!-- Regatta landing page — full-screen overlay shown on every open -->
+    <div id="view-landing" role="main" aria-label="Choose regatta">
+        <div class="landing-inner">
+            <div class="landing-logo">
+                <div class="landing-title">DBSC Navigator</div>
+                <div class="landing-subtitle">Dublin Bay Sailing Club</div>
+            </div>
+            <p class="landing-prompt">Select your event</p>
+            <div class="landing-cards">
+                <button class="regatta-card" data-regatta="dublin-bay" type="button">
+                    <span class="regatta-card-icon">⛵</span>
+                    <span class="regatta-card-name">Dublin Bay</span>
+                    <span class="regatta-card-desc">DBSC weekly racing</span>
+                </button>
+                <button class="regatta-card" data-regatta="club-regattas" type="button">
+                    <span class="regatta-card-icon">🏆</span>
+                    <span class="regatta-card-name">Club Regattas</span>
+                    <span class="regatta-card-desc">DL Combined Clubs 2026</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="title-row">
             <h1>DBSC Navigator</h1>
@@ -271,6 +294,8 @@
                     title="Toggle theme">🌙</button>
                 <button id="btnSettings" class="theme-toggle" type="button" aria-label="Customise layout"
                     title="Customise layout">⚙</button>
+                <button id="btnChangeRegatta" class="theme-toggle" type="button" aria-label="Change regatta"
+                    title="Change regatta" hidden>⛵</button>
                 <button id="btnInstall" class="install" hidden>Install</button>
             </div>
         </div>
@@ -306,7 +331,7 @@
         </div>
     </div>
 
-    <div id="view-course" class="view">
+    <div id="view-course" class="view" hidden>
         <div class="course-columns">
 
             <div class="course-left">
@@ -717,6 +742,7 @@
                 title="Tap to check for updates"><span id="appVersion"></span></button></small>
     </footer>
 
+    <script src="regatta-data.js"></script>
     <script src="data.js"></script>
     <script src="app.js"></script>
 </body>

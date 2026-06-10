@@ -21,6 +21,7 @@ function applyData(d) {
     return true;
 }
 applyData(window.DBSC_DATA);
+const REGATTA_LS_KEY = "dbsc.regatta";
 
 // ---------- Coastline (approx) ----------
 // Hand-traced shoreline of Dublin Bay — Howth Head south to Bray Head —
@@ -141,8 +142,8 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v43.0.0";
-const APP_BUILD_DATE = "2026-05-19";
+const APP_VERSION = "v44.0.0";
+const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
 
@@ -180,6 +181,7 @@ const state = {
     windKey: localStorage.getItem("dbsc.wind") || "A",
     courseN: +(localStorage.getItem("dbsc.course") || 1),
     rounded: 0,             // index of next mark to round (0-based into legs[])
+    regatta: null,          // 'dublin-bay' | 'club-regattas' — set by selectRegatta()
     gpsOn: false,
     gpsWatch: null,
     gpsPos: null,          // {lat, lon, accuracy, heading?, speed?}
@@ -298,26 +300,27 @@ function saveRaceState() {
     const obj = {
         v: RACE_STATE_VERSION,
         savedAt: Date.now(),
-        cardId:  state.cardId,
+        regatta: state.regatta,
+        cardId: state.cardId,
         windKey: state.windKey,
         courseN: state.courseN,
         rounded: state.rounded,
         twdOverride: state.twdOverride,
         startLine: state.startLine,
         startSeq: seq ? {
-            phase:      seq.phase,
-            remaining:  seq.remaining,
-            elapsed:    seq.elapsed,
+            phase: seq.phase,
+            remaining: seq.remaining,
+            elapsed: seq.elapsed,
             raceStartMs: seq.raceStartMs,
         } : null,
         gpsLastKnown: state.gpsPos ? {
-            lat:      state.gpsPos.lat,
-            lon:      state.gpsPos.lon,
+            lat: state.gpsPos.lat,
+            lon: state.gpsPos.lon,
             accuracy: state.gpsPos.accuracy,
-            ts:       Date.now(),
+            ts: Date.now(),
         } : null,
     };
-    try { localStorage.setItem(RACE_STATE_KEY, JSON.stringify(obj)); } catch (_) {}
+    try { localStorage.setItem(RACE_STATE_KEY, JSON.stringify(obj)); } catch (_) { }
 }
 
 /** Read saved race state from localStorage. Returns null on any problem. */
@@ -337,7 +340,7 @@ function loadRaceState() {
 
 /** Wipe the saved race state key. */
 function clearRaceState() {
-    try { localStorage.removeItem(RACE_STATE_KEY); } catch (_) {}
+    try { localStorage.removeItem(RACE_STATE_KEY); } catch (_) { }
 }
 
 /** Basic sanity checks before attempting a restore. */
@@ -357,6 +360,16 @@ function _applyShallowRaceRestore() {
     const saved = loadRaceState();
     if (!saved || !isSavedRaceStateValid(saved)) return;
 
+    // Restore regatta selection silently so populateCards() uses the right dataset
+    if (saved.regatta) {
+        state.regatta = saved.regatta;
+        try { localStorage.setItem(REGATTA_LS_KEY, saved.regatta); } catch (_) { }
+        const d = (saved.regatta === "club-regattas" && window.REGATTA_DATA)
+            ? window.REGATTA_DATA
+            : window.DBSC_DATA;
+        applyData(d);
+    }
+
     // rounded marks
     if (typeof saved.rounded === "number") state.rounded = saved.rounded;
 
@@ -368,23 +381,57 @@ function _applyShallowRaceRestore() {
     // TWD override (normally session-scoped; promote to persisted on restore)
     if (saved.twdOverride != null) {
         state.twdOverride = saved.twdOverride;
-        try { sessionStorage.setItem("dbsc.twd", String(saved.twdOverride)); } catch (_) {}
+        try { sessionStorage.setItem("dbsc.twd", String(saved.twdOverride)); } catch (_) { }
     }
 
     // Last known GPS position (shown as a stale dot until a real fix arrives)
     if (saved.gpsLastKnown && typeof saved.gpsLastKnown.lat === "number") {
         state.gpsPos = {
-            lat:      saved.gpsLastKnown.lat,
-            lon:      saved.gpsLastKnown.lon,
+            lat: saved.gpsLastKnown.lat,
+            lon: saved.gpsLastKnown.lon,
             accuracy: saved.gpsLastKnown.accuracy,
-            heading:  null,
-            speed:    null,
+            heading: null,
+            speed: null,
         };
     }
 
     _pendingRaceRestore = saved;
 }
 
+// ---------- Regatta selection ----------
+function showLanding() {
+    const landingEl = document.getElementById("view-landing");
+    if (!landingEl) return;
+    landingEl.removeAttribute("hidden");
+    // Pre-highlight the last-used regatta card
+    const last = (() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })();
+    document.querySelectorAll(".regatta-card").forEach(card => {
+        card.classList.toggle("selected", card.dataset.regatta === last);
+    });
+}
+
+function selectRegatta(id) {
+    try { localStorage.setItem(REGATTA_LS_KEY, id); } catch (_) { }
+    state.regatta = id;
+    const d = (id === "club-regattas" && window.REGATTA_DATA) ? window.REGATTA_DATA : window.DBSC_DATA;
+    applyData(d);
+    populateCards();
+    populateWinds();
+    populateCourses();
+    syncTwdInput();
+    renderAll();
+    // Hide landing and reveal normal app
+    const landingEl = document.getElementById("view-landing");
+    if (landingEl) landingEl.setAttribute("hidden", "");
+    const btnCR = document.getElementById("btnChangeRegatta");
+    if (btnCR) btnCR.removeAttribute("hidden");
+    showTab("course");
+    // Trigger first-visit welcome modal now that a regatta is chosen
+    if (typeof _triggerWelcomeIfNeeded === "function") _triggerWelcomeIfNeeded();
+    // Resume any in-progress race session
+    completeDeferredRaceRestore();
+    saveRaceState();
+}
 
 
 function populateCards() {
@@ -1076,6 +1123,7 @@ populateWinds();
 populateCourses();
 syncTwdInput();
 renderAll();
+showLanding();
 
 // Check GPS permission on load: prompt if not yet granted, warn if blocked.
 (function checkGpsPermissionOnLoad() {
@@ -1101,6 +1149,7 @@ renderAll();
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
             if (!d) return;
+            if (state.regatta === "club-regattas") return; // don't overwrite club regatta data with Dublin Bay fetch
             const oldKey = JSON.stringify(window.DBSC_DATA?.marks?.A || {});
             const newKey = JSON.stringify(d.marks?.A || {});
             applyData(d);
@@ -2145,7 +2194,13 @@ renderInstallBanner();
 
     let seen = false;
     try { seen = localStorage.getItem(SEEN_KEY) === "1"; } catch (_) { }
-    if (!seen) openWelcome();
+    // Expose hook so selectRegatta() can trigger the welcome after landing page selection
+    _triggerWelcomeIfNeeded = () => { if (!seen) { seen = true; openWelcome(); } };
+    // Only auto-open if the landing page is not currently showing
+    if (!seen) {
+        const landingEl = document.getElementById("view-landing");
+        if (!landingEl || landingEl.hidden) openWelcome();
+    }
 })();
 
 // ============================================================
@@ -2362,6 +2417,7 @@ function setAccordion(id, open) {
 // _getStartSeqState before the IIFE runs (returns null safely).
 let _getStartSeqState = null;
 let _restoreStartSeqState = null;
+let _triggerWelcomeIfNeeded = null;
 
 (function initStartSequence() {
     // --- DOM refs ---
@@ -2586,11 +2642,11 @@ let _restoreStartSeqState = null;
     // Expose state and restore hook to module scope
     _getStartSeqState = () => ({ phase, remaining, elapsed, raceStartMs });
 
-    _restoreStartSeqState = function(saved) {
+    _restoreStartSeqState = function (saved) {
         stopTicker();
-        phase       = saved.phase       || "idle";
-        remaining   = saved.remaining  !== undefined ? saved.remaining  : DEFAULT_SECS;
-        elapsed     = saved.elapsed    !== undefined ? saved.elapsed    : 0;
+        phase = saved.phase || "idle";
+        remaining = saved.remaining !== undefined ? saved.remaining : DEFAULT_SECS;
+        elapsed = saved.elapsed !== undefined ? saved.elapsed : 0;
         raceStartMs = saved.raceStartMs || null;
 
         // Advance time-sensitive values for the gap while the app was closed
@@ -2612,10 +2668,10 @@ let _restoreStartSeqState = null;
         updateSignals();
 
         const inProgress = phase !== "idle";
-        if (adjustEl)  { if (!inProgress) adjustEl.removeAttribute("hidden");  else adjustEl.hidden = true; }
-        if (btnGo)     { if (!inProgress) btnGo.removeAttribute("hidden");    else btnGo.setAttribute("hidden", ""); }
-        if (btnFinish) { if (phase === "racing")  btnFinish.removeAttribute("hidden"); else btnFinish.setAttribute("hidden", ""); }
-        if (btnReset)  { if (inProgress)  btnReset.removeAttribute("hidden");  else btnReset.setAttribute("hidden", ""); }
+        if (adjustEl) { if (!inProgress) adjustEl.removeAttribute("hidden"); else adjustEl.hidden = true; }
+        if (btnGo) { if (!inProgress) btnGo.removeAttribute("hidden"); else btnGo.setAttribute("hidden", ""); }
+        if (btnFinish) { if (phase === "racing") btnFinish.removeAttribute("hidden"); else btnFinish.setAttribute("hidden", ""); }
+        if (btnReset) { if (inProgress) btnReset.removeAttribute("hidden"); else btnReset.setAttribute("hidden", ""); }
         if (phase === "countdown" || phase === "racing") startTicker();
     };
 }());
@@ -3540,8 +3596,11 @@ window.addEventListener("resize", measureHeader, { passive: true });
 // Deferred race state restore — runs after all IIFEs have set
 // _restoreStartSeqState, so the start sequence can be resumed.
 // ============================================================
-(function completeDeferredRaceRestore() {
+function completeDeferredRaceRestore() {
     if (!_pendingRaceRestore) return;
+    // If the landing page is still visible, wait — selectRegatta() will call this
+    const landingEl = document.getElementById("view-landing");
+    if (landingEl && !landingEl.hidden) return;
     const saved = _pendingRaceRestore;
     _pendingRaceRestore = null;
 
@@ -3549,7 +3608,7 @@ window.addEventListener("resize", measureHeader, { passive: true });
 
     if (ageMs > RACE_STATE_MAX_AGE_MS) {
         // Too old — ask the user before restoring
-        const ageH   = Math.floor(ageMs / 3600000);
+        const ageH = Math.floor(ageMs / 3600000);
         const ageMin = Math.floor((ageMs % 3600000) / 60000);
         const ageLabel = ageH > 0
             ? `${ageH}h ${ageMin}m ago`
@@ -3565,13 +3624,14 @@ window.addEventListener("resize", measureHeader, { passive: true });
         }
         showToast("Race state restored \u2713");
     }
-}());
+}
+completeDeferredRaceRestore();
 
 // --- Restore / discard modal handlers ---
 (function wireRestoreModal() {
     const modal = document.getElementById("restoreRaceModal");
     const btnYes = document.getElementById("restoreRaceYes");
-    const btnNo  = document.getElementById("restoreRaceNo");
+    const btnNo = document.getElementById("restoreRaceNo");
 
     if (btnYes) btnYes.addEventListener("click", () => {
         if (modal) modal.hidden = true;
@@ -3587,7 +3647,7 @@ window.addEventListener("resize", measureHeader, { passive: true });
         clearRaceState();
         state.rounded = 0;
         state.startLine = { pinSet: false, cbSet: false, pin: null, cb: null };
-        state.gpsPos    = null;
+        state.gpsPos = null;
         renderAll();
         if (typeof renderStartLinePanel === "function") renderStartLinePanel();
         showToast("Previous race discarded.");
@@ -3606,4 +3666,13 @@ window.addEventListener("resize", measureHeader, { passive: true });
         }, 100);
     });
 }());
+
+// ---------- Regatta landing — wire click handlers ----------
+document.querySelectorAll(".regatta-card").forEach(card => {
+    card.addEventListener("click", () => selectRegatta(card.dataset.regatta));
+});
+const btnChangeRegatta = document.getElementById("btnChangeRegatta");
+if (btnChangeRegatta) {
+    btnChangeRegatta.addEventListener("click", showLanding);
+}
 

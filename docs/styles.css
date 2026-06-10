@@ -2536,3 +2536,134 @@ footer .app-version {
 .start-signal-row.gun .sig-name {
     color: var(--good);
 }
+
+/* ============================================================
+   Regatta landing page
+   ============================================================ */
+#view-landing {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+#view-landing[hidden] {
+    display: none;
+}
+
+.landing-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    max-width: 560px;
+    width: 100%;
+}
+
+.landing-logo {
+    text-align: center;
+}
+
+.landing-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+.landing-subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.landing-prompt {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0;
+}
+
+.landing-cards {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.regatta-card {
+    flex: 1 1 160px;
+    max-width: 240px;
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 28px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+    color: var(--text);
+    font-family: inherit;
+}
+
+.regatta-card:hover,
+.regatta-card:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.regatta-card.selected {
+    border-color: var(--accent);
+    background: var(--card2);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.regatta-card-icon {
+    font-size: 2.6rem;
+    line-height: 1;
+}
+
+.regatta-card-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.regatta-card-desc {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* Change-regatta button in the header */
+#btnChangeRegatta {
+    font-size: 1.1rem;
+}
+
+/* Landscape: cards side by side already; limit height so they don't fill screen */
+@media (orientation: landscape) and (max-height: 500px) {
+    .landing-inner {
+        gap: 16px;
+    }
+
+    .regatta-card {
+        padding: 16px 20px;
+    }
+
+    .regatta-card-icon {
+        font-size: 1.8rem;
+    }
+
+    .landing-title {
+        font-size: 1.5rem;
+    }
+}

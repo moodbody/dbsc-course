@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = "dbsc-v53";
+﻿const CACHE_VERSION = "dbsc-v55";
 
 const CORE = [
     "./",
@@ -6,6 +6,7 @@ const CORE = [
     "./styles.css",
     "./app.js",
     "./data.js",
+    "./regatta-data.js",
     "./manifest.webmanifest",
     "./tides.json",
     "./icons/icon-192.png",
