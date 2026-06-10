@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.1.2";
+const APP_VERSION = "v44.1.3";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -405,17 +405,15 @@ function showLanding() {
     const landingEl = document.getElementById("view-landing");
     if (!landingEl) return;
     landingEl.removeAttribute("hidden");
-    // Pre-highlight the last-used regatta card
-    const last = (() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })();
+    // Pre-highlight the last-used regatta, defaulting to dublin-bay so
+    // first-time visitors can continue immediately without making a choice.
+    const last = (() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })() ?? "dublin-bay";
     _pendingRegatta = last;
     document.querySelectorAll(".regatta-card").forEach(card => {
         card.classList.toggle("selected", card.dataset.regatta === last);
     });
     const continueBtn = document.getElementById("btnLandingContinue");
-    if (continueBtn) {
-        if (last) continueBtn.removeAttribute("disabled");
-        else continueBtn.setAttribute("disabled", "");
-    }
+    if (continueBtn) continueBtn.removeAttribute("disabled");
 }
 
 function selectRegatta(id) {
