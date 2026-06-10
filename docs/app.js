@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.0.1";
+const APP_VERSION = "v44.1.0";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -399,15 +399,23 @@ function _applyShallowRaceRestore() {
 }
 
 // ---------- Regatta selection ----------
+let _pendingRegatta = null; // which regatta card is currently selected on the landing page
+
 function showLanding() {
     const landingEl = document.getElementById("view-landing");
     if (!landingEl) return;
     landingEl.removeAttribute("hidden");
     // Pre-highlight the last-used regatta card
     const last = (() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })();
+    _pendingRegatta = last;
     document.querySelectorAll(".regatta-card").forEach(card => {
         card.classList.toggle("selected", card.dataset.regatta === last);
     });
+    const continueBtn = document.getElementById("btnLandingContinue");
+    if (continueBtn) {
+        if (last) continueBtn.removeAttribute("disabled");
+        else continueBtn.setAttribute("disabled", "");
+    }
 }
 
 function selectRegatta(id) {
@@ -3670,9 +3678,23 @@ completeDeferredRaceRestore();
 }());
 
 // ---------- Regatta landing — wire click handlers ----------
+// Card click = select only; Continue button = enter app
 document.querySelectorAll(".regatta-card").forEach(card => {
-    card.addEventListener("click", () => selectRegatta(card.dataset.regatta));
+    card.addEventListener("click", () => {
+        _pendingRegatta = card.dataset.regatta;
+        document.querySelectorAll(".regatta-card").forEach(c => {
+            c.classList.toggle("selected", c === card);
+        });
+        const continueBtn = document.getElementById("btnLandingContinue");
+        if (continueBtn) continueBtn.removeAttribute("disabled");
+    });
 });
+const btnLandingContinue = document.getElementById("btnLandingContinue");
+if (btnLandingContinue) {
+    btnLandingContinue.addEventListener("click", () => {
+        if (_pendingRegatta) selectRegatta(_pendingRegatta);
+    });
+}
 const btnChangeRegatta = document.getElementById("btnChangeRegatta");
 if (btnChangeRegatta) {
     btnChangeRegatta.addEventListener("click", showLanding);

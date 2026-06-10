@@ -2649,6 +2649,32 @@ footer .app-version {
     font-size: 1.1rem;
 }
 
+/* Continue button on the landing page */
+.landing-continue {
+    background: var(--good);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px 48px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    transition: opacity 0.15s, transform 0.12s, box-shadow 0.12s;
+    font-family: inherit;
+}
+.landing-continue:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+.landing-continue:not(:disabled):hover,
+.landing-continue:not(:disabled):focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    outline: none;
+}
+
 /* Landscape: cards side by side already; limit height so they don't fill screen */
 @media (orientation: landscape) and (max-height: 500px) {
     .landing-inner {
