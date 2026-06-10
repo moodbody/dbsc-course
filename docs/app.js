@@ -2165,6 +2165,9 @@ window.addEventListener("appinstalled", () => {
 renderInstallBanner();
 
 // ---------- welcome / how-to-use modal ----------
+// Declared here (before the IIFE) to avoid TDZ — selectRegatta() calls this
+// hook after the landing page closes.
+let _triggerWelcomeIfNeeded = null;
 (function setupWelcome() {
     const welcomeModal = document.getElementById("welcomeModal");
     const helpModal = document.getElementById("helpModal");
@@ -2427,7 +2430,6 @@ function setAccordion(id, open) {
 // _getStartSeqState before the IIFE runs (returns null safely).
 let _getStartSeqState = null;
 let _restoreStartSeqState = null;
-let _triggerWelcomeIfNeeded = null;
 
 (function initStartSequence() {
     // --- DOM refs ---
