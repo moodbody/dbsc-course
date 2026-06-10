@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.3.0";
+const APP_VERSION = "v44.3.1";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -3154,8 +3154,8 @@ let _orientHandler = null;
 
 function stopCompass() {
     if (_orientHandler) {
-        window.removeEventListener("deviceorientationabsolute", _orientHandler);
-        window.removeEventListener("deviceorientation", _orientHandler);
+        window.removeEventListener("deviceorientationabsolute", _orientHandler, true);
+        window.removeEventListener("deviceorientation", _orientHandler, true);
         _orientHandler = null;
     }
     state.headingOn = false;
