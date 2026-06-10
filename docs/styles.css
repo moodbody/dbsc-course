@@ -2694,11 +2694,11 @@ footer .app-version {
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: var(--accent);
-    color: #000;
-    font-size: 0.78rem;
+    background: var(--text);
+    color: var(--bg);
+    font-size: 0.95rem;
     font-weight: 600;
-    padding: 6px 10px;
+    padding: 10px 16px;
     border-radius: 8px;
     white-space: nowrap;
     z-index: 300;
@@ -2712,7 +2712,7 @@ footer .app-version {
     top: -5px;
     right: 11px;
     border: 5px solid transparent;
-    border-bottom-color: var(--accent);
+    border-bottom-color: var(--text);
     border-top: none;
 }
 

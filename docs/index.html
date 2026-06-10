@@ -70,6 +70,19 @@
         </div>
     </div>
 
+    <!-- Undo GPS-confirmed mark confirmation -->
+    <div id="undoConfirmModal" class="modal" hidden role="alertdialog" aria-modal="true"
+        aria-labelledby="undoConfirmTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="undoConfirmTitle">↶ Undo GPS-confirmed mark?</h2>
+            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where you actually are.</p>
+            <div class="modal-row" style="margin-top:18px;">
+                <button id="undoConfirmYes" class="ghost" type="button">↶ Go back</button>
+                <button id="undoConfirmNo" class="primary" type="button">Stay on this leg</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Race state restore prompt — shown when a saved race session is found -->
     <div id="restoreRaceModal" class="modal" hidden role="alertdialog" aria-modal="true"
         aria-labelledby="restoreRaceTitle">

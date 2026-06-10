@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.1.5";
+const APP_VERSION = "v44.2.0";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -198,6 +198,9 @@ const state = {
     // the boat is no longer within range.
     autoRound: localStorage.getItem("dbsc.autoRound") !== "0",
     autoRoundHits: 0,
+    // True when the most-recently-rounded mark was GPS-auto-confirmed.
+    // Triggers an undo confirmation dialog to prevent accidental leg regression.
+    lastWasAutoRound: false,
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
@@ -305,6 +308,7 @@ function saveRaceState() {
         windKey: state.windKey,
         courseN: state.courseN,
         rounded: state.rounded,
+        lastWasAutoRound: state.lastWasAutoRound,
         twdOverride: state.twdOverride,
         startLine: state.startLine,
         startSeq: seq ? {
@@ -372,6 +376,7 @@ function _applyShallowRaceRestore() {
 
     // rounded marks
     if (typeof saved.rounded === "number") state.rounded = saved.rounded;
+    if (saved.lastWasAutoRound) state.lastWasAutoRound = true;
 
     // start line ends
     if (saved.startLine && (saved.startLine.pinSet || saved.startLine.cbSet)) {
@@ -780,6 +785,7 @@ cardSel.addEventListener("change", () => {
     const oldDefault = currentCourse().bearing;
     state.cardId = cardSel.value;
     state.rounded = 0;
+    state.lastWasAutoRound = false;
     populateWinds(); populateCourses(); saveSelection();
     // If override exactly matches the previous default, the user almost
     // certainly hasn't customised TWD — let the new card's default take over.
@@ -792,6 +798,7 @@ windSel.addEventListener("change", () => {
     const oldDefault = currentCourse().bearing;
     state.windKey = windSel.value;
     state.rounded = 0;
+    state.lastWasAutoRound = false;
     populateCourses(); saveSelection();
     if (state.twdOverride === oldDefault) clearTwdOverride();
     syncTwdInput();
@@ -801,6 +808,7 @@ windSel.addEventListener("change", () => {
 courseSel.addEventListener("change", () => {
     state.courseN = +courseSel.value;
     state.rounded = 0;
+    state.lastWasAutoRound = false;
     saveSelection(); renderAll();
     saveRaceState();
 });
@@ -809,18 +817,29 @@ btnNext.addEventListener("click", () => {
     const c = currentCourse();
     if (state.rounded < c.tokens.length) state.rounded += 1;
     state.autoRoundHits = 0;
+    state.lastWasAutoRound = false;
     renderAll();
     saveRaceState();
 });
-btnUndo.addEventListener("click", () => {
+function performUndo() {
     if (state.rounded > 0) state.rounded -= 1;
     state.autoRoundHits = 0;
+    state.lastWasAutoRound = false;
     renderAll();
     saveRaceState();
+}
+btnUndo.addEventListener("click", () => {
+    if (state.rounded === 0) return;
+    if (state.lastWasAutoRound) {
+        const modal = document.getElementById("undoConfirmModal");
+        if (modal) { modal.hidden = false; return; }
+    }
+    performUndo();
 });
 btnReset.addEventListener("click", () => {
     state.rounded = 0;
     state.autoRoundHits = 0;
+    state.lastWasAutoRound = false;
     renderAll();
     saveRaceState();
 });
@@ -1003,6 +1022,7 @@ function checkAutoRound() {
             state.autoRoundHits = 0;
             const finishing = state.rounded === tokens.length - 1;
             state.rounded += 1;
+            state.lastWasAutoRound = true;
             renderAll();
             showToast(finishing
                 ? `🏁 Finished at ${nextTok.mark}`
@@ -3716,4 +3736,14 @@ const btnChangeRegatta = document.getElementById("btnChangeRegatta");
 if (btnChangeRegatta) {
     btnChangeRegatta.addEventListener("click", showLanding);
 }
+
+// ---------- Undo GPS-confirm modal ----------
+(function wireUndoConfirm() {
+    const modal = document.getElementById("undoConfirmModal");
+    const btnYes = document.getElementById("undoConfirmYes");
+    const btnNo  = document.getElementById("undoConfirmNo");
+    if (!modal) return;
+    if (btnYes) btnYes.addEventListener("click", () => { modal.hidden = true; performUndo(); });
+    if (btnNo)  btnNo.addEventListener("click",  () => { modal.hidden = true; });
+}());
 
