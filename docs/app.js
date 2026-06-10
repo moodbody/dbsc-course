@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.1.4";
+const APP_VERSION = "v44.1.5";
 const APP_BUILD_DATE = "2026-06-10";
 
 const $ = (id) => document.getElementById(id);
@@ -417,6 +417,9 @@ function showLanding() {
 }
 
 function selectRegatta(id) {
+    // Detect a regatta switch before overwriting state — used to show the hint
+    const previousRegatta = state.regatta;
+
     // Hide landing immediately — gives instant click feedback and ensures
     // view-course is visible before renderAll() / resizeChart() run.
     const landingEl = document.getElementById("view-landing");
@@ -439,6 +442,15 @@ function selectRegatta(id) {
     // Resume any in-progress race session
     completeDeferredRaceRestore();
     saveRaceState();
+
+    // Show a brief tooltip pointing at the ⛵ button when the user switched regatta
+    if (previousRegatta && previousRegatta !== id) {
+        const hint = document.getElementById("regattaHint");
+        if (hint) {
+            hint.hidden = false;
+            setTimeout(() => { hint.hidden = true; }, 3500);
+        }
+    }
 }
 
 

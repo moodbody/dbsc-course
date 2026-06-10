@@ -296,8 +296,11 @@
                     title="Toggle theme">🌙</button>
                 <button id="btnSettings" class="theme-toggle" type="button" aria-label="Customise layout"
                     title="Customise layout">⚙</button>
-                <button id="btnChangeRegatta" class="theme-toggle" type="button" aria-label="Change regatta"
-                    title="Change regatta" hidden>⛵</button>
+                <div class="regatta-hint-anchor">
+                    <button id="btnChangeRegatta" class="theme-toggle" type="button" aria-label="Change regatta"
+                        title="Change regatta" hidden>⛵</button>
+                    <div id="regattaHint" class="regatta-hint" hidden role="status">Tap here to switch back</div>
+                </div>
                 <button id="btnInstall" class="install" hidden>Install</button>
             </div>
         </div>
