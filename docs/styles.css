@@ -2677,6 +2677,14 @@ footer .app-version {
     outline: none;
 }
 
+.landing-switch-hint {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    margin: 0;
+    opacity: 0.75;
+}
+
 /* Landscape: cards side by side already; limit height so they don't fill screen */
 @media (orientation: landscape) and (max-height: 500px) {
     .landing-inner {
