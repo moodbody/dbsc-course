@@ -4020,54 +4020,72 @@ if (btnChangeRegatta) {
         });
     }
 
-    // ---- Initialise Leaflet map ----
-    const lmap = L.map("markMap", {
-        center: [53.310, -6.120],
-        zoom: 13,
-        zoomControl: true,
-        attributionControl: true,
-    });
-
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(lmap);
-
-    const seaLayer = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
-        maxZoom: 18,
-        opacity: 0.85,
-        attribution: '© <a href="https://www.openseamap.org">OpenSeaMap</a>',
-    });
-    seaLayer.addTo(lmap);
-
+    // ---- Lazy Leaflet initialisation (deferred until tab is first opened) ----
+    let lmap = null;
+    let seaLayer = null;
     let seaMarksOn = true;
-    if (btnMarkMapSeamarks) {
-        btnMarkMapSeamarks.setAttribute("aria-pressed", "true");
-        btnMarkMapSeamarks.classList.add("active");
-        btnMarkMapSeamarks.addEventListener("click", () => {
-            seaMarksOn = !seaMarksOn;
-            if (seaMarksOn) { seaLayer.addTo(lmap); } else { lmap.removeLayer(seaLayer); }
-            btnMarkMapSeamarks.classList.toggle("active", seaMarksOn);
-            btnMarkMapSeamarks.setAttribute("aria-pressed", String(seaMarksOn));
-        });
-    }
-
-    // ---- Add DBSC mark markers ----
     const mmMarkers = {};
-    for (const [letter, mark] of Object.entries(MARKS)) {
-        const m = L.marker([mark.lat, mark.lon], {
-            icon: createBuoyIcon(letter, mark.colour, false),
-            title: `${letter} – ${mark.name}`,
-            keyboard: false,
-        }).addTo(lmap);
-        m.on("click", () => {
-            state.selectedMark = letter;
-            state.markMapSteerMode = false;
-            updateAllIcons();
-            updateMarkInfoPanel();
-            updateBearingLine();
+    let gpsMarker = null;
+    let gpsIcon = null;
+    let bearingLine = null;
+    let mmReady = false;
+
+    function ensureMapReady() {
+        if (mmReady) return;
+        mmReady = true;
+
+        lmap = L.map("markMap", {
+            center: [53.310, -6.120],
+            zoom: 13,
+            zoomControl: true,
+            attributionControl: true,
         });
-        mmMarkers[letter] = m;
+
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(lmap);
+
+        seaLayer = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
+            maxZoom: 18,
+            opacity: 0.85,
+            attribution: '© <a href="https://www.openseamap.org">OpenSeaMap</a>',
+        });
+        seaLayer.addTo(lmap);
+
+        if (btnMarkMapSeamarks) {
+            btnMarkMapSeamarks.setAttribute("aria-pressed", "true");
+            btnMarkMapSeamarks.classList.add("active");
+            btnMarkMapSeamarks.addEventListener("click", () => {
+                seaMarksOn = !seaMarksOn;
+                if (seaMarksOn) { seaLayer.addTo(lmap); } else { lmap.removeLayer(seaLayer); }
+                btnMarkMapSeamarks.classList.toggle("active", seaMarksOn);
+                btnMarkMapSeamarks.setAttribute("aria-pressed", String(seaMarksOn));
+            });
+        }
+
+        for (const [letter, mark] of Object.entries(MARKS)) {
+            const m = L.marker([mark.lat, mark.lon], {
+                icon: createBuoyIcon(letter, mark.colour, false),
+                title: `${letter} – ${mark.name}`,
+                keyboard: false,
+            }).addTo(lmap);
+            m.on("click", () => {
+                state.selectedMark = letter;
+                state.markMapSteerMode = false;
+                updateAllIcons();
+                updateMarkInfoPanel();
+                updateBearingLine();
+            });
+            mmMarkers[letter] = m;
+        }
+
+        gpsIcon = L.divIcon({
+            html: `<div class="mm-gps-dot"><div class="mm-gps-pulse"></div></div>`,
+            className: "mm-gps-icon",
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+        });
     }
 
     function updateAllIcons() {
@@ -4076,16 +4094,8 @@ if (btnChangeRegatta) {
         }
     }
 
-    // ---- GPS position marker ----
-    let gpsMarker = null;
-    const gpsIcon = L.divIcon({
-        html: `<div class="mm-gps-dot"><div class="mm-gps-pulse"></div></div>`,
-        className: "mm-gps-icon",
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
-    });
-
     function updateGpsMarker() {
+        if (!lmap) return;
         if (state.gpsPos) {
             if (gpsMarker) {
                 gpsMarker.setLatLng([state.gpsPos.lat, state.gpsPos.lon]);
@@ -4100,9 +4110,8 @@ if (btnChangeRegatta) {
         }
     }
 
-    // ---- Bearing line GPS → selected mark ----
-    let bearingLine = null;
     function updateBearingLine() {
+        if (!lmap) return;
         if (bearingLine) { bearingLine.remove(); bearingLine = null; }
         if (state.gpsPos && state.selectedMark && MARKS[state.selectedMark]) {
             const mk = MARKS[state.selectedMark];
@@ -4115,7 +4124,8 @@ if (btnChangeRegatta) {
 
     // ---- resize ----
     function resizeMarkMap() {
-        lmap.invalidateSize({ animate: false });
+        ensureMapReady();
+        if (lmap) lmap.invalidateSize({ animate: false });
         if (markSteerCvs && !markSteerCvs.hidden) {
             const dpr = window.devicePixelRatio || 1;
             const p = markSteerCvs.parentElement;
@@ -4157,7 +4167,8 @@ if (btnChangeRegatta) {
             // Leaflet map mode
             if (markSteerCvs) markSteerCvs.hidden = true;
             mmLeafletDiv.removeAttribute("hidden");
-            lmap.invalidateSize({ animate: false });
+            ensureMapReady();
+            if (lmap) lmap.invalidateSize({ animate: false });
             updateGpsMarker();
             updateBearingLine();
             updateAllIcons();
