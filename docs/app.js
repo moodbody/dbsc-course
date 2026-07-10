@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v46.3.0";
+const APP_VERSION = "v46.4.0";
 const APP_BUILD_DATE = "2026-07-10";
 
 const $ = (id) => document.getElementById(id);
@@ -4124,6 +4124,17 @@ if (btnChangeRegatta) {
 
     // ---- resize ----
     function resizeMarkMap() {
+        // In portrait mode the CSS percentage-height chain breaks (ancestor
+        // views have height:auto). Measure the actual available viewport space
+        // and set an explicit pixel height on the flex area so Leaflet always
+        // gets a real container. getBoundingClientRect() forces a synchronous
+        // reflow, ensuring correct values even inside a requestAnimationFrame.
+        const flexArea = mmLeafletDiv ? mmLeafletDiv.parentElement : null;
+        if (flexArea) {
+            const rect = flexArea.getBoundingClientRect();
+            const h = window.innerHeight - rect.top;
+            if (h > 50) flexArea.style.height = h + 'px';
+        }
         ensureMapReady();
         if (lmap) lmap.invalidateSize({ animate: false });
         if (markSteerCvs && !markSteerCvs.hidden) {
