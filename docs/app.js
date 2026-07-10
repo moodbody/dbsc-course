@@ -142,8 +142,8 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.3.1";
-const APP_BUILD_DATE = "2026-06-10";
+const APP_VERSION = "v45.0.0";
+const APP_BUILD_DATE = "2026-07-10";
 
 const $ = (id) => document.getElementById(id);
 
@@ -205,6 +205,9 @@ const state = {
     chartZoom: 1,
     // Map orientation: 'north' = North up (default), 'cog' = Course-over-ground up
     mapUp: localStorage.getItem("dbsc.mapUp") || "north",
+    // Mark Map tab state (not persisted)
+    selectedMark: null,       // letter of tapped mark, or null
+    markMapSteerMode: false,  // true when showing navigate-to-mark steer arrow
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
     // 0–359 = user-entered value, persisted for the session only since
@@ -2367,6 +2370,7 @@ const views = {
     start: document.getElementById("view-start"),
     today: document.getElementById("view-today"),
     docs: document.getElementById("view-docs"),
+    markmap: document.getElementById("view-markmap"),
 };
 function showTab(name) {
     for (const btn of tabButtons) {
@@ -2382,6 +2386,12 @@ function showTab(name) {
     if (name === "course") {
         // Recompute chart size in case it was hidden when last resized
         try { resizeChart(); } catch (_) { }
+    }
+    if (name === "markmap") {
+        requestAnimationFrame(() => {
+            try { resizeMarkMap(); } catch (_) { }
+            try { syncMarkMapGpsBtn(); } catch (_) { }
+        });
     }
 }
 tabButtons.forEach((b) => b.addEventListener("click", () => {
@@ -3897,4 +3907,591 @@ if (btnChangeRegatta) {
     if (btnYes) btnYes.addEventListener("click", () => { modal.hidden = true; performUndo(); });
     if (btnNo)  btnNo.addEventListener("click",  () => { modal.hidden = true; });
 }());
+
+// ============================================================
+// ⚓ MARK MAP — interactive bay-wide marks explorer
+// ============================================================
+(function initMarkMap() {
+    // ---- DOM refs ----
+    const markMapCanvas   = document.getElementById("markMapCanvas");
+    const markInfoPanel   = document.getElementById("markInfoPanel");
+    const mipLetter       = document.getElementById("mipLetter");
+    const mipName         = document.getElementById("mipName");
+    const mipColour       = document.getElementById("mipColour");
+    const mipDist         = document.getElementById("mipDist");
+    const mipBearing      = document.getElementById("mipBearing");
+    const mipGpsStatus    = document.getElementById("mipGpsStatus");
+    const mipSwatch       = document.getElementById("mipSwatch");
+    const btnMarkNavigate = document.getElementById("btnMarkNavigate");
+    const btnMarkBackMap  = document.getElementById("btnMarkBackMap");
+    const mipClose        = document.getElementById("mipClose");
+    const btnMarkMapGps   = document.getElementById("btnMarkMapGps");
+
+    if (!markMapCanvas) return;
+
+    // ---- colour map ----
+    const BUOY_COLOUR_MAP = {
+        "orange": "#f97316",
+        "green":  "#22c55e",
+        "yellow": "#eab308",
+        "black":  "#1e293b",
+        "blk":    "#1e293b",
+        "white":  "#f8fafc",
+        "wh":     "#f8fafc",
+        "nav mk": "#eab308",
+        "blue":   "#3b82f6",
+        "red":    "#ef4444",
+    };
+
+    function parseBuoyColours(colourStr) {
+        if (!colourStr) return ["#8aa5bf"];
+        const parts = colourStr.toLowerCase().split("/");
+        return parts.map((p) => {
+            p = p.trim();
+            if (BUOY_COLOUR_MAP[p]) return BUOY_COLOUR_MAP[p];
+            for (const [key, val] of Object.entries(BUOY_COLOUR_MAP)) {
+                if (p.includes(key)) return val;
+            }
+            return "#8aa5bf";
+        });
+    }
+
+    /** True if hex colour is perceptually light (luminance > 0.42). */
+    function isLightColour(hex) {
+        if (!hex || hex[0] !== "#" || hex.length < 7) return false;
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.42;
+    }
+
+    // Stores canvas device-pixel positions after each render (for hit-testing)
+    let projected = {};
+
+    // ---- resize ----
+    function resizeMarkMap() {
+        if (!markMapCanvas) return;
+        const dpr  = window.devicePixelRatio || 1;
+        const cssW = markMapCanvas.clientWidth;
+        const cssH = markMapCanvas.clientHeight;
+        if (cssW < 2 || cssH < 2) return;
+        markMapCanvas.width  = Math.round(cssW * dpr);
+        markMapCanvas.height = Math.round(cssH * dpr);
+        renderMarkMap();
+    }
+    window.resizeMarkMap = resizeMarkMap;
+
+    // ---- GPS button sync ----
+    function syncMarkMapGpsBtn() {
+        if (!btnMarkMapGps) return;
+        btnMarkMapGps.textContent = state.gpsOn ? "📍 GPS on" : "📍 Use GPS";
+        btnMarkMapGps.classList.toggle("primary", state.gpsOn);
+    }
+    window.syncMarkMapGpsBtn = syncMarkMapGpsBtn;
+
+    // ---- main render dispatcher ----
+    function renderMarkMap() {
+        if (!markMapCanvas) return;
+        if (markMapCanvas.width < 2 || markMapCanvas.height < 2) return;
+        if (state.markMapSteerMode && state.selectedMark) {
+            drawMarkSteerTo(markMapCanvas);
+        } else {
+            drawAllMarksMap(markMapCanvas);
+        }
+    }
+    window.renderMarkMap = renderMarkMap;
+
+    // ---- draw buoy silhouette icon ----
+    function drawBuoyIcon(ctx, x, y, letter, colours, r, isSelected) {
+        const stemH = r * 0.6;
+        const stemW = r * 0.3;
+
+        // Stem below body
+        ctx.beginPath();
+        ctx.rect(x - stemW / 2, y + r * 0.72, stemW, stemH);
+        ctx.fillStyle = colours[0];
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.3)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Buoy body — clip to circle then paint colour bands
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.clip();
+
+        if (colours.length === 1) {
+            ctx.fillStyle = colours[0];
+            ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        } else if (colours.length === 2) {
+            // Left / right split
+            ctx.fillStyle = colours[0];
+            ctx.fillRect(x - r, y - r, r, r * 2);
+            ctx.fillStyle = colours[1];
+            ctx.fillRect(x, y - r, r, r * 2);
+        } else {
+            // Three horizontal bands
+            const bH = (r * 2) / 3;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = colours[i] || colours[0];
+                ctx.fillRect(x - r, y - r + i * bH, r * 2, bH);
+            }
+        }
+        ctx.restore();
+
+        // Circle outline
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.strokeStyle = isSelected
+            ? cssVar("--accent", "#ffb000")
+            : "rgba(0,0,0,0.45)";
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
+        ctx.stroke();
+
+        // Selection pulse ring
+        if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(x, y, r + 5, 0, Math.PI * 2);
+            ctx.strokeStyle = cssVar("--accent", "#ffb000");
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([5, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Letter inside body
+        const textCol = isLightColour(colours[0]) ? "#0a1a2c" : "#ffffff";
+        ctx.fillStyle = textCol;
+        ctx.font = `bold ${Math.round(r * 1.05)}px -apple-system,"Segoe UI",Roboto,sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(letter, x, y);
+    }
+
+    // ---- north indicator (top-right corner) ----
+    function drawNorthIndicator(ctx, W, H) {
+        const cr  = Math.max(14, Math.round(W * 0.038));
+        const pad = Math.round(W * 0.035);
+        const cx  = W - cr - pad;
+        const cy  = cr + pad;
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(11,31,51,0.75)";
+        ctx.fill();
+        ctx.strokeStyle = cssVar("--line", "#1f4870");
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Red N-half needle
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - cr * 0.72);
+        ctx.lineTo(cx + cr * 0.2, cy + cr * 0.12);
+        ctx.lineTo(cx - cr * 0.2, cy + cr * 0.12);
+        ctx.closePath();
+        ctx.fillStyle = "#ef4444";
+        ctx.fill();
+
+        // White S-half needle
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + cr * 0.72);
+        ctx.lineTo(cx + cr * 0.2, cy - cr * 0.12);
+        ctx.lineTo(cx - cr * 0.2, cy - cr * 0.12);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.fill();
+
+        // "N" label
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `700 ${Math.round(cr * 0.6)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("N", cx, cy - cr * 0.52);
+    }
+
+    // ---- main map drawing ----
+    function drawAllMarksMap(canvas) {
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const allMarks = Object.values(MARKS);
+        if (allMarks.length === 0) return;
+
+        // Bounds from all marks (+GPS if within ~20 km of bay)
+        let minLat = Infinity, maxLat = -Infinity;
+        let minLon = Infinity, maxLon = -Infinity;
+        for (const m of allMarks) {
+            if (m.lat < minLat) minLat = m.lat;
+            if (m.lat > maxLat) maxLat = m.lat;
+            if (m.lon < minLon) minLon = m.lon;
+            if (m.lon > maxLon) maxLon = m.lon;
+        }
+        if (state.gpsPos) {
+            const bayCentreLat = (minLat + maxLat) / 2;
+            const bayCentreLon = (minLon + maxLon) / 2;
+            const d = geo(state.gpsPos.lat, state.gpsPos.lon, bayCentreLat, bayCentreLon);
+            if (d.distance < 10.8) {
+                if (state.gpsPos.lat < minLat) minLat = state.gpsPos.lat;
+                if (state.gpsPos.lat > maxLat) maxLat = state.gpsPos.lat;
+                if (state.gpsPos.lon < minLon) minLon = state.gpsPos.lon;
+                if (state.gpsPos.lon > maxLon) maxLon = state.gpsPos.lon;
+            }
+        }
+
+        const padFrac = 0.10;
+        const dLat = Math.max(maxLat - minLat, 0.005);
+        const dLon = Math.max(maxLon - minLon, 0.005);
+        minLat -= dLat * padFrac;  maxLat += dLat * padFrac;
+        minLon -= dLon * padFrac;  maxLon += dLon * padFrac;
+
+        // Equirectangular projection (same formula as main race chart)
+        const midLat = (minLat + maxLat) / 2;
+        const cosLat = Math.cos((midLat * Math.PI) / 180);
+        const margin = Math.round(W * 0.04);
+        const chartW = W - margin * 2;
+        const chartH = H - margin * 2;
+        const xRange = (maxLon - minLon) * cosLat;
+        const yRange = maxLat - minLat;
+        const s = Math.min(chartW / xRange, chartH / yRange);
+        const usedW = xRange * s;
+        const usedH = yRange * s;
+        const offX = margin + (chartW - usedW) / 2;
+        const offY = margin + (chartH - usedH) / 2;
+
+        function project(lat, lon) {
+            return [
+                offX + (lon - minLon) * cosLat * s,
+                offY + (maxLat - lat) * s,
+            ];
+        }
+
+        // Sea background
+        ctx.fillStyle = cssVar("--chart-sea", "#1d4a73");
+        ctx.fillRect(0, 0, W, H);
+
+        // Dashed bearing line GPS → selected mark
+        if (state.gpsPos && state.selectedMark && MARKS[state.selectedMark]) {
+            const [gpsx, gpsy] = project(state.gpsPos.lat, state.gpsPos.lon);
+            const sm = MARKS[state.selectedMark];
+            const [mx, my] = project(sm.lat, sm.lon);
+            ctx.beginPath();
+            ctx.moveTo(gpsx, gpsy);
+            ctx.lineTo(mx, my);
+            ctx.strokeStyle = cssVar("--accent", "#ffb000");
+            ctx.lineWidth = Math.max(1.5, W * 0.003);
+            ctx.setLineDash([Math.round(W * 0.018), Math.round(W * 0.012)]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Arrow tip at mark end
+            const ang = Math.atan2(my - gpsy, mx - gpsx);
+            const ah = Math.max(8, W * 0.018);
+            ctx.beginPath();
+            ctx.moveTo(mx, my);
+            ctx.lineTo(mx - ah * Math.cos(ang - 0.42), my - ah * Math.sin(ang - 0.42));
+            ctx.lineTo(mx - ah * Math.cos(ang + 0.42), my - ah * Math.sin(ang + 0.42));
+            ctx.closePath();
+            ctx.fillStyle = cssVar("--accent", "#ffb000");
+            ctx.fill();
+        }
+
+        // All mark icons
+        const markR = Math.max(10, Math.round(W * 0.026));
+        projected = {};
+        for (const [letter, mark] of Object.entries(MARKS)) {
+            const [x, y] = project(mark.lat, mark.lon);
+            projected[letter] = { x, y };
+            drawBuoyIcon(ctx, x, y, letter, parseBuoyColours(mark.colour), markR, letter === state.selectedMark);
+        }
+
+        // GPS boat position
+        if (state.gpsPos) {
+            const [gx, gy] = project(state.gpsPos.lat, state.gpsPos.lon);
+            const dotR = Math.max(5, W * 0.012);
+            // Accuracy ring
+            if (state.gpsPos.accuracy && state.gpsPos.accuracy < 200) {
+                const accPx = (state.gpsPos.accuracy / 1852) * s * cosLat * (Math.PI / 180) * 111320;
+                if (accPx > dotR) {
+                    ctx.beginPath();
+                    ctx.arc(gx, gy, accPx, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(43,182,115,0.1)";
+                    ctx.fill();
+                    ctx.strokeStyle = "rgba(43,182,115,0.35)";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+            // Boat dot
+            ctx.beginPath();
+            ctx.arc(gx, gy, dotR, 0, Math.PI * 2);
+            ctx.fillStyle = cssVar("--good", "#2bb673");
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.6)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // "You" label
+            ctx.fillStyle = cssVar("--good", "#2bb673");
+            ctx.font = `700 ${Math.max(9, Math.round(W * 0.022))}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "bottom";
+            ctx.fillText("You", gx, gy - dotR - 2);
+        }
+
+        drawNorthIndicator(ctx, W, H);
+    }
+
+    // ---- steer-to-mark compass arrow view ----
+    function drawMarkSteerTo(canvas) {
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const accent = cssVar("--accent", "#ffb000");
+        const textC  = cssVar("--text",   "#e7eef5");
+        const muted  = cssVar("--muted",  "#cfd9e4");
+
+        const targetLetter = state.selectedMark;
+        const targetMark   = targetLetter ? MARKS[targetLetter] : null;
+
+        let bearingToMark = null, distanceToMark = null;
+        if (state.gpsPos && targetMark) {
+            const g = geo(state.gpsPos.lat, state.gpsPos.lon, targetMark.lat, targetMark.lon);
+            bearingToMark  = g.bearing;
+            distanceToMark = g.distance;
+        }
+
+        const gpsHeading  = state.gpsPos && state.gpsPos.heading != null
+            && state.gpsPos.speed != null && state.gpsPos.speed > 0.2
+            ? state.gpsPos.heading : null;
+        const boatHeading = gpsHeading !== null ? gpsHeading
+            : (state.headingOn && state.heading != null ? state.heading : null);
+        const headingRel  = boatHeading !== null;
+
+        const topBlockH    = Math.round(H * 0.10);
+        const bottomBlockH = Math.round(H * 0.22);
+        const arrowAreaH   = H - topBlockH - bottomBlockH;
+        const cx = W / 2;
+        const cy = topBlockH + arrowAreaH / 2;
+
+        // Orientation label
+        ctx.font = `700 ${Math.round(W * 0.022)}px -apple-system,"Segoe UI",Roboto,sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillStyle = muted;
+        ctx.fillText(
+            headingRel ? (gpsHeading !== null ? "↑ Bow  (GPS COG)" : "↑ Bow  (compass)") : "N ↑",
+            W / 2, Math.round(H * 0.025)
+        );
+
+        if (!targetMark) {
+            ctx.fillStyle = muted;
+            ctx.font = `${Math.round(W * 0.04)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("No mark selected", cx, cy);
+            return;
+        }
+        if (bearingToMark == null) {
+            ctx.fillStyle = muted;
+            ctx.font = `${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(`${targetLetter} — ${targetMark.name}`, cx, cy - Math.round(H * 0.05));
+            ctx.fillStyle = textC;
+            ctx.font = `${Math.round(W * 0.028)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.fillText("Turn on GPS for live bearing", cx, cy + Math.round(H * 0.04));
+            return;
+        }
+
+        // Arrow
+        const arrowLen = Math.min(arrowAreaH, W) * 0.82;
+        const shaftW   = arrowLen * 0.14;
+        const headW    = arrowLen * 0.36;
+        const headH    = arrowLen * 0.32;
+        const halfL    = arrowLen / 2;
+        const arrowAng = headingRel
+            ? ((bearingToMark - boatHeading + 360) % 360)
+            : bearingToMark;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate((arrowAng * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, -halfL);
+        ctx.lineTo(headW / 2, -halfL + headH);
+        ctx.lineTo(shaftW / 2, -halfL + headH);
+        ctx.lineTo(shaftW / 2, halfL);
+        ctx.lineTo(-shaftW / 2, halfL);
+        ctx.lineTo(-shaftW / 2, -halfL + headH);
+        ctx.lineTo(-headW / 2, -halfL + headH);
+        ctx.closePath();
+        ctx.fillStyle = accent;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, W * 0.004);
+        ctx.strokeStyle = "#0a1a2c";
+        ctx.stroke();
+        ctx.restore();
+
+        // Top label
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = muted;
+        ctx.font = `600 ${Math.round(W * 0.023)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(`Navigate to ${targetLetter} — ${targetMark.name}`, cx, topBlockH * 0.55);
+
+        // Bottom stats
+        const baseY = H - bottomBlockH;
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.fillStyle = accent;
+        ctx.font = `800 ${Math.round(W * 0.07)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(fmtBearing(bearingToMark), cx, baseY + Math.round(H * 0.005));
+
+        ctx.fillStyle = textC;
+        ctx.font = `600 ${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(targetMark.name, cx, baseY + Math.round(H * 0.10));
+
+        ctx.fillStyle = muted;
+        ctx.font = `${Math.round(W * 0.026)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(`${fmtDist(distanceToMark)} · from GPS`, cx, baseY + Math.round(H * 0.155));
+    }
+
+    // ---- info panel update ----
+    function updateMarkInfoPanel() {
+        if (!state.selectedMark || !MARKS[state.selectedMark]) {
+            if (markInfoPanel) markInfoPanel.hidden = true;
+            return;
+        }
+        const mark    = MARKS[state.selectedMark];
+        const colours = parseBuoyColours(mark.colour);
+
+        if (mipLetter) mipLetter.textContent = mark.letter;
+        if (mipName)   mipName.textContent   = mark.name;
+        if (mipColour) mipColour.textContent  = mark.colour;
+
+        // Colour swatch gradient
+        if (mipSwatch) {
+            if (colours.length === 1) {
+                mipSwatch.style.background = colours[0];
+            } else if (colours.length === 2) {
+                mipSwatch.style.background =
+                    `linear-gradient(135deg, ${colours[0]} 50%, ${colours[1]} 50%)`;
+            } else {
+                mipSwatch.style.background =
+                    `linear-gradient(180deg, ${colours[0]} 33%, ${colours[1]} 33% 66%, ${colours[2]} 66%)`;
+            }
+        }
+
+        // Distance & bearing from GPS
+        if (state.gpsPos) {
+            const g = geo(state.gpsPos.lat, state.gpsPos.lon, mark.lat, mark.lon);
+            if (mipDist)      mipDist.textContent      = fmtDist(g.distance);
+            if (mipBearing)   mipBearing.textContent   = fmtBearing(g.bearing);
+            if (mipGpsStatus) mipGpsStatus.textContent = "✓ Live";
+        } else {
+            if (mipDist)      mipDist.textContent      = "—";
+            if (mipBearing)   mipBearing.textContent   = "—";
+            if (mipGpsStatus) mipGpsStatus.textContent = "Off";
+        }
+
+        // Navigate / Back-to-map button visibility
+        if (btnMarkNavigate) btnMarkNavigate.hidden = state.markMapSteerMode;
+        if (btnMarkBackMap)  btnMarkBackMap.hidden  = !state.markMapSteerMode;
+
+        if (markInfoPanel) markInfoPanel.hidden = false;
+    }
+    window.updateMarkInfoPanel = updateMarkInfoPanel;
+
+    // ---- pointer handler (click + touch) ----
+    function handleMarkMapPointer(e) {
+        // In steer mode taps just mean "I'm looking at the arrow" — ignore for selection
+        if (state.markMapSteerMode) return;
+        e.preventDefault();
+        const rect = markMapCanvas.getBoundingClientRect();
+        const dpr  = window.devicePixelRatio || 1;
+        let clientX, clientY;
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        const px = (clientX - rect.left) * dpr;
+        const py = (clientY - rect.top)  * dpr;
+
+        let closest = null, closestD = Infinity;
+        for (const [letter, pos] of Object.entries(projected)) {
+            const d = Math.hypot(pos.x - px, pos.y - py);
+            if (d < closestD) { closest = letter; closestD = d; }
+        }
+
+        // Hit radius: 44 CSS px converted to device pixels
+        const hitR = 44 * dpr;
+        state.selectedMark = closestD <= hitR ? closest : null;
+        state.markMapSteerMode = false;
+        renderMarkMap();
+        updateMarkInfoPanel();
+    }
+
+    markMapCanvas.addEventListener("click", handleMarkMapPointer);
+    markMapCanvas.addEventListener("touchend", handleMarkMapPointer, { passive: false });
+
+    // ---- GPS toggle button (shared GPS session with Course tab) ----
+    if (btnMarkMapGps) {
+        btnMarkMapGps.addEventListener("click", () => {
+            if (state.gpsOn) {
+                stopGps();
+            } else {
+                startGps();
+            }
+            syncMarkMapGpsBtn();
+        });
+    }
+
+    // ---- Navigate button → steer-to-mark mode ----
+    if (btnMarkNavigate) {
+        btnMarkNavigate.addEventListener("click", () => {
+            if (!state.gpsOn) startGps();
+            state.markMapSteerMode = true;
+            renderMarkMap();
+            updateMarkInfoPanel();
+        });
+    }
+
+    // ---- Back-to-map button ----
+    if (btnMarkBackMap) {
+        btnMarkBackMap.addEventListener("click", () => {
+            state.markMapSteerMode = false;
+            renderMarkMap();
+            updateMarkInfoPanel();
+        });
+    }
+
+    // ---- Close info panel ----
+    if (mipClose) {
+        mipClose.addEventListener("click", () => {
+            state.selectedMark = null;
+            state.markMapSteerMode = false;
+            if (markInfoPanel) markInfoPanel.hidden = true;
+            renderMarkMap();
+        });
+    }
+
+    // ---- Hook into renderNow so GPS updates refresh the info panel live ----
+    const _rnMm = renderNow;
+    renderNow = function () {
+        _rnMm();
+        const mmView = document.getElementById("view-markmap");
+        if (!mmView || mmView.hidden) return;
+        syncMarkMapGpsBtn();
+        updateMarkInfoPanel();
+        if (state.markMapSteerMode) renderMarkMap();
+    };
+
+    // ---- Resize when window changes while map tab is visible ----
+    window.addEventListener("resize", () => {
+        const mmView = document.getElementById("view-markmap");
+        if (mmView && !mmView.hidden) resizeMarkMap();
+    }, { passive: true });
+})();
 

@@ -324,6 +324,7 @@
             <button class="tab" data-tab="race" role="tab" aria-selected="false">Race</button>
             <button class="tab" data-tab="today" role="tab" aria-selected="false">Race finder</button>
             <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
+            <button class="tab" data-tab="markmap" role="tab" aria-selected="false">Map</button>
         </nav>
     </header>
 
@@ -743,6 +744,45 @@
                 <div class="doc-name">NoR — Dinghy Fleet 2026</div>
             </a>
         </section>
+    </div>
+
+    <!-- ⚓ Mark Map view -->
+    <div id="view-markmap" class="view markmap-view" hidden>
+        <div class="mmp-toolbar">
+            <button id="btnMarkMapGps" type="button" class="mmp-gps-btn">📍 Use GPS</button>
+            <span class="mmp-hint">Tap any mark to explore</span>
+        </div>
+        <canvas id="markMapCanvas" class="markmap-canvas" aria-label="Dublin Bay racing marks"></canvas>
+        <div id="markInfoPanel" class="mark-info-panel" hidden>
+            <div class="mip-header">
+                <div class="mip-title-row">
+                    <span id="mipSwatch" class="mip-swatch"></span>
+                    <div class="mip-title-text">
+                        <span class="mip-letter-name"><span id="mipLetter" class="mip-letter"></span>&ensp;<span id="mipName" class="mip-name"></span></span>
+                        <span id="mipColour" class="mip-colour-label"></span>
+                    </div>
+                </div>
+                <button id="mipClose" type="button" class="mip-close" aria-label="Close info panel">&times;</button>
+            </div>
+            <div class="mip-stats">
+                <div class="mip-stat">
+                    <div class="mip-stat-label">Distance</div>
+                    <div class="mip-stat-value" id="mipDist">&mdash;</div>
+                </div>
+                <div class="mip-stat">
+                    <div class="mip-stat-label">Bearing</div>
+                    <div class="mip-stat-value" id="mipBearing">&mdash;</div>
+                </div>
+                <div class="mip-stat">
+                    <div class="mip-stat-label">GPS</div>
+                    <div class="mip-stat-value mip-gps-status" id="mipGpsStatus">&mdash;</div>
+                </div>
+            </div>
+            <div class="mip-actions">
+                <button id="btnMarkNavigate" type="button" class="mmp-btn primary">&#x1F9ED; Navigate</button>
+                <button id="btnMarkBackMap" type="button" class="mmp-btn" hidden>&#8592; Map</button>
+            </div>
+        </div>
     </div>
 
     <div id="chartModal" class="chart-modal" hidden role="dialog" aria-label="Course chart fullscreen">

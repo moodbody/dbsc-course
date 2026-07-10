@@ -2789,3 +2789,228 @@ footer .app-version {
         font-size: 1.5rem;
     }
 }
+
+/* ============================================================
+   ⚓ Mark Map view
+   ============================================================ */
+.markmap-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.mmp-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    gap: 10px;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
+}
+
+.mmp-gps-btn {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card2);
+    color: var(--text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.mmp-gps-btn.primary {
+    background: var(--accent);
+    color: #0a1a2c;
+    border-color: var(--accent);
+}
+
+.mmp-hint {
+    font-size: 0.76rem;
+    color: var(--muted);
+    flex: 1;
+    text-align: right;
+}
+
+.markmap-canvas {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: block;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Info panel — slides up from bottom, overlays the canvas */
+.mark-info-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 2px solid var(--line);
+    border-radius: 16px 16px 0 0;
+    padding: 14px 16px max(16px, env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    animation: mip-slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes mip-slide-in {
+    from { transform: translateY(40%); opacity: 0; }
+    to   { transform: translateY(0);   opacity: 1; }
+}
+
+.mip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mip-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mip-swatch {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+.mip-title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mip-letter-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mip-letter {
+    color: var(--accent);
+}
+
+.mip-name {
+    color: var(--text);
+}
+
+.mip-colour-label {
+    font-size: 0.74rem;
+    color: var(--muted);
+}
+
+.mip-close {
+    font-size: 1.5rem;
+    line-height: 1;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0 4px;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mip-stats {
+    display: flex;
+    background: var(--card2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.mip-stat {
+    flex: 1;
+    padding: 9px 10px;
+    text-align: center;
+}
+
+.mip-stat + .mip-stat {
+    border-left: 1px solid var(--line);
+}
+
+.mip-stat-label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 3px;
+}
+
+.mip-stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.mip-gps-status {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.mip-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.mmp-btn {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card2);
+    color: var(--text);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.12s, opacity 0.12s;
+}
+
+.mmp-btn:active { opacity: 0.75; }
+
+.mmp-btn.primary {
+    background: var(--accent);
+    color: #0a1a2c;
+    border-color: var(--accent);
+}
+
+.mmp-btn[hidden] { display: none; }
+
+/* Light-theme overrides for mark map */
+[data-theme="light"] .mark-info-panel {
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.18);
+}
+
+/* Landscape: give the view full-height treatment */
+@media (orientation: landscape) and (min-width: 600px) {
+    .markmap-view {
+        height: 100svh;
+    }
+}
