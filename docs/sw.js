@@ -1,4 +1,4 @@
-﻿const CACHE_VERSION = "dbsc-v60";
+﻿const CACHE_VERSION = "dbsc-v61";
 const TILE_CACHE = "dbsc-tiles";
 
 const CORE = [

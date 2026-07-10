@@ -747,7 +747,8 @@ footer {
        Give the map flex area a viewport-relative minimum height so Leaflet
        always initialises on a container with real dimensions. */
     .markmap-flex-area {
-        min-height: calc(100svh - 200px);
+        min-height: calc(100vh - 200px);   /* fallback for older browsers */
+        min-height: calc(100svh - 200px);  /* preferred: small-viewport height */
     }
 }
 
@@ -2858,6 +2859,10 @@ footer .app-version {
     min-height: 0;
     position: relative;
     overflow: hidden;
+    /* Leaflet's internal panes have z-index 200-700. Without isolation they
+       leak into the root stacking context and sit above fixed overlays like
+       the settings panel (z-index 400). isolation:isolate confines them. */
+    isolation: isolate;
 }
 
 #markMap {
