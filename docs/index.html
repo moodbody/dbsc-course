@@ -5,11 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b3d66" />
-    <!-- Content Security Policy: same-origin + Leaflet CDN (unpkg.com) for the tile map feature.
-         Tile images permitted from OpenStreetMap and OpenSeaMap. Inline styles allowed for
-         canvas chart and computed colours. -->  
+    <!-- Content Security Policy: same-origin. Inline styles allowed for
+         canvas chart and computed colours. -->
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://tiles.openseamap.org; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://unpkg.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
     <meta name="referrer" content="no-referrer" />
     <title>DBSC Navigator</title>
 
@@ -22,7 +21,6 @@
     <meta name="mobile-web-app-capable" content="yes" />
 
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
 
 <body>
@@ -750,47 +748,23 @@
         </section>
     </div>
 
-    <!-- ⚓ Mark Map view -->
+    <!-- ⚓ Mark Map view — Dublin Bay canvas chart + live mark list -->
     <div id="view-markmap" class="view markmap-view" hidden>
         <div class="mmp-toolbar">
             <button id="btnMarkMapGps" type="button" class="mmp-gps-btn">📍 Use GPS</button>
-            <button id="btnMarkMapSeamarks" type="button" class="mmp-layer-btn" aria-pressed="true" title="Toggle nautical chart overlay">⚓</button>
-            <span class="mmp-hint">Tap any mark</span>
+            <span class="mmp-hint">Tap › to navigate</span>
         </div>
-        <div class="markmap-flex-area">
-            <div id="markMap" class="markmap-leaflet" aria-label="Dublin Bay racing marks map"></div>
-            <canvas id="markSteerCanvas" class="markmap-steer-canvas" hidden aria-label="Navigate to mark"></canvas>
-        </div>
-        <div id="markInfoPanel" class="mark-info-panel" hidden>
-            <div class="mip-header">
-                <div class="mip-title-row">
-                    <span id="mipSwatch" class="mip-swatch"></span>
-                    <div class="mip-title-text">
-                        <span class="mip-letter-name"><span id="mipLetter" class="mip-letter"></span>&ensp;<span
-                                id="mipName" class="mip-name"></span></span>
-                        <span id="mipColour" class="mip-colour-label"></span>
-                    </div>
-                </div>
-                <button id="mipClose" type="button" class="mip-close" aria-label="Close info panel">&times;</button>
+        <!-- Dublin Bay overview canvas -->
+        <canvas id="mmCanvas" class="mm-chart-canvas" aria-label="Dublin Bay racing marks"></canvas>
+        <!-- Scrollable mark list with live distance and bearing -->
+        <div id="mmMarkList" class="mm-mark-list" role="list" aria-label="Racing marks"></div>
+        <!-- Steer-to-mark overlay (covers the canvas + list when navigating) -->
+        <div id="mmSteerPanel" class="mm-steer-panel" hidden>
+            <div class="mm-steer-hdr">
+                <button id="btnSteerBack" type="button" class="mm-back-btn">&#8592; Back</button>
+                <span id="mmSteerTitle" class="mm-steer-title"></span>
             </div>
-            <div class="mip-stats">
-                <div class="mip-stat">
-                    <div class="mip-stat-label">Distance</div>
-                    <div class="mip-stat-value" id="mipDist">&mdash;</div>
-                </div>
-                <div class="mip-stat">
-                    <div class="mip-stat-label">Bearing</div>
-                    <div class="mip-stat-value" id="mipBearing">&mdash;</div>
-                </div>
-                <div class="mip-stat">
-                    <div class="mip-stat-label">GPS</div>
-                    <div class="mip-stat-value mip-gps-status" id="mipGpsStatus">&mdash;</div>
-                </div>
-            </div>
-            <div class="mip-actions">
-                <button id="btnMarkNavigate" type="button" class="mmp-btn primary">&#x1F9ED; Navigate</button>
-                <button id="btnMarkBackMap" type="button" class="mmp-btn" hidden>&#8592; Map</button>
-            </div>
+            <canvas id="markSteerCanvas" class="mm-steer-canvas" aria-label="Navigate to mark"></canvas>
         </div>
     </div>
 
@@ -817,7 +791,6 @@
 
     <script src="regatta-data.js"></script>
     <script src="data.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="app.js"></script>
 </body>
 

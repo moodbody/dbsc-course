@@ -743,13 +743,6 @@ footer {
         display: none;
     }
 
-    /* In portrait, .view has height:auto so the percentage-height chain breaks.
-       Give the map flex area a viewport-relative minimum height so Leaflet
-       always initialises on a container with real dimensions. */
-    .markmap-flex-area {
-        min-height: calc(100vh - 200px);   /* fallback for older browsers */
-        min-height: calc(100svh - 200px);  /* preferred: small-viewport height */
-    }
 }
 
 /* ---------- Floating landscape nav button (hidden in portrait) ---------- */
@@ -2806,7 +2799,7 @@ footer .app-version {
 }
 
 /* ============================================================
-   ⚓ Mark Map view
+   ⚓ Mark Map view — Dublin Bay canvas chart + live mark list
    ============================================================ */
 .markmap-view {
     display: flex;
@@ -2814,6 +2807,7 @@ footer .app-version {
     height: 100%;
     overflow: hidden;
     position: relative;
+    background: var(--bg);
 }
 
 .mmp-toolbar {
@@ -2840,7 +2834,6 @@ footer .app-version {
     transition: background 0.15s, color 0.15s, border-color 0.15s;
     white-space: nowrap;
 }
-
 .mmp-gps-btn.primary {
     background: var(--accent);
     color: #0a1a2c;
@@ -2854,287 +2847,155 @@ footer .app-version {
     text-align: right;
 }
 
-.markmap-flex-area {
-    flex: 1;
-    min-height: 0;
-    position: relative;
-    overflow: hidden;
-    /* Leaflet's internal panes have z-index 200-700. Without isolation they
-       leak into the root stacking context and sit above fixed overlays like
-       the settings panel (z-index 400). isolation:isolate confines them. */
-    isolation: isolate;
-}
-
-#markMap {
-    position: absolute;
-    inset: 0;
+/* Dublin Bay mini-canvas — height set by JS on tab open/resize */
+.mm-chart-canvas {
+    display: block;
     width: 100%;
-    height: 100%;
-}
-
-.markmap-leaflet {
-    width: 100%;
-    height: 100%;
-}
-
-.markmap-steer-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--bg);
-}
-
-/* Neutralise Leaflet's default divIcon box for buoy + GPS icons */
-.mm-buoy-icon,
-.mm-gps-icon {
-    background: none !important;
-    border: none !important;
-}
-
-/* GPS position dot with pulsing ring */
-.mm-gps-dot {
-    width: 16px;
-    height: 16px;
-    background: #2bb673;
-    border: 2px solid #0a1a2c;
-    border-radius: 50%;
-    position: relative;
-}
-
-.mm-gps-pulse {
-    position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    border: 2px solid #2bb673;
-    opacity: 0;
-    animation: mm-pulse 2s ease-out infinite;
-}
-
-@keyframes mm-pulse {
-    0% {
-        transform: scale(0.6);
-        opacity: 0.8;
-    }
-
-    100% {
-        transform: scale(2.2);
-        opacity: 0;
-    }
-}
-
-/* Sea-marks layer toggle button */
-.mmp-layer-btn {
-    font-size: 1rem;
-    padding: 6px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: var(--card2);
-    color: var(--muted);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-    white-space: nowrap;
-}
-
-.mmp-layer-btn.active {
-    background: var(--accent);
-    color: #0a1a2c;
-    border-color: var(--accent);
-}
-
-/* Leaflet attribution bar — dark theme */
-.leaflet-container .leaflet-control-attribution {
-    background: rgba(11, 31, 51, 0.72);
-    color: var(--muted);
-    font-size: 0.65rem;
-}
-
-.leaflet-container .leaflet-control-attribution a {
-    color: var(--accent);
-}
-
-/* Light-theme attribution */
-[data-theme="light"] .leaflet-container .leaflet-control-attribution {
-    background: rgba(255, 255, 255, 0.8);
-    color: #444;
-}
-
-[data-theme="light"] .leaflet-container .leaflet-control-attribution a {
-    color: var(--accent);
-}
-
-/* Info panel — slides up from bottom, overlays the canvas */
-.mark-info-panel {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--card);
-    border-top: 2px solid var(--line);
-    border-radius: 16px 16px 0 0;
-    padding: 14px 16px max(16px, env(safe-area-inset-bottom));
-    box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.5);
-    z-index: 10;
-    animation: mip-slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes mip-slide-in {
-    from {
-        transform: translateY(40%);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.mip-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.mip-title-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-}
-
-.mip-swatch {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.15);
     flex-shrink: 0;
 }
 
-.mip-title-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+/* Scrollable mark list */
+.mm-mark-list {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    min-height: 0;
 }
 
-.mip-letter-name {
-    font-size: 1.05rem;
+.mm-mark-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 14px;
+    gap: 11px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+.mm-mark-row.selected { background: var(--hi); }
+.mm-mark-row:active    { background: var(--card2); }
+
+.mm-mark-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 700;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(0, 0, 0, 0.35);
+}
+
+.mm-mark-info {
+    flex: 1;
+    min-width: 0;
+}
+.mm-mark-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
     color: var(--text);
-    line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.mm-mark-colour {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
 
-.mip-letter {
+.mm-mark-data {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 66px;
+}
+.mm-mark-dist {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+}
+.mm-mark-brg {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.mm-nav-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.12s, color 0.12s;
+}
+.mm-mark-row.selected .mm-nav-btn,
+.mm-nav-btn:active {
+    border-color: var(--accent);
     color: var(--accent);
 }
 
-.mip-name {
-    color: var(--text);
+/* Steer-to-mark overlay — covers canvas + list when navigating */
+.mm-steer-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    z-index: 2;
 }
+.mm-steer-panel[hidden] { display: none; }
 
-.mip-colour-label {
-    font-size: 0.74rem;
-    color: var(--muted);
-}
-
-.mip-close {
-    font-size: 1.5rem;
-    line-height: 1;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    padding: 0 4px;
+.mm-steer-hdr {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
     flex-shrink: 0;
-    -webkit-tap-highlight-color: transparent;
 }
-
-.mip-stats {
-    display: flex;
-    background: var(--card2);
-    border-radius: 10px;
-    overflow: hidden;
-    margin-bottom: 12px;
-}
-
-.mip-stat {
-    flex: 1;
-    padding: 9px 10px;
-    text-align: center;
-}
-
-.mip-stat+.mip-stat {
-    border-left: 1px solid var(--line);
-}
-
-.mip-stat-label {
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--muted);
-    margin-bottom: 3px;
-}
-
-.mip-stat-value {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: var(--text);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
-}
-
-.mip-gps-status {
-    font-size: 0.82rem;
-    font-weight: 600;
-}
-
-.mip-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.mmp-btn {
-    flex: 1;
-    padding: 10px 0;
-    font-size: 0.88rem;
-    font-weight: 600;
-    border-radius: 10px;
+.mm-back-btn {
+    background: none;
     border: 1px solid var(--line);
-    background: var(--card2);
     color: var(--text);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.12s, opacity 0.12s;
+}
+.mm-steer-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mm-steer-canvas {
+    flex: 1;
+    width: 100%;
+    display: block;
+    min-height: 0;
+    background: var(--bg);
 }
 
-.mmp-btn:active {
-    opacity: 0.75;
-}
-
-.mmp-btn.primary {
-    background: var(--accent);
-    color: #0a1a2c;
-    border-color: var(--accent);
-}
-
-.mmp-btn[hidden] {
-    display: none;
-}
-
-/* Light-theme overrides for mark map */
-[data-theme="light"] .mark-info-panel {
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.18);
-}
-
-/* Landscape: give the view full-height treatment */
+/* Landscape: full-height treatment */
 @media (orientation: landscape) and (min-width: 600px) {
     .markmap-view {
         height: 100svh;

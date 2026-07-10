@@ -1,4 +1,4 @@
-/* DBSC Race Course – app logic
+﻿/* DBSC Race Course â€“ app logic
  * Selection: card -> wind -> course
  * Navigation: marks list with bearing/distance per leg + a "current leg" focus
  * GPS (optional): live bearing & distance from current position to next mark
@@ -24,11 +24,11 @@ applyData(window.DBSC_DATA);
 const REGATTA_LS_KEY = "dbsc.regatta";
 
 // ---------- Coastline (approx) ----------
-// Hand-traced shoreline of Dublin Bay — Howth Head south to Bray Head —
+// Hand-traced shoreline of Dublin Bay â€” Howth Head south to Bray Head â€”
 // running roughly N -> S along the western shore of the bay. Used to
 // shade land on the chart. Polygons are closed by going far inland
 // (lon -6.30) so anything west of the shore is filled as land.
-// Coordinates are eyeballed from OSM / Admiralty 1415 (~50–100 m). Good
+// Coordinates are eyeballed from OSM / Admiralty 1415 (~50â€“100 m). Good
 // enough for at-a-glance racing context, NOT for navigation.
 const DUBLIN_BAY_COAST = [
     // ----- Howth peninsula (clockwise from NE) -----
@@ -67,7 +67,7 @@ const DUBLIN_BAY_COAST = [
     { lat: 53.299, lon: -6.171 },   // Salthill / Monkstown
     { lat: 53.295, lon: -6.162 },   // Seapoint
     { lat: 53.293, lon: -6.155 },   // Seapoint S
-    // ----- Dún Laoghaire harbour: West Pier (L-shape) -----
+    // ----- DÃºn Laoghaire harbour: West Pier (L-shape) -----
     { lat: 53.293, lon: -6.149 },   // West Pier root
     { lat: 53.297, lon: -6.146 },   // West Pier mid
     { lat: 53.3015, lon: -6.142 },  // West Pier head (N tip)
@@ -103,7 +103,7 @@ const DUBLIN_BAY_COAST = [
     { lat: 53.405, lon: -6.350 },
 ];
 
-// North Bull Island — a barrier island between the channel and the open
+// North Bull Island â€” a barrier island between the channel and the open
 // bay, separated from the mainland by a narrow tidal lagoon. Drawn as a
 // separate land polygon so the Causeway gap reads correctly.
 const BULL_ISLAND = [
@@ -134,16 +134,16 @@ const DALKEY_ISLAND = [
 // initialised binding instead of hitting the let-TDZ ReferenceError.
 let TIDES = null;
 
-// Build identifier — visible in the footer so it's easy to verify which
+// Build identifier â€” visible in the footer so it's easy to verify which
 // version is actually running on a phone after a SW update. Bump these
 // together with sw.js CACHE_VERSION on every release.
 //
 // Versioning scheme: MAJOR.MINOR.PATCH
-//   MAJOR — bump when the SW cache version increments (breaking cache change)
-//   MINOR — bump for new features or significant UI additions
-//   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v46.4.0";
-const APP_BUILD_DATE = "2026-07-10";
+//   MAJOR â€” bump when the SW cache version increments (breaking cache change)
+//   MINOR â€” bump for new features or significant UI additions
+//   PATCH â€” bump for bug-fixes, copy tweaks, minor adjustments
+const APP_VERSION = "v47.0.0";
+const APP_BUILD_DATE = "2026-07-11";
 
 const $ = (id) => document.getElementById(id);
 
@@ -181,7 +181,7 @@ const state = {
     windKey: localStorage.getItem("dbsc.wind") || "A",
     courseN: +(localStorage.getItem("dbsc.course") || 1),
     rounded: 0,             // index of next mark to round (0-based into legs[])
-    regatta: null,          // 'dublin-bay' | 'club-regattas' — set by selectRegatta()
+    regatta: null,          // 'dublin-bay' | 'club-regattas' â€” set by selectRegatta()
     gpsOn: false,
     gpsWatch: null,
     gpsPos: null,          // {lat, lon, accuracy, heading?, speed?}
@@ -201,7 +201,7 @@ const state = {
     // True when the most-recently-rounded mark was GPS-auto-confirmed.
     // Triggers an undo confirmation dialog to prevent accidental leg regression.
     lastWasAutoRound: false,
-    // Chart zoom level (1 = auto-fit, 2 = 2× zoom in, 0.5 = zoom out)
+    // Chart zoom level (1 = auto-fit, 2 = 2Ã— zoom in, 0.5 = zoom out)
     chartZoom: 1,
     // Map orientation: 'north' = North up (default), 'cog' = Course-over-ground up
     mapUp: localStorage.getItem("dbsc.mapUp") || "north",
@@ -210,12 +210,12 @@ const state = {
     markMapSteerMode: false,  // true when showing navigate-to-mark steer arrow
     // True wind direction override (degrees, where wind blows FROM).
     // null  = follow the course-card default (card.wind[windKey].bearing)
-    // 0–359 = user-entered value, persisted for the session only since
+    // 0â€“359 = user-entered value, persisted for the session only since
     //         real wind shifts hour-by-hour.
-    // Chart overlay toggles — which layers are drawn on the map.
+    // Chart overlay toggles â€” which layers are drawn on the map.
     // Persisted individually in localStorage so they survive refresh.
     chartOverlays: {
-        // tides intentionally disabled — stream data uses a constant vector,
+        // tides intentionally disabled â€” stream data uses a constant vector,
         // not accurate enough to publish. Re-enable by restoring the line below
         // and unhiding #btnOvTides / #btnOvTidesBig in index.html.
         // tides: localStorage.getItem("dbsc.ov.tides") === "1",
@@ -240,14 +240,14 @@ function markColour(letter) {
 function sidePill(side) {
     if (side === "p") return `<span class="pill p">PORT</span>`;
     if (side === "s") return `<span class="pill s">STBD</span>`;
-    return `<span class="pill x">PASS</span>`;  // CC4 (all port) – we still mark p in the title
+    return `<span class="pill x">PASS</span>`;  // CC4 (all port) â€“ we still mark p in the title
 }
 function fmtBearing(b) {
-    if (b == null || isNaN(b)) return "—";
-    return String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, "0") + "°";
+    if (b == null || isNaN(b)) return "â€”";
+    return String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, "0") + "Â°";
 }
 function fmtDist(d) {
-    if (d == null || isNaN(d)) return "—";
+    if (d == null || isNaN(d)) return "â€”";
     return d.toFixed(2) + " NM";
 }
 
@@ -255,15 +255,15 @@ function fmtDist(d) {
 function geo(lat1, lon1, lat2, lon2) {
     const toRad = (x) => x * Math.PI / 180;
     const toDeg = (x) => x * 180 / Math.PI;
-    const φ1 = toRad(lat1), φ2 = toRad(lat2);
-    const Δφ = toRad(lat2 - lat1), Δλ = toRad(lon2 - lon1);
+    const Ï†1 = toRad(lat1), Ï†2 = toRad(lat2);
+    const Î”Ï† = toRad(lat2 - lat1), Î”Î» = toRad(lon2 - lon1);
     // distance (haversine) in nautical miles
-    const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+    const a = Math.sin(Î”Ï† / 2) ** 2 + Math.cos(Ï†1) * Math.cos(Ï†2) * Math.sin(Î”Î» / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distNM = (6371000 * c) / 1852;
     // initial bearing
-    const y = Math.sin(Δλ) * Math.cos(φ2);
-    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    const y = Math.sin(Î”Î») * Math.cos(Ï†2);
+    const x = Math.cos(Ï†1) * Math.sin(Ï†2) - Math.sin(Ï†1) * Math.cos(Ï†2) * Math.cos(Î”Î»);
     const brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
     return { bearing: brng, distance: distNM };
 }
@@ -297,7 +297,7 @@ const RACE_STATE_KEY = "sailingRaceApp.activeRaceState";
 const RACE_STATE_VERSION = 1;
 const RACE_STATE_MAX_AGE_MS = 12 * 60 * 60 * 1000; // 12 h
 
-// Throttle GPS saves — one write per 5 fixes (never on every fix)
+// Throttle GPS saves â€” one write per 5 fixes (never on every fix)
 let _gpsSaveThrottle = 0;
 
 // Set by _applyShallowRaceRestore(); consumed at end of file once all
@@ -365,7 +365,7 @@ function isSavedRaceStateValid(saved) {
 /**
  * Apply the easy fields (rounded, GPS, startLine) to state before the
  * first renderAll so the opening frame already shows the correct state.
- * Start-sequence restore is deferred — see bottom of file.
+ * Start-sequence restore is deferred â€” see bottom of file.
  */
 function _applyShallowRaceRestore() {
     const saved = loadRaceState();
@@ -429,10 +429,10 @@ function showLanding() {
 }
 
 function selectRegatta(id) {
-    // Detect a regatta switch before overwriting state — used to show the hint
+    // Detect a regatta switch before overwriting state â€” used to show the hint
     const previousRegatta = state.regatta;
 
-    // Hide landing immediately — gives instant click feedback and ensures
+    // Hide landing immediately â€” gives instant click feedback and ensures
     // view-course is visible before renderAll() / resizeChart() run.
     const landingEl = document.getElementById("view-landing");
     if (landingEl) landingEl.setAttribute("hidden", "");
@@ -455,7 +455,7 @@ function selectRegatta(id) {
     completeDeferredRaceRestore();
     saveRaceState();
 
-    // Show a brief tooltip pointing at the ⛵ button when the user switched regatta
+    // Show a brief tooltip pointing at the â›µ button when the user switched regatta
     if (previousRegatta && previousRegatta !== id) {
         const hint = document.getElementById("regattaHint");
         if (hint) {
@@ -472,7 +472,7 @@ function populateCards() {
         const c = CARDS[id];
         const opt = document.createElement("option");
         opt.value = id;
-        opt.textContent = `${id} – ${c.name}`;
+        opt.textContent = `${id} â€“ ${c.name}`;
         cardSel.appendChild(opt);
     }
     if (!CARDS[state.cardId]) state.cardId = Object.keys(CARDS)[0];
@@ -486,7 +486,7 @@ function populateWinds() {
     for (const w of winds) {
         const opt = document.createElement("option");
         opt.value = w;
-        opt.textContent = `${w} – ${String(card.wind[w].bearing).padStart(3, "0")}°`;
+        opt.textContent = `${w} â€“ ${String(card.wind[w].bearing).padStart(3, "0")}Â°`;
         windSel.appendChild(opt);
     }
     if (!card.wind[state.windKey]) state.windKey = winds[0];
@@ -520,7 +520,7 @@ function currentCourse() {
     };
 }
 
-// True Wind Direction in degrees (0–359, where wind blows FROM).
+// True Wind Direction in degrees (0â€“359, where wind blows FROM).
 // User override takes priority; otherwise the course card's expected
 // wind axis is used so things "just work" without any input.
 function effectiveTWD() {
@@ -531,11 +531,11 @@ function effectiveTWD() {
 
 // True Wind Angle for a given leg bearing (degrees).
 // Returns:
-//   { angle: 0..180,        // |TWA| – absolute angle off the bow
+//   { angle: 0..180,        // |TWA| â€“ absolute angle off the bow
 //     side: "S" | "P" | "" } // tack: wind on Stbd/Port (empty when head-to-wind or DDW)
 //
 // Worked example matches the user's spec:
-//   TWD = 090°, leg bearing = 000°
+//   TWD = 090Â°, leg bearing = 000Â°
 //   diff = ((90 - 0 + 540) % 360) - 180 = 90  -> wind on starboard
 function twa(legBearing, twd) {
     if (legBearing == null) return null;
@@ -549,22 +549,22 @@ function twa(legBearing, twd) {
 
 function twaHtml(t) {
     if (!t) return "";
-    if (t.side === "S") return `<span class="tack-s">${t.angle}° Starboard</span>`;
-    if (t.side === "P") return `<span class="tack-p">${t.angle}° Port</span>`;
-    return `<span>${t.angle}°</span>`;
+    if (t.side === "S") return `<span class="tack-s">${t.angle}Â° Starboard</span>`;
+    if (t.side === "P") return `<span class="tack-p">${t.angle}Â° Port</span>`;
+    return `<span>${t.angle}Â°</span>`;
 }
 
 function renderSummary() {
     const c = currentCourse();
-    cardSub.textContent = `${c.card.id} – ${c.card.name}  •  VHF ${c.card.vhf}`;
+    cardSub.textContent = `${c.card.id} â€“ ${c.card.name}  â€¢  VHF ${c.card.vhf}`;
 
     // Badge: wind letter + course number (e.g. "A1", "B3")
     const badge = `${state.windKey}${state.courseN}`;
 
-    // Wind bearing line — show TWD override in accent if active
+    // Wind bearing line â€” show TWD override in accent if active
     const refBearing = fmtBearing(c.bearing);
     const twdLine = state.twdOverride != null
-        ? `${refBearing} <span class="sum-override">→ using ${fmtBearing(state.twdOverride)}</span>`
+        ? `${refBearing} <span class="sum-override">â†’ using ${fmtBearing(state.twdOverride)}</span>`
         : refBearing;
 
     // Race distance
@@ -573,7 +573,7 @@ function renderSummary() {
         const L = leg(c.tokens[i - 1].mark, c.tokens[i].mark);
         if (L.distance != null) total += L.distance;
     }
-    const distStr = total ? total.toFixed(2) + " NM" : "—";
+    const distStr = total ? total.toFixed(2) + " NM" : "â€”";
     const markCount = c.tokens.length;
 
     // Mark sequence with coloured port/stbd superscripts
@@ -584,7 +584,7 @@ function renderSummary() {
             : sideKey === "s"
                 ? `<sup class="sm-side s">S</sup>`
                 : "";
-        const sep = i > 0 ? `<span class="sum-sep">→</span>` : "";
+        const sep = i > 0 ? `<span class="sum-sep">â†’</span>` : "";
         return `${sep}<span class="sum-mark">${tok.mark}${sideTag}</span>`;
     }).join("");
 
@@ -619,7 +619,7 @@ function renderLegs() {
         const sidePillHtml =
             sideKey === "p" ? `<span class="pill p">PORT</span>` :
                 sideKey === "s" ? `<span class="pill s">STBD</span>` :
-                    `<span class="pill x">—</span>`;
+                    `<span class="pill x">â€”</span>`;
 
         const legTwa = (i > 0 && bearing != null) ? twa(bearing) : null;
         const twaLine = legTwa ? `<div class="twa">TWA ${twaHtml(legTwa)}</div>` : "";
@@ -627,14 +627,14 @@ function renderLegs() {
         li.innerHTML = `
       <div class="idx">${i + 1}</div>
       <div class="info">
-        <div class="name">${tok.mark} – ${markName(tok.mark)}${isFinish ? " (Finish)" : ""}</div>
+        <div class="name">${tok.mark} â€“ ${markName(tok.mark)}${isFinish ? " (Finish)" : ""}</div>
         <div class="meta">${sidePillHtml}<span class="colour">${markColour(tok.mark)}</span></div>
         ${twaLine}
       </div>
       <div class="nav">
         ${i === 0
                 ? `<div class="b">START</div><div class="d">&nbsp;</div>`
-                : `<div class="b">${fmtBearing(bearing)}</div><div class="d">${fmtDist(distance)}${src === "calc" ? " ≈" : ""}</div>`}
+                : `<div class="b">${fmtBearing(bearing)}</div><div class="d">${fmtDist(distance)}${src === "calc" ? " â‰ˆ" : ""}</div>`}
       </div>
     `;
         legListEl.appendChild(li);
@@ -647,7 +647,7 @@ function renderNow() {
     const target = c.tokens[idx];
     if (!target) {
         nowEl.innerHTML = `<h3>Course complete</h3>
-      <div class="name">🏁 Finished</div>
+      <div class="name">ðŸ Finished</div>
       <div class="row"><div class="cell"><div class="lbl">All marks rounded.</div></div></div>`;
         btnNext.disabled = true;
         btnUndo.disabled = idx === 0;
@@ -669,7 +669,7 @@ function renderNow() {
         const chartBearingSub = (idx > 0 && tableNav.bearing != null)
             ? `<div class="cell-sub">Chart ${fmtBearing(tableNav.bearing)}</div>` : "";
         const chartDistSub = (idx > 0 && tableNav.distance != null)
-            ? `<div class="cell-sub">Chart ${fmtDist(tableNav.distance)}${tableNav.src === "calc" ? " ≈" : ""}</div>` : "";
+            ? `<div class="cell-sub">Chart ${fmtDist(tableNav.distance)}${tableNav.src === "calc" ? " â‰ˆ" : ""}</div>` : "";
 
         rowHtml = `
     <div class="row">
@@ -685,22 +685,22 @@ function renderNow() {
       </div>
       <div class="cell">
         <div class="lbl">Colour</div>
-        <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
+        <div class="val" style="font-size:16px">${markColour(target.mark) || "â€”"}</div>
       </div>
     </div>`;
 
         if (state.headingOn && state.heading != null) {
             let off = ((g.bearing - state.heading + 540) % 360) - 180;
             const offAbs = Math.abs(off).toFixed(0);
-            const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "—");
-            const steerText = (dir === "—") ? "on bearing" : `${offAbs}° ${dir === "stbd" ? "↻" : "↺"}`;
+            const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "â€”");
+            const steerText = (dir === "â€”") ? "on bearing" : `${offAbs}Â° ${dir === "stbd" ? "â†»" : "â†º"}`;
             steerRowHtml = `<div class="steer-row"><span class="steer-lbl">Steer</span><span class="steer">${steerText}</span></div>`;
         }
 
         const headingStr = (state.headingOn && state.heading != null)
-            ? ` · heading ${Math.round(state.heading)}°${state.headingTrue ? "T" : "M"}`
-            : ` · tap 🧭 for steer`;
-        gpsFooterHtml = `<div class="gps-footer">GPS ±${Math.round(state.gpsPos.accuracy)} m${headingStr}</div>`;
+            ? ` Â· heading ${Math.round(state.heading)}Â°${state.headingTrue ? "T" : "M"}`
+            : ` Â· tap ðŸ§­ for steer`;
+        gpsFooterHtml = `<div class="gps-footer">GPS Â±${Math.round(state.gpsPos.accuracy)}â€¯m${headingStr}</div>`;
 
     } else {
         rowHtml = `
@@ -711,21 +711,21 @@ function renderNow() {
       </div>
       <div class="cell">
         <div class="lbl">Distance (chart)</div>
-        <div class="val">${idx === 0 ? "—" : fmtDist(tableNav.distance) + (tableNav.src === "calc" ? " ≈" : "")}</div>
+        <div class="val">${idx === 0 ? "â€”" : fmtDist(tableNav.distance) + (tableNav.src === "calc" ? " â‰ˆ" : "")}</div>
       </div>
       <div class="cell">
         <div class="lbl">Colour</div>
-        <div class="val" style="font-size:16px">${markColour(target.mark) || "—"}</div>
+        <div class="val" style="font-size:16px">${markColour(target.mark) || "â€”"}</div>
       </div>
     </div>`;
-        gpsFooterHtml = `<div class="gps">Tap “Use GPS” for live bearing &amp; distance from your boat.</div>`;
+        gpsFooterHtml = `<div class="gps">Tap â€œUse GPSâ€ for live bearing &amp; distance from your boat.</div>`;
     }
 
     const sideKey = target.side || (c.card.all_port ? "p" : "");
     const sidePillHtml =
         sideKey === "p" ? `<span class="pill p">PORT</span>` :
             sideKey === "s" ? `<span class="pill s">STBD</span>` :
-                `<span class="pill x">—</span>`;
+                `<span class="pill x">â€”</span>`;
 
     let prevColHtml;
     if (idx > 0) {
@@ -740,7 +740,7 @@ function renderNow() {
     }
 
     // True wind angle for the upcoming leg (uses chart bearing if we have it,
-    // otherwise the live GPS bearing — either way it's relative to the same TWD).
+    // otherwise the live GPS bearing â€” either way it's relative to the same TWD).
     let twaForLeg = null;
     if (idx > 0 && tableNav.bearing != null) twaForLeg = twa(tableNav.bearing);
     else if (state.gpsPos && MARKS[target.mark]) {
@@ -750,7 +750,7 @@ function renderNow() {
     const twdNow = effectiveTWD();
     const twdSrc = state.twdOverride != null ? "actual" : "default";
     const twaLineHtml = twaForLeg
-        ? `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc}) · TWA ${twaHtml(twaForLeg)}</div>`
+        ? `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc}) Â· TWA ${twaHtml(twaForLeg)}</div>`
         : `<div class="twa-line">Wind from ${fmtBearing(twdNow)} (${twdSrc})</div>`;
 
     nowEl.innerHTML = `
@@ -772,7 +772,7 @@ function renderNow() {
   `;
 
     btnNext.disabled = false;
-    btnNext.textContent = isFinishLeg(idx) ? "🏁 Finish" : "✓ Mark rounded";
+    btnNext.textContent = isFinishLeg(idx) ? "ðŸ Finish" : "âœ“ Mark rounded";
     btnUndo.disabled = idx === 0;
 }
 
@@ -795,7 +795,7 @@ cardSel.addEventListener("change", () => {
     state.lastWasAutoRound = false;
     populateWinds(); populateCourses(); saveSelection();
     // If override exactly matches the previous default, the user almost
-    // certainly hasn't customised TWD — let the new card's default take over.
+    // certainly hasn't customised TWD â€” let the new card's default take over.
     if (state.twdOverride === oldDefault) clearTwdOverride();
     syncTwdInput();
     renderAll();
@@ -908,7 +908,7 @@ if (twdInput) {
         state.twdOverride = (wrapped === def) ? null : wrapped;
         if (state.twdOverride != null) sessionStorage.setItem("dbsc.twd", String(wrapped));
         else sessionStorage.removeItem("dbsc.twd");
-        // Don't call syncTwdInput() here — we'd fight the user's caret.
+        // Don't call syncTwdInput() here â€” we'd fight the user's caret.
         if (twdHint) {
             twdHint.textContent = state.twdOverride != null ? "\u25cf" : "";
             twdHint.classList.toggle("override", state.twdOverride != null);
@@ -945,7 +945,7 @@ function stopGps(reason) {
     state.gpsWatch = null;
     state.gpsPos = null;
     state.gpsEndTime = null;
-    btnGps.textContent = "📍 Use GPS";
+    btnGps.textContent = "ðŸ“ Use GPS";
     btnGps.classList.remove("primary");
     renderNow();
     if (reason === "timeout") {
@@ -973,14 +973,14 @@ function startGps() {
                 speed: pos.coords.speed,
             };
             state.gpsOn = true;
-            btnGps.textContent = "📍 GPS on";
+            btnGps.textContent = "ðŸ“ GPS on";
             checkAutoRound();
             renderNow();
         },
         (err) => {
             // Only stop GPS on permanent permission errors.
             // Transient errors (TIMEOUT, POSITION_UNAVAILABLE) happen when
-            // the phone screen wakes up — ignore them so GPS survives.
+            // the phone screen wakes up â€” ignore them so GPS survives.
             if (err.code === err.PERMISSION_DENIED) {
                 stopGps();
                 if (gpsPermissionModal) gpsPermissionModal.hidden = false;
@@ -1032,8 +1032,8 @@ function checkAutoRound() {
             state.lastWasAutoRound = true;
             renderAll();
             showToast(finishing
-                ? `🏁 Finished at ${nextTok.mark}`
-                : `✓ Auto-rounded ${nextTok.mark}`);
+                ? `ðŸ Finished at ${nextTok.mark}`
+                : `âœ“ Auto-rounded ${nextTok.mark}`);
         }
     } else {
         state.autoRoundHits = 0;
@@ -1094,7 +1094,7 @@ if (wakeReloadOk) {
         if (wakeReloadError) wakeReloadError.hidden = true;
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                // Fresh fix obtained — update GPS state and resume watch
+                // Fresh fix obtained â€” update GPS state and resume watch
                 state.gpsPos = {
                     lat: pos.coords.latitude,
                     lon: pos.coords.longitude,
@@ -1177,10 +1177,10 @@ showLanding();
     if (!("permissions" in navigator)) return; // API unavailable (old browsers)
     navigator.permissions.query({ name: "geolocation" }).then((result) => {
         if (result.state === "denied") {
-            // Permission permanently blocked — show info modal
+            // Permission permanently blocked â€” show info modal
             if (gpsPermissionModal) gpsPermissionModal.hidden = false;
         } else if (result.state === "prompt") {
-            // User hasn't been asked yet — show the GPS explain/invite modal
+            // User hasn't been asked yet â€” show the GPS explain/invite modal
             if (gpsExplain) gpsExplain.hidden = false;
         }
         // "granted": GPS button works as normal; no action needed on load
@@ -1208,7 +1208,7 @@ showLanding();
             renderAll();
             if (oldKey !== newKey) console.log("[DBSC] live data refreshed from data.json");
         })
-        .catch(() => { /* offline – stick with bundled data */ });
+        .catch(() => { /* offline â€“ stick with bundled data */ });
 })();
 
 // ============================================================
@@ -1260,7 +1260,7 @@ window.addEventListener("resize", resizeChart);
     if (!splitter || !courseLeft) return;
 
     const LS_KEY = "dbsc.panelWidth";
-    const MIN_LEFT = 180;   // px — left panel never narrower than this
+    const MIN_LEFT = 180;   // px â€” left panel never narrower than this
     const MAX_LEFT_FRAC = 0.70; // never more than 70% of viewport width
 
     function isLandscapeMode() {
@@ -1471,7 +1471,7 @@ function drawMapTo(canvas) {
         ctx.beginPath(); ctx.moveTo(x, margin); ctx.lineTo(x, H - margin); ctx.stroke();
     }
 
-    // North arrow — only in North-up mode. In COG-up mode a rotated N indicator
+    // North arrow â€” only in North-up mode. In COG-up mode a rotated N indicator
     // is drawn after restore() so it always appears in the correct screen corner.
     if (!cogMode) {
         const ax = W - margin - Math.round(W * 0.025);
@@ -1500,7 +1500,7 @@ function drawMapTo(canvas) {
         ctx.fillText("N", ax, ay - head * 0.6);
     }
 
-    // Wind arrow — drawn top-LEFT corner, points in the direction the wind
+    // Wind arrow â€” drawn top-LEFT corner, points in the direction the wind
     // is blowing TO (i.e. opposite the TWD reading). Includes the numeric
     // bearing label so a glance at the chart confirms the wind setting.
     {
@@ -1510,7 +1510,7 @@ function drawMapTo(canvas) {
         const wy = margin + Math.round(W * 0.05);
         const wlen = Math.round(W * 0.06);
         const whead = Math.round(W * 0.018);
-        // Wind blows TO (TWD + 180). Convert to screen angle: 0° = up.
+        // Wind blows TO (TWD + 180). Convert to screen angle: 0Â° = up.
         const blowTo = (wTwd + 180) % 360;
         const rad = (blowTo - 90) * Math.PI / 180;
         const dx = Math.cos(rad), dy = Math.sin(rad);
@@ -1534,11 +1534,11 @@ function drawMapTo(canvas) {
         // label below the icon
         ctx.font = `bold ${Math.round(W * 0.018)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
         ctx.textAlign = "left"; ctx.textBaseline = "top";
-        ctx.fillText(`Wind ${String(Math.round(wTwd)).padStart(3, "0")}°`,
+        ctx.fillText(`Wind ${String(Math.round(wTwd)).padStart(3, "0")}Â°`,
             margin, wy + Math.round(W * 0.06));
     }
 
-    // Faint background marks (not in this course) — shown when "all marks" overlay is on
+    // Faint background marks (not in this course) â€” shown when "all marks" overlay is on
     if (state.chartOverlays.allMarks) {
         ctx.fillStyle = cssVar("--chart-mark-faint", "#23496e");
         const dotR = Math.max(2, Math.round(W * 0.006));
@@ -1589,12 +1589,12 @@ function drawMapTo(canvas) {
         }
 
         if (gridTs && gridTs.drift >= 0.05) {
-            // Grid spacing: ~5 columns × 4 rows regardless of canvas size.
+            // Grid spacing: ~5 columns Ã— 4 rows regardless of canvas size.
             const COLS = 5, ROWS = 4;
             const cellW = W / COLS;
             const cellH = H / ROWS;
 
-            // Arrow length: 1 kn → 1/4 of cell width; clamped to reasonable range
+            // Arrow length: 1 kn â†’ 1/4 of cell width; clamped to reasonable range
             const lenPer1kn = cellW * 0.28;
             const arrowLen = Math.max(cellW * 0.14, Math.min(cellW * 0.48, gridTs.drift * lenPer1kn));
             const headLen = arrowLen * 0.35;
@@ -1609,7 +1609,7 @@ function drawMapTo(canvas) {
                 exclusionPts.push({ x: gx, y: gy });
             }
 
-            // Screen angle: compass set 0°=north → canvas 0°=east, so subtract 90°
+            // Screen angle: compass set 0Â°=north â†’ canvas 0Â°=east, so subtract 90Â°
             const rad = (gridTs.set - 90) * Math.PI / 180;
             const dx = Math.cos(rad), dy = Math.sin(rad);
             const px = -dy, py = dx; // perpendicular for arrowhead
@@ -1667,7 +1667,7 @@ function drawMapTo(canvas) {
                     ctx.closePath();
                     ctx.fill();
 
-                    // Drift label — placed at the tail end so it doesn't cover the tip
+                    // Drift label â€” placed at the tail end so it doesn't cover the tip
                     ctx.fillStyle = tideCol;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -1758,10 +1758,10 @@ function drawMapTo(canvas) {
         // Heading wedge (drawn under the dot so the dot stays visible)
         if (state.headingOn && state.heading != null) {
             // Convert true bearing -> screen angle. Screen angle 0 is east,
-            // we want compass 0 = up = -π/2.
+            // we want compass 0 = up = -Ï€/2.
             const rad = (state.heading - 90) * Math.PI / 180;
             const len = Math.max(28, W * 0.07);
-            const half = 0.45; // wedge half-angle in radians (~26°)
+            const half = 0.45; // wedge half-angle in radians (~26Â°)
             ctx.beginPath();
             ctx.moveTo(gx, gy);
             ctx.arc(gx, gy, len, rad - half, rad + half);
@@ -1773,7 +1773,7 @@ function drawMapTo(canvas) {
             ctx.fill();
         }
 
-        // Boat icon — pointed hull silhouette oriented in the COG direction
+        // Boat icon â€” pointed hull silhouette oriented in the COG direction
         {
             const bSize = Math.max(8, W * 0.018);
             // In COG-up mode the canvas is already rotated so COG = up; no
@@ -1818,7 +1818,7 @@ function drawMapTo(canvas) {
         const ix = W - margin - Math.round(W * 0.025);
         const iy = margin + Math.round(W * 0.04);
         // After rotating the canvas by -cogDeg, North appears at screen angle
-        // (-cogDeg - 90)° from east (canvas convention: 0 = east, CW positive).
+        // (-cogDeg - 90)Â° from east (canvas convention: 0 = east, CW positive).
         const northAng = (-cogDeg - 90) * Math.PI / 180;
         const nx = Math.cos(northAng), ny = Math.sin(northAng);
         const aColor = cssVar("--chart-arrow", "#8aa5bf");
@@ -1848,8 +1848,8 @@ function drawMapTo(canvas) {
     // COG overlay: large amber bearing + speed at the bottom of the chart
     if (cogDeg != null) {
         const spd = state.gpsPos && state.gpsPos.speed != null
-            ? state.gpsPos.speed * 1.94384 : null; // m/s → knots
-        const cogStr = `COG ${String(Math.round(cogDeg)).padStart(3, "0")}°`;
+            ? state.gpsPos.speed * 1.94384 : null; // m/s â†’ knots
+        const cogStr = `COG ${String(Math.round(cogDeg)).padStart(3, "0")}Â°`;
         const spdStr = spd != null && spd >= 0.3 ? `${spd.toFixed(1)} kn` : null;
         const bx = W / 2;
         const cogFontSz = Math.round(W * 0.044);
@@ -1914,7 +1914,7 @@ function drawSteerTo(canvas) {
             src = "leg";
         }
     } else if (nextMark && tokens[0] && tokens[0].mark === nextMarkLetter) {
-        // Very first mark of the course — use the start->first-mark leg if
+        // Very first mark of the course â€” use the start->first-mark leg if
         // there's a second token, else just point along the wind axis as a
         // graceful fallback.
         if (tokens[1]) {
@@ -1943,8 +1943,8 @@ function drawSteerTo(canvas) {
     ctx.textBaseline = "top";
     ctx.fillStyle = muted;
     const orientLabel = headingRelative
-        ? (gpsHeading !== null ? "↑ Bow  (GPS COG)" : "↑ Bow  (compass)")
-        : "N ↑";
+        ? (gpsHeading !== null ? "â†‘ Bow  (GPS COG)" : "â†‘ Bow  (compass)")
+        : "N â†‘";
     ctx.fillText(orientLabel, W / 2, Math.round(H * 0.025));
 
     // Layout: top text block, big arrow centred, bottom text block
@@ -1959,7 +1959,7 @@ function drawSteerTo(canvas) {
         ctx.fillStyle = muted;
         ctx.font = `${Math.round(W * 0.05)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("🏁  Course complete", cx, cy);
+        ctx.fillText("ðŸ  Course complete", cx, cy);
         return;
     }
     if (bearingToMark == null) {
@@ -1981,14 +1981,14 @@ function drawSteerTo(canvas) {
 
     // When we have a boat heading, rotate the arrow relative to the bow so
     // that "up" = the direction the boat is moving. E.g. heading 090, bearing
-    // 000 → arrow points left (9 o'clock).
+    // 000 â†’ arrow points left (9 o'clock).
     const arrowAngle = headingRelative
         ? ((bearingToMark - boatHeading + 360) % 360)
         : bearingToMark;
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate((arrowAngle * Math.PI) / 180); // 0° = up
+    ctx.rotate((arrowAngle * Math.PI) / 180); // 0Â° = up
     // arrow shape pointing up before rotation
     ctx.beginPath();
     ctx.moveTo(0, -halfL);                      // tip
@@ -2023,11 +2023,11 @@ function drawSteerTo(canvas) {
     ctx.font = `800 ${Math.round(W * 0.07)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
     ctx.fillText(fmtBearing(bearingToMark), cx, baseY + Math.round(H * 0.005));
 
-    // "to <mark>  ·  Port/Stbd"
+    // "to <mark>  Â·  Port/Stbd"
     const sideTok = nextTok && nextTok.side;
     const sideStr = (sideTok === "p" || (c.card && c.card.all_port && !sideTok))
-        ? "  ·  Port"
-        : sideTok === "s" ? "  ·  Stbd" : "";
+        ? "  Â·  Port"
+        : sideTok === "s" ? "  Â·  Stbd" : "";
     ctx.fillStyle = text;
     ctx.font = `600 ${Math.round(W * 0.034)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
     ctx.fillText(`to ${nextMarkLetter}${sideStr}`, cx, baseY + Math.round(H * 0.10));
@@ -2035,8 +2035,8 @@ function drawSteerTo(canvas) {
     // Distance + source
     ctx.fillStyle = muted;
     ctx.font = `${Math.round(W * 0.026)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
-    const distStr = distanceToMark != null ? fmtDist(distanceToMark) : "—";
-    const srcStr = src === "gps" ? " · from GPS" : src === "leg" ? " · leg bearing" : "";
+    const distStr = distanceToMark != null ? fmtDist(distanceToMark) : "â€”";
+    const srcStr = src === "gps" ? " Â· from GPS" : src === "leg" ? " Â· leg bearing" : "";
     ctx.fillText(`${distStr}${srcStr}`, cx, baseY + Math.round(H * 0.155));
 
     // ---- Tide-push arrow (relative to the next leg) ----
@@ -2048,7 +2048,7 @@ function drawSteerTo(canvas) {
         const ts = tideStreamAt(nextMarkLetter, Date.now());
         if (ts && ts.drift >= 0.1) {
             const tideCol = cssVar("--chart-tide", "#5fc0ff");
-            // Relative angle: 0° = tide running same direction as mark bearing (with you)
+            // Relative angle: 0Â° = tide running same direction as mark bearing (with you)
             const relDeg = ((ts.set - bearingToMark + 360) % 360);
             const relRad = (relDeg - 90) * Math.PI / 180; // screen: 0rad = east
             const tArrowLen = Math.round(W * 0.07);
@@ -2223,7 +2223,7 @@ function instructionsFor(platform) {
             <ol>
                 <li>Tap the <strong>Share</strong> icon at the bottom of Safari.</li>
                 <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
-                <li>Tap <strong>Add</strong> — the icon appears on your home screen.</li>
+                <li>Tap <strong>Add</strong> â€” the icon appears on your home screen.</li>
             </ol>`;
     }
     if (platform.android) {
@@ -2232,7 +2232,7 @@ function instructionsFor(platform) {
             <ol>
                 <li>Tap the menu in Chrome.</li>
                 <li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-                <li>Confirm — the app icon will appear on your home screen.</li>
+                <li>Confirm â€” the app icon will appear on your home screen.</li>
             </ol>`;
     }
     return `
@@ -2254,7 +2254,7 @@ function renderInstallBanner(force) {
     const platform = detectPlatform();
     let html = instructionsFor(platform);
 
-    // On Android we usually have a native prompt too — offer it as a CTA.
+    // On Android we usually have a native prompt too â€” offer it as a CTA.
     if (platform.android && deferredPrompt) {
         html += `<button class="ib-cta" id="ibInstall" type="button">Install now</button>`;
     }
@@ -2280,14 +2280,14 @@ function renderInstallBanner(force) {
 if (ibClose) {
     ibClose.addEventListener("click", () => {
         installBanner.hidden = true;
-        // Only hide for this session — reappear on next visit until installed.
+        // Only hide for this session â€” reappear on next visit until installed.
         sessionStorage.setItem("dbsc.installHidden", "1");
     });
 }
 if (lnkInstallHelp) {
     lnkInstallHelp.addEventListener("click", (e) => {
         e.preventDefault();
-        // Open the help guide — installation instructions are in section 8
+        // Open the help guide â€” installation instructions are in section 8
         const helpModal = document.getElementById("helpModal");
         if (helpModal) {
             helpModal.hidden = false;
@@ -2310,7 +2310,7 @@ window.addEventListener("appinstalled", () => {
 renderInstallBanner();
 
 // ---------- welcome / how-to-use modal ----------
-// Declared here (before the IIFE) to avoid TDZ — selectRegatta() calls this
+// Declared here (before the IIFE) to avoid TDZ â€” selectRegatta() calls this
 // hook after the landing page closes.
 let _triggerWelcomeIfNeeded = null;
 (function setupWelcome() {
@@ -2512,8 +2512,8 @@ function initLayoutSettings() {
                 `<button class="settings-vis${s.visible ? " active" : ""}" data-id="${s.id}" type="button" title="${s.visible ? "Hide section" : "Show section"}">&#x1F441;</button>` +
                 `<span class="settings-label${!s.visible ? " muted" : ""}">${s.label}</span>` +
                 `<div class="settings-order">` +
-                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="up" type="button" aria-label="Move up"${i === 0 ? " disabled" : ""}>↑</button>` +
-                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="down" type="button" aria-label="Move down"${i === cfg.length - 1 ? " disabled" : ""}>↓</button>` +
+                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="up" type="button" aria-label="Move up"${i === 0 ? " disabled" : ""}>â†‘</button>` +
+                `<button class="settings-ord-btn" data-id="${s.id}" data-dir="down" type="button" aria-label="Move down"${i === cfg.length - 1 ? " disabled" : ""}>â†“</button>` +
                 `</div>` +
                 `<div class="settings-cols">` +
                 `<button class="settings-col-btn${s.col === "left" ? " active" : ""}" data-id="${s.id}" data-col="left" type="button">L</button>` +
@@ -2561,7 +2561,7 @@ function initLayoutSettings() {
 initLayoutSettings();
 
 // ============================================================
-// Accordion helper — programmatic open/close from outside initAccordions
+// Accordion helper â€” programmatic open/close from outside initAccordions
 // ============================================================
 function setAccordion(id, open) {
     const section = document.getElementById(id);
@@ -2636,7 +2636,7 @@ let _restoreStartSeqState = null;
             const at = parseInt(row.dataset.at, 10);
             row.classList.remove("active", "past", "gun", "upcoming");
             if (phase === "idle") {
-                // No styling — all neutral
+                // No styling â€” all neutral
             } else if (phase === "racing" || phase === "finished") {
                 // All signals past; gun row gets special colour
                 row.classList.add(at === 0 ? "gun" : "past");
@@ -2645,7 +2645,7 @@ let _restoreStartSeqState = null;
                 if (remaining <= at) {
                     row.classList.add(at === 0 ? "gun" : "past");
                 } else if (remaining <= at + 5) {
-                    // just passed — keep as active for a moment (handled by exact tick)
+                    // just passed â€” keep as active for a moment (handled by exact tick)
                     row.classList.add("past");
                 } else {
                     // upcoming
@@ -2684,7 +2684,7 @@ let _restoreStartSeqState = null;
         setAccordion("ac-setup", false);
         setAccordion("ac-nav", false);
         setAccordion("ac-legs", false);
-        showToast("🔫 Gun! Race started — good luck!");
+        showToast("ðŸ”« Gun! Race started â€” good luck!");
     }
 
     function triggerGun() {
@@ -2743,7 +2743,7 @@ let _restoreStartSeqState = null;
         if (btnGo) btnGo.removeAttribute("hidden");
         if (btnFinish) btnFinish.setAttribute("hidden", "");
         if (btnReset) btnReset.setAttribute("hidden", "");
-        clearRaceState(); // user explicitly reset — wipe the saved state
+        clearRaceState(); // user explicitly reset â€” wipe the saved state
     }
 
     // --- Button handlers ---
@@ -2792,7 +2792,7 @@ let _restoreStartSeqState = null;
         updateSignals();
         btnFinish.setAttribute("hidden", "");
         if (btnReset) btnReset.removeAttribute("hidden");
-        showToast(`🏁 Race finished — elapsed time ${fmtMSS(elapsed)}`);
+        showToast(`ðŸ Race finished â€” elapsed time ${fmtMSS(elapsed)}`);
         saveRaceState();
     });
 
@@ -2872,7 +2872,7 @@ if (lsBackdrop) {
 }
 
 // ============================================================
-// Schedule (Today view) — date + boat -> recommended card
+// Schedule (Today view) â€” date + boat -> recommended card
 // ============================================================
 let SCHED = null;
 const todayDate = document.getElementById("todayDate");
@@ -2902,7 +2902,7 @@ function applySchedule(s) {
     todayBoat.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "— Select a boat / class —";
+    placeholder.textContent = "â€” Select a boat / class â€”";
     todayBoat.appendChild(placeholder);
     for (const b of s.boats || []) {
         const opt = document.createElement("option");
@@ -2933,7 +2933,7 @@ function findRace() {
     const headerMeta = document.getElementById("headerMeta");
     if (headerMeta) headerMeta.setAttribute("hidden", "");
     if (!SCHED) {
-        todayResult.innerHTML = `<div class="card"><div class="big">Schedule still loading…</div></div>`;
+        todayResult.innerHTML = `<div class="card"><div class="big">Schedule still loadingâ€¦</div></div>`;
         return;
     }
     const dateStr = todayDate.value;
@@ -2992,7 +2992,7 @@ function findRace() {
             return showRecommend({
                 warn: true,
                 day: dateLabel,
-                big: "Regatta — no DBSC racing",
+                big: "Regatta â€” no DBSC racing",
                 note: extraNote || "An external club regatta is on; DBSC isn't running races on this Saturday.",
             });
         }
@@ -3012,7 +3012,7 @@ function findRace() {
             warn: true,
             day: dateLabel,
             big: "Couldn't determine a course card",
-            note: "Schedule data is incomplete for this combination — please check the PDFs in the Docs tab.",
+            note: "Schedule data is incomplete for this combination â€” please check the PDFs in the Docs tab.",
         });
     }
 
@@ -3026,33 +3026,33 @@ function findRace() {
         if (extraNote) noteParts.push(extraNote);
         return showRecommend({
             warn: false,
-            day: dateLabel + " • " + slot.name,
+            day: dateLabel + " â€¢ " + slot.name,
             big: boat.name,
             rows: [
-                ["Format", slot.format ? "W/L" : "—"],
+                ["Format", slot.format ? "W/L" : "â€”"],
                 ["VHF channel", "Ch " + slot.vhf],
-                ["Warning signal", dayInfo.warn || "—"],
-                ["Class flag", dayInfo.flag || "—"],
+                ["Warning signal", dayInfo.warn || "â€”"],
+                ["Class flag", dayInfo.flag || "â€”"],
             ],
             note: noteParts.join(" "),
             openPdf: slot.pdf || null,
-            openPdfLabel: "Open Sailing Instructions →",
+            openPdfLabel: "Open Sailing Instructions â†’",
         });
     }
 
     showRecommend({
         warn: false,
-        day: dateLabel + " • " + slot.name,
-        big: `${boat.name} → ${slot.card}`,
+        day: dateLabel + " â€¢ " + slot.name,
+        big: `${boat.name} â†’ ${slot.card}`,
         rows: [
             ["Course card", slot.card],
             ["VHF channel", "Ch " + slot.vhf],
-            ["Warning signal", dayInfo.warn || "—"],
-            ["Class flag", dayInfo.flag || "—"],
+            ["Warning signal", dayInfo.warn || "â€”"],
+            ["Class flag", dayInfo.flag || "â€”"],
         ],
         note: extraNote || (dayKey === "sat" && inCal.hut ? `Saturday hut colour: ${inCal.hut}.` : ""),
         openCard: slot.card,
-        metaText: `${boat.name} · ${dateLabel}`,
+        metaText: `${boat.name} Â· ${dateLabel}`,
     });
 }
 
@@ -3068,8 +3068,8 @@ function showRecommend({ warn, day, big, rows, note, openCard, openPdf, openPdfL
         : "";
     const noteHtml = note ? `<div class="note">${note}</div>` : "";
     const btnHtml = openCard
-        ? `<button id="btnOpenCard" type="button">Open ${openCard} →</button>`
-        : (openPdf ? `<a id="btnOpenPdf" class="pdf-btn" href="${openPdf}" target="_blank" rel="noopener">${openPdfLabel || "Open PDF →"}</a>` : "");
+        ? `<button id="btnOpenCard" type="button">Open ${openCard} â†’</button>`
+        : (openPdf ? `<a id="btnOpenPdf" class="pdf-btn" href="${openPdf}" target="_blank" rel="noopener">${openPdfLabel || "Open PDF â†’"}</a>` : "");
     todayResult.innerHTML = `
         <div class="card">
             <div class="day">${day}</div>
@@ -3101,7 +3101,7 @@ todayBoat.addEventListener("change", () => { if (todayDate.value) findRace(); })
 fetch("schedule.json?v=" + Date.now(), { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))
     .then((s) => { if (s) applySchedule(s); renderCountdown(); })
-    .catch(() => { /* offline – feature unavailable until first online run */ });
+    .catch(() => { /* offline â€“ feature unavailable until first online run */ });
 
 // ============================================================
 // Theme toggle (light / dark)
@@ -3134,10 +3134,10 @@ fetch("schedule.json?v=" + Date.now(), { cache: "no-store" })
 function applyTheme(theme) {
     if (theme === "light") {
         document.documentElement.setAttribute("data-theme", "light");
-        if (btnTheme) btnTheme.textContent = "☀️";
+        if (btnTheme) btnTheme.textContent = "â˜€ï¸";
     } else {
         document.documentElement.removeAttribute("data-theme");
-        if (btnTheme) btnTheme.textContent = "🌙";
+        if (btnTheme) btnTheme.textContent = "ðŸŒ™";
     }
     // Theme colour for the OS chrome (status bar tint on installed app).
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -3172,7 +3172,7 @@ function stopCompass() {
     state.heading = null;
     state.headingTrue = false;
     if (btnCompass) {
-        btnCompass.textContent = "🧭 Compass";
+        btnCompass.textContent = "ðŸ§­ Compass";
         btnCompass.classList.remove("primary");
     }
     renderNow();
@@ -3203,7 +3203,7 @@ function startCompass() {
             state.heading = h;
             state.headingTrue = isTrue;
             state.headingOn = true;
-            // Throttle re-render: only redraw if heading changed by ≥ 2°.
+            // Throttle re-render: only redraw if heading changed by â‰¥ 2Â°.
             if (state._lastDrawnHeading == null || Math.abs(h - state._lastDrawnHeading) > 2) {
                 state._lastDrawnHeading = h;
                 renderNow();
@@ -3213,7 +3213,7 @@ function startCompass() {
         window.addEventListener("deviceorientationabsolute", _orientHandler, true);
         window.addEventListener("deviceorientation", _orientHandler, true);
         if (btnCompass) {
-            btnCompass.textContent = "🧭 Compass on";
+            btnCompass.textContent = "ðŸ§­ Compass on";
             btnCompass.classList.add("primary");
         }
     };
@@ -3279,7 +3279,7 @@ if (chartModal) {
     function apply() {
         const isSteer = state.viewMode === "steer";
         btn.setAttribute("aria-pressed", isSteer ? "true" : "false");
-        btn.textContent = isSteer ? "🗺 Chart" : "🧭 Steer";
+        btn.textContent = isSteer ? "ðŸ—º Chart" : "ðŸ§­ Steer";
         try { localStorage.setItem("dbsc.viewMode", state.viewMode); } catch (_) { }
         if (typeof renderChart === "function") renderChart();
     }
@@ -3296,7 +3296,7 @@ if (chartModal) {
     if (!btn) return;
     function apply() {
         btn.setAttribute("aria-pressed", state.autoRound ? "true" : "false");
-        btn.textContent = state.autoRound ? "🎯 Auto-round on" : "🎯 Auto-round off";
+        btn.textContent = state.autoRound ? "ðŸŽ¯ Auto-round on" : "ðŸŽ¯ Auto-round off";
         try { localStorage.setItem("dbsc.autoRound", state.autoRound ? "1" : "0"); } catch (_) { }
         if (!state.autoRound) state.autoRoundHits = 0;
     }
@@ -3304,8 +3304,8 @@ if (chartModal) {
         state.autoRound = !state.autoRound;
         apply();
         showToast(state.autoRound
-            ? "Auto-round on — marks tick off when within 30 m"
-            : "Auto-round off — tap ✓ Mark rounded manually");
+            ? "Auto-round on â€” marks tick off when within 30 m"
+            : "Auto-round off â€” tap âœ“ Mark rounded manually");
     });
     apply();
 })();
@@ -3320,7 +3320,7 @@ window.addEventListener("resize", () => {
 });
 
 // ============================================================
-// Chart layer overlay toggles (🌊 tide / ⚓ all-marks)
+// Chart layer overlay toggles (ðŸŒŠ tide / âš“ all-marks)
 // ============================================================
 (function setupChartLayers() {
     function wire(btnId, key) {
@@ -3364,12 +3364,12 @@ window.addEventListener("resize", () => {
             renderChart();
         });
     }
-    // Map orientation toggle: N↑ (north-up) ↔ ↑COG (course-up)
+    // Map orientation toggle: Nâ†‘ (north-up) â†” â†‘COG (course-up)
     const btnMapUp = document.getElementById("btnMapUp");
     function applyMapUp() {
         if (!btnMapUp) return;
         const isCog = state.mapUp === "cog";
-        btnMapUp.textContent = isCog ? "↑COG" : "N↑";
+        btnMapUp.textContent = isCog ? "â†‘COG" : "Nâ†‘";
         btnMapUp.setAttribute("aria-pressed", isCog ? "true" : "false");
     }
     if (btnMapUp) {
@@ -3460,7 +3460,7 @@ window.addEventListener("resize", () => {
         if (!btnRaceViewToggle) return;
         const isSteer = state.viewMode === "steer";
         btnRaceViewToggle.setAttribute("aria-pressed", isSteer ? "true" : "false");
-        btnRaceViewToggle.textContent = isSteer ? "🗺 Chart" : "🧭 Steer";
+        btnRaceViewToggle.textContent = isSteer ? "ðŸ—º Chart" : "ðŸ§­ Steer";
     }
     if (btnRaceViewToggle) {
         btnRaceViewToggle.addEventListener("click", () => {
@@ -3470,7 +3470,7 @@ window.addEventListener("resize", () => {
             const mainToggle = document.getElementById("btnViewToggle");
             if (mainToggle) {
                 mainToggle.setAttribute("aria-pressed", state.viewMode === "steer" ? "true" : "false");
-                mainToggle.textContent = state.viewMode === "steer" ? "🗺 Chart" : "🧭 Steer";
+                mainToggle.textContent = state.viewMode === "steer" ? "ðŸ—º Chart" : "ðŸ§­ Steer";
             }
             renderChart();
             applyRaceToggle();
@@ -3488,7 +3488,7 @@ window.addEventListener("resize", () => {
     if (raceBtnNext) raceBtnNext.addEventListener("click", () => btnNext.click());
     if (raceBtnUndo) raceBtnUndo.addEventListener("click", () => btnUndo.click());
 
-    // ---- 8. Timer strip "⏱" link jumps to Start tab ----
+    // ---- 8. Timer strip "â±" link jumps to Start tab ----
     const rtsLink = document.querySelector(".rts-link[data-tab='start']");
     if (rtsLink) rtsLink.addEventListener("click", (e) => { e.preventDefault(); showTab("start"); });
 
@@ -3513,7 +3513,7 @@ window.addEventListener("resize", () => {
 // ============================================================
 // Picks the next Tue/Thu/Sat date from schedule.json, derives a warning-signal
 // time from the user's last-selected boat (or sensible defaults), and shows
-// "Tuesday 18:35 · in 2 days". Tapping it jumps to the Race finder with that
+// "Tuesday 18:35 Â· in 2 days". Tapping it jumps to the Race finder with that
 // date pre-selected.
 const DEFAULT_WARN = { tue: "18:35", thu: "18:40", sat: "14:00" };
 const DAY_LABELS = { tue: "Tuesday", thu: "Thursday", sat: "Saturday" };
@@ -3567,7 +3567,7 @@ function renderCountdown() {
         const days = Math.floor(diffMin / (60 * 24));
         when = days === 1 ? "tomorrow" : `in ${days} days`;
     }
-    const note = (next.entry && next.entry.note) ? ` · ${next.entry.note}` : "";
+    const note = (next.entry && next.entry.note) ? ` Â· ${next.entry.note}` : "";
     countdownBig.textContent = `${DAY_LABELS[next.day]} ${warn}`;
     countdownSub.textContent = `${when}${note}`;
     countdownPanel.dataset.date = next.date;
@@ -3592,7 +3592,7 @@ if (countdownPanel) {
 }
 
 // ============================================================
-// Tide engine (Dún Laoghaire, static table) + tidal streams
+// Tide engine (DÃºn Laoghaire, static table) + tidal streams
 // ============================================================
 // (TIDES is declared near the top of the file so that early calls to
 // renderChart() at module-load time can safely call hasTideStreamData()
@@ -3628,7 +3628,7 @@ function tideHeightAt(t) {
 
 /**
  * Hours from the nearest HW. Negative = before HW, positive = after HW.
- * Range: −6.2 .. +6.2 (semidiurnal). Returns null if no surrounding data.
+ * Range: âˆ’6.2 .. +6.2 (semidiurnal). Returns null if no surrounding data.
  */
 function tidePhaseHoursFromHW(t) {
     if (!TIDES || !Array.isArray(TIDES.events) || TIDES.events.length === 0) return null;
@@ -3716,13 +3716,13 @@ function renderTides() {
     const hh = String(dt.getHours()).padStart(2, "0");
     const mm = String(dt.getMinutes()).padStart(2, "0");
     const tag = next.type === "high" ? "HW" : "LW";
-    const arrow = next.type === "high" ? "▲" : "▼";   // rising => HW next, falling => LW next
+    const arrow = next.type === "high" ? "â–²" : "â–¼";   // rising => HW next, falling => LW next
     const minsTo = Math.round((dt.getTime() - nowMs) / 60000);
     const inStr = minsTo < 60
         ? `in ${minsTo}m`
         : `in ${Math.floor(minsTo / 60)}h ${minsTo % 60}m`;
     tideBig.textContent = `${arrow} ${tag} ${hh}:${mm}`;
-    const hStr = next.height_m != null ? ` · ${next.height_m.toFixed(1)} m` : "";
+    const hStr = next.height_m != null ? ` Â· ${next.height_m.toFixed(1)} m` : "";
     tideSub.textContent = `${inStr}${hStr}`;
     tidePanel.hidden = false;
     infoStrip.hidden = false;
@@ -3753,7 +3753,7 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             day: "numeric", month: "short", year: "numeric",
         });
     } catch (e) { /* keep raw ISO */ }
-    span.textContent = `${APP_VERSION} · ${dateStr}`;
+    span.textContent = `${APP_VERSION} Â· ${dateStr}`;
 
     const btn = document.getElementById("btnVersion");
     if (!btn) return;
@@ -3765,7 +3765,7 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         try {
             const reg = await navigator.serviceWorker.getRegistration();
             if (!reg) { showToast("No service worker registered yet."); return; }
-            showToast("Checking for updates…");
+            showToast("Checking for updatesâ€¦");
             await reg.update();
         } catch (e) {
             showToast("Update check failed.");
@@ -3791,17 +3791,17 @@ measureHeader();
 window.addEventListener("resize", measureHeader, { passive: true });
 
 // ---------- iOS Safari orientation-change zoom fix ----------
-// iOS retains the zoom level when rotating landscape → portrait.
-// Briefly pinning maximum-scale=1 snaps it back to 1× zoom, then
+// iOS retains the zoom level when rotating landscape â†’ portrait.
+// Briefly pinning maximum-scale=1 snaps it back to 1Ã— zoom, then
 // we restore the original content so pinch-zoom still works.
 
 // ============================================================
-// Deferred race state restore — runs after all IIFEs have set
+// Deferred race state restore â€” runs after all IIFEs have set
 // _restoreStartSeqState, so the start sequence can be resumed.
 // ============================================================
 function completeDeferredRaceRestore() {
     if (!_pendingRaceRestore) return;
-    // If the landing page is still visible, wait — selectRegatta() will call this
+    // If the landing page is still visible, wait â€” selectRegatta() will call this
     const landingEl = document.getElementById("view-landing");
     if (landingEl && !landingEl.hidden) return;
     const saved = _pendingRaceRestore;
@@ -3810,7 +3810,7 @@ function completeDeferredRaceRestore() {
     const ageMs = Date.now() - (saved.savedAt || 0);
 
     if (ageMs > RACE_STATE_MAX_AGE_MS) {
-        // Too old — ask the user before restoring
+        // Too old â€” ask the user before restoring
         const ageH = Math.floor(ageMs / 3600000);
         const ageMin = Math.floor((ageMs % 3600000) / 60000);
         const ageLabel = ageH > 0
@@ -3821,7 +3821,7 @@ function completeDeferredRaceRestore() {
         const m = document.getElementById("restoreRaceModal");
         if (m) m.hidden = false;
     } else {
-        // Fresh save — restore silently
+        // Fresh save â€” restore silently
         if (saved.startSeq && typeof _restoreStartSeqState === "function") {
             _restoreStartSeqState({ ...saved.startSeq, savedAt: saved.savedAt });
         }
@@ -3862,7 +3862,7 @@ completeDeferredRaceRestore();
     if (!viewportMeta) return;
     const original = viewportMeta.getAttribute("content");
     window.addEventListener("orientationchange", () => {
-        // After the rotation settles, snap zoom to 1×, then restore
+        // After the rotation settles, snap zoom to 1Ã—, then restore
         setTimeout(() => {
             viewportMeta.setAttribute("content", original + ", maximum-scale=1");
             setTimeout(() => viewportMeta.setAttribute("content", original), 300);
@@ -3870,7 +3870,7 @@ completeDeferredRaceRestore();
     });
 }());
 
-// ---------- Regatta landing — event delegation on the overlay ----------
+// ---------- Regatta landing â€” event delegation on the overlay ----------
 // Single listener on the container is more reliable than per-button listeners.
 (function wireLandingHandlers() {
     const overlay = document.getElementById("view-landing");
@@ -3909,11 +3909,11 @@ if (btnChangeRegatta) {
 }());
 
 // ============================================================
-// ⚓ MARK MAP — Leaflet tile map explorer
+// âš“ MARK MAP â€” Leaflet tile map explorer
 // ============================================================
 (function initMarkMap() {
     if (typeof L === "undefined") {
-        console.error("Leaflet not loaded – mark map disabled.");
+        console.error("Leaflet not loaded â€“ mark map disabled.");
         return;
     }
 
@@ -3924,425 +3924,320 @@ if (btnChangeRegatta) {
     const mipLetter = document.getElementById("mipLetter");
     const mipName = document.getElementById("mipName");
     const mipColour = document.getElementById("mipColour");
-    const mipDist = document.getElementById("mipDist");
-    const mipBearing = document.getElementById("mipBearing");
-    const mipGpsStatus = document.getElementById("mipGpsStatus");
-    const mipSwatch = document.getElementById("mipSwatch");
-    const btnMarkNavigate = document.getElementById("btnMarkNavigate");
-    const btnMarkBackMap = document.getElementById("btnMarkBackMap");
-    const mipClose = document.getElementById("mipClose");
-    const btnMarkMapGps = document.getElementById("btnMarkMapGps");
-    const btnMarkMapSeamarks = document.getElementById("btnMarkMapSeamarks");
-
-    if (!mmLeafletDiv) return;
-
-    // ---- colour map ----
+    // ---- Colour utilities ----
     const BUOY_COLOUR_MAP = {
-        "orange": "#f97316",
-        "green": "#22c55e",
-        "yellow": "#eab308",
-        "black": "#1e293b",
-        "blk": "#1e293b",
-        "white": "#f8fafc",
-        "wh": "#f8fafc",
-        "nav mk": "#eab308",
-        "blue": "#3b82f6",
-        "red": "#ef4444",
+        "orange": "#f97316", "green":  "#22c55e", "yellow": "#eab308",
+        "black":  "#1e293b", "blk":    "#1e293b", "white":  "#f8fafc",
+        "wh":     "#f8fafc", "nav mk": "#eab308", "blue":   "#3b82f6",
+        "red":    "#ef4444",
     };
-
-    function parseBuoyColours(colourStr) {
-        if (!colourStr) return ["#8aa5bf"];
-        const parts = colourStr.toLowerCase().split("/");
-        return parts.map((p) => {
-            p = p.trim();
-            if (BUOY_COLOUR_MAP[p]) return BUOY_COLOUR_MAP[p];
-            for (const [key, val] of Object.entries(BUOY_COLOUR_MAP)) {
-                if (p.includes(key)) return val;
-            }
-            return "#8aa5bf";
-        });
+    function buoyColours(str) {
+        return (str || "").toLowerCase().split(/[/,]/)
+            .map((s) => BUOY_COLOUR_MAP[s.trim()] || "#888888");
     }
-
-    /** True if hex colour is perceptually light (luminance > 0.42). */
-    function isLightColour(hex) {
-        if (!hex || hex[0] !== "#" || hex.length < 7) return false;
+    function primaryCol(str)  { return buoyColours(str)[0]; }
+    function isLight(hex) {
         const r = parseInt(hex.slice(1, 3), 16) / 255;
         const g = parseInt(hex.slice(3, 5), 16) / 255;
         const b = parseInt(hex.slice(5, 7), 16) / 255;
         return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.42;
     }
 
-    // ---- Leaflet DivIcon factory ----
-    function createBuoyIcon(letter, colourStr, isSelected) {
-        const colours = parseBuoyColours(colourStr);
-        const c1 = colours[0], c2 = colours[1] || c1, c3 = colours[2] || c2;
-        const textFill = isLightColour(c1) ? "#0a1a2c" : "#ffffff";
-        const fs = letter.length > 1 ? "9" : "12";
-        const lid = "bi" + letter.replace(/[^a-zA-Z0-9]/g, "_");
-        const selRing = isSelected
-            ? `<circle cx="16" cy="16" r="15.5" fill="none" stroke="#ffb000" stroke-width="3" stroke-dasharray="5 4"/>`
-            : "";
+    // ---- Canvas chart: all marks on Dublin Bay ----
+    const B = { minLat: 53.276, maxLat: 53.350, minLon: -6.178, maxLon: -6.072 };
 
-        let defs = "", body;
-        if (colours.length === 1) {
-            defs = "";
-            body = `<circle cx="16" cy="16" r="14" fill="${c1}"/>`;
-        } else if (colours.length === 2) {
-            defs = `<defs><clipPath id="${lid}r"><rect x="16" y="2" width="14" height="28"/></clipPath></defs>`;
-            body = `<circle cx="16" cy="16" r="14" fill="${c1}"/>` +
-                `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}r)"/>`;
-        } else {
-            defs = `<defs>` +
-                `<clipPath id="${lid}m"><rect x="2" y="11" width="28" height="10"/></clipPath>` +
-                `<clipPath id="${lid}b"><rect x="2" y="21" width="28" height="9"/></clipPath>` +
-                `</defs>`;
-            body = `<circle cx="16" cy="16" r="14" fill="${c1}"/>` +
-                `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}m)"/>` +
-                `<circle cx="16" cy="16" r="14" fill="${c3}" clip-path="url(#${lid}b)"/>`;
+    function drawAllMarksTo(canvas) {
+        if (!canvas || canvas.width < 2 || canvas.height < 2) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        const midLat = (B.minLat + B.maxLat) / 2;
+        const cosLat = Math.cos(midLat * Math.PI / 180);
+        const pad = Math.round(Math.min(W, H) * 0.04);
+        const cW  = W - pad * 2, cH = H - pad * 2;
+        const xR  = (B.maxLon - B.minLon) * cosLat, yR = B.maxLat - B.minLat;
+        const s   = Math.min(cW / xR, cH / yR);
+        const oX  = pad + (cW - xR * s) / 2;
+        const oY  = pad + (cH - yR * s) / 2;
+        function proj(lat, lon) {
+            return [oX + (lon - B.minLon) * cosLat * s, oY + (B.maxLat - lat) * s];
         }
-
-        const svg =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42">` +
-            defs +
-            `<rect x="14" y="30" width="4" height="12" rx="2" fill="${c1}" opacity="0.8"/>` +
-            body +
-            `<circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.5"/>` +
-            selRing +
-            `<text x="16" y="21" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif"` +
-            ` font-size="${fs}" font-weight="700" fill="${textFill}">${letter}</text>` +
-            `</svg>`;
-
-        return L.divIcon({
-            html: svg,
-            className: "mm-buoy-icon",
-            iconSize: [32, 42],
-            iconAnchor: [16, 42],
-        });
-    }
-
-    // ---- Lazy Leaflet initialisation (deferred until tab is first opened) ----
-    let lmap = null;
-    let seaLayer = null;
-    let seaMarksOn = true;
-    const mmMarkers = {};
-    let gpsMarker = null;
-    let gpsIcon = null;
-    let bearingLine = null;
-    let mmReady = false;
-
-    function ensureMapReady() {
-        if (mmReady) return;
-        mmReady = true;
-
-        lmap = L.map("markMap", {
-            center: [53.310, -6.120],
-            zoom: 13,
-            zoomControl: true,
-            attributionControl: true,
-        });
-
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(lmap);
-
-        seaLayer = L.tileLayer("https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png", {
-            maxZoom: 18,
-            opacity: 0.85,
-            attribution: '© <a href="https://www.openseamap.org">OpenSeaMap</a>',
-        });
-        seaLayer.addTo(lmap);
-
-        if (btnMarkMapSeamarks) {
-            btnMarkMapSeamarks.setAttribute("aria-pressed", "true");
-            btnMarkMapSeamarks.classList.add("active");
-            btnMarkMapSeamarks.addEventListener("click", () => {
-                seaMarksOn = !seaMarksOn;
-                if (seaMarksOn) { seaLayer.addTo(lmap); } else { lmap.removeLayer(seaLayer); }
-                btnMarkMapSeamarks.classList.toggle("active", seaMarksOn);
-                btnMarkMapSeamarks.setAttribute("aria-pressed", String(seaMarksOn));
+        ctx.fillStyle = cssVar("--chart-sea", "#1d4a73");
+        ctx.fillRect(0, 0, W, H);
+        function fillLand(coords) {
+            if (!coords || coords.length < 3) return;
+            ctx.beginPath();
+            coords.forEach((p, i) => {
+                const [x, y] = proj(p.lat, p.lon);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
             });
+            ctx.closePath();
+            ctx.fillStyle = cssVar("--chart-land", "#2a3848");
+            ctx.fill();
+            ctx.lineWidth = Math.max(1, W * 0.0015);
+            ctx.strokeStyle = cssVar("--chart-coast", "#4a6280");
+            ctx.stroke();
         }
-
-        for (const [letter, mark] of Object.entries(MARKS)) {
-            const m = L.marker([mark.lat, mark.lon], {
-                icon: createBuoyIcon(letter, mark.colour, false),
-                title: `${letter} – ${mark.name}`,
-                keyboard: false,
-            }).addTo(lmap);
-            m.on("click", () => {
-                state.selectedMark = letter;
-                state.markMapSteerMode = false;
-                updateAllIcons();
-                updateMarkInfoPanel();
-                updateBearingLine();
-            });
-            mmMarkers[letter] = m;
+        fillLand(DUBLIN_BAY_COAST);
+        fillLand(BULL_ISLAND);
+        fillLand(DALKEY_ISLAND);
+        {
+            const ax = W - pad - Math.round(W * 0.028);
+            const ay = pad + Math.round(H * 0.045);
+            const len = Math.round(Math.min(W, H) * 0.038);
+            const hd  = Math.round(len * 0.35);
+            ctx.strokeStyle = ctx.fillStyle = cssVar("--chart-arrow", "#8aa5bf");
+            ctx.lineWidth = Math.max(1.5, W * 0.003);
+            ctx.beginPath(); ctx.moveTo(ax, ay + len); ctx.lineTo(ax, ay); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(ax, ay - hd * 0.4);
+            ctx.lineTo(ax - hd * 0.6, ay + hd * 0.4);
+            ctx.lineTo(ax + hd * 0.6, ay + hd * 0.4);
+            ctx.closePath(); ctx.fill();
+            ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+            ctx.fillText("N", ax, ay - hd * 0.6);
         }
-
-        gpsIcon = L.divIcon({
-            html: `<div class="mm-gps-dot"><div class="mm-gps-pulse"></div></div>`,
-            className: "mm-gps-icon",
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
-        });
-    }
-
-    function updateAllIcons() {
-        for (const [letter, marker] of Object.entries(mmMarkers)) {
-            marker.setIcon(createBuoyIcon(letter, MARKS[letter].colour, letter === state.selectedMark));
-        }
-    }
-
-    function updateGpsMarker() {
-        if (!lmap) return;
-        if (state.gpsPos) {
-            if (gpsMarker) {
-                gpsMarker.setLatLng([state.gpsPos.lat, state.gpsPos.lon]);
-            } else {
-                gpsMarker = L.marker([state.gpsPos.lat, state.gpsPos.lon], {
-                    icon: gpsIcon, zIndexOffset: 1000, keyboard: false,
-                }).addTo(lmap);
-            }
-        } else if (gpsMarker) {
-            gpsMarker.remove();
-            gpsMarker = null;
-        }
-    }
-
-    function updateBearingLine() {
-        if (!lmap) return;
-        if (bearingLine) { bearingLine.remove(); bearingLine = null; }
         if (state.gpsPos && state.selectedMark && MARKS[state.selectedMark]) {
+            const [gx, gy] = proj(state.gpsPos.lat, state.gpsPos.lon);
             const mk = MARKS[state.selectedMark];
-            bearingLine = L.polyline(
-                [[state.gpsPos.lat, state.gpsPos.lon], [mk.lat, mk.lon]],
-                { color: "#ffb000", weight: 2.5, dashArray: "8 6", opacity: 0.9, interactive: false }
-            ).addTo(lmap);
+            const [mx, my] = proj(mk.lat, mk.lon);
+            ctx.setLineDash([5, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = cssVar("--accent", "#ffb000");
+            ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(mx, my); ctx.stroke();
+            ctx.setLineDash([]);
         }
-    }
-
-    // ---- resize ----
-    function resizeMarkMap() {
-        // In portrait mode the CSS percentage-height chain breaks (ancestor
-        // views have height:auto). Measure the actual available viewport space
-        // and set an explicit pixel height on the flex area so Leaflet always
-        // gets a real container. getBoundingClientRect() forces a synchronous
-        // reflow, ensuring correct values even inside a requestAnimationFrame.
-        const flexArea = mmLeafletDiv ? mmLeafletDiv.parentElement : null;
-        if (flexArea) {
-            const rect = flexArea.getBoundingClientRect();
-            const h = window.innerHeight - rect.top;
-            if (h > 50) flexArea.style.height = h + 'px';
-        }
-        ensureMapReady();
-        if (lmap) lmap.invalidateSize({ animate: false });
-        if (markSteerCvs && !markSteerCvs.hidden) {
-            const dpr = window.devicePixelRatio || 1;
-            const p = markSteerCvs.parentElement;
-            if (p && p.clientWidth > 0) {
-                markSteerCvs.width = Math.round(p.clientWidth * dpr);
-                markSteerCvs.height = Math.round(p.clientHeight * dpr);
+        const markR    = Math.max(5, Math.round(Math.min(W, H) * 0.014));
+        const fontSize = Math.max(9, Math.round(markR * 1.1));
+        for (const [letter, mark] of Object.entries(MARKS)) {
+            const [x, y] = proj(mark.lat, mark.lon);
+            const col   = primaryCol(mark.colour);
+            const textC = isLight(col) ? "#0a1a2c" : "#f5f7fa";
+            const sel   = letter === state.selectedMark;
+            if (sel) {
+                ctx.beginPath(); ctx.arc(x, y, markR + 5, 0, Math.PI * 2);
+                ctx.strokeStyle = cssVar("--accent", "#ffb000");
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
             }
-            drawMarkSteerTo(markSteerCvs);
+            ctx.beginPath(); ctx.arc(x, y, markR, 0, Math.PI * 2);
+            ctx.fillStyle = col; ctx.fill();
+            ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(0,0,0,0.4)"; ctx.stroke();
+            ctx.font = `bold ${fontSize}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillStyle = textC;
+            ctx.fillText(letter, x, y);
+        }
+        if (state.gpsPos) {
+            const [gx, gy] = proj(state.gpsPos.lat, state.gpsPos.lon);
+            const r = Math.max(5, Math.round(Math.min(W, H) * 0.014));
+            ctx.beginPath(); ctx.arc(gx, gy, r, 0, Math.PI * 2);
+            ctx.fillStyle = "#3aa0ff"; ctx.fill();
+            ctx.lineWidth = Math.max(1.5, W * 0.003);
+            ctx.strokeStyle = "#fff"; ctx.stroke();
         }
     }
-    window.resizeMarkMap = resizeMarkMap;
 
-    // ---- GPS button sync ----
+    // ---- Mark list ----
+    let rowRefs = {};
+    function buildMarkList() {
+        mmMarkList.innerHTML = "";
+        rowRefs = {};
+        const sorted = Object.entries(MARKS).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+        for (const [letter, mark] of sorted) {
+            const col  = primaryCol(mark.colour);
+            const txtC = isLight(col) ? "#0a1a2c" : "#f5f7fa";
+            const row  = document.createElement("div");
+            row.className = "mm-mark-row";
+            row.setAttribute("role", "listitem");
+            row.dataset.letter = letter;
+            row.innerHTML =
+                `<div class="mm-mark-dot" style="background:${col};color:${txtC}">${letter}</div>` +
+                `<div class="mm-mark-info">` +
+                    `<span class="mm-mark-name">${mark.name}</span>` +
+                    `<span class="mm-mark-colour">${mark.colour}</span>` +
+                `</div>` +
+                `<div class="mm-mark-data">` +
+                    `<span class="mm-mark-dist">\u2014</span>` +
+                    `<span class="mm-mark-brg">\u2014</span>` +
+                `</div>` +
+                `<button class="mm-nav-btn" type="button" ` +
+                    `aria-label="Navigate to ${mark.name}">&#8250;</button>`;
+            row.addEventListener("click", (e) => {
+                if (e.target.closest(".mm-nav-btn")) { enterSteerMode(letter); return; }
+                state.selectedMark = (state.selectedMark === letter) ? null : letter;
+                renderMarkMap();
+            });
+            mmMarkList.appendChild(row);
+            const dataDiv = row.querySelector(".mm-mark-data");
+            rowRefs[letter] = {
+                row,
+                distEl: dataDiv.querySelector(".mm-mark-dist"),
+                brgEl:  dataDiv.querySelector(".mm-mark-brg"),
+            };
+        }
+    }
+
+    function refreshMarkList() {
+        const entries = Object.entries(rowRefs).map(([letter, refs]) => {
+            const mark = MARKS[letter];
+            let dist = null, brg = null;
+            if (state.gpsPos && mark) {
+                const g = geo(state.gpsPos.lat, state.gpsPos.lon, mark.lat, mark.lon);
+                dist = g.distance; brg = g.bearing;
+            }
+            return { letter, refs, dist, brg };
+        });
+        if (state.gpsPos) {
+            entries.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+            for (const { refs } of entries) mmMarkList.appendChild(refs.row);
+        }
+        for (const { letter, refs, dist, brg } of entries) {
+            refs.distEl.textContent = dist != null ? fmtDist(dist) : "\u2014";
+            refs.brgEl.textContent  = brg  != null ? fmtBearing(brg) + "T" : "\u2014";
+            refs.row.classList.toggle("selected", letter === state.selectedMark);
+        }
+    }
+
+    // ---- Steer-to-mark mode ----
+    function enterSteerMode(letter) {
+        if (!letter || !MARKS[letter]) return;
+        state.selectedMark     = letter;
+        state.markMapSteerMode = true;
+        const mk = MARKS[letter];
+        if (mmSteerTitle) mmSteerTitle.textContent = `${letter} \u2014 ${mk.name}`;
+        if (mmSteerPanel) mmSteerPanel.removeAttribute("hidden");
+        if (!state.gpsOn) startGps();
+        sizeSteerCanvas();
+        drawMarkSteerTo(markSteerCvs);
+    }
+    function exitSteerMode() {
+        state.markMapSteerMode = false;
+        if (mmSteerPanel) mmSteerPanel.setAttribute("hidden", "");
+        renderMarkMap();
+    }
+    if (btnSteerBack) btnSteerBack.addEventListener("click", exitSteerMode);
+
+    // ---- Compass arrow (steer-to-mark) ----
+    function drawMarkSteerTo(canvas) {
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+        ctx.fillStyle = cssVar("--bg", "#0b1f33");
+        ctx.fillRect(0, 0, W, H);
+        const accent = cssVar("--accent", "#ffb000");
+        const textC  = cssVar("--text",   "#e7eef5");
+        const muted  = cssVar("--muted",  "#cfd9e4");
+        const tLetter = state.selectedMark;
+        const tMark   = tLetter ? MARKS[tLetter] : null;
+        let brng = null, dist = null;
+        if (state.gpsPos && tMark) {
+            const g = geo(state.gpsPos.lat, state.gpsPos.lon, tMark.lat, tMark.lon);
+            brng = g.bearing; dist = g.distance;
+        }
+        const gpsHdg  = state.gpsPos?.heading != null && (state.gpsPos?.speed ?? 0) > 0.2
+                        ? state.gpsPos.heading : null;
+        const boatHdg = gpsHdg ?? (state.headingOn && state.heading != null ? state.heading : null);
+        const hdgRel  = boatHdg !== null;
+        const topH = Math.round(H * 0.10), botH = Math.round(H * 0.22);
+        const arrH = H - topH - botH;
+        const cx = W / 2, cy = topH + arrH / 2;
+        ctx.font = `700 ${Math.round(W * 0.022)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillStyle = muted;
+        ctx.fillText(
+            hdgRel ? (gpsHdg !== null ? "\u2191 Bow  (GPS COG)" : "\u2191 Bow  (compass)") : "N \u2191",
+            W / 2, Math.round(H * 0.025)
+        );
+        if (!tMark) {
+            ctx.fillStyle = muted;
+            ctx.font = `${Math.round(W * 0.04)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("No mark selected", cx, cy); return;
+        }
+        if (brng == null) {
+            ctx.fillStyle = muted;
+            ctx.font = `${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText(`${tLetter} \u2014 ${tMark.name}`, cx, cy - Math.round(H * 0.05));
+            ctx.fillStyle = textC;
+            ctx.font = `${Math.round(W * 0.028)}px -apple-system,"Segoe UI",sans-serif`;
+            ctx.fillText("Turn on GPS for live bearing", cx, cy + Math.round(H * 0.04)); return;
+        }
+        const arrLen = Math.min(arrH, W) * 0.82;
+        const shaftW = arrLen * 0.14, headW = arrLen * 0.36, headH = arrLen * 0.32;
+        const halfL  = arrLen / 2;
+        const arrAng = hdgRel ? ((brng - boatHdg + 360) % 360) : brng;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(arrAng * Math.PI / 180);
+        ctx.beginPath();
+        ctx.moveTo(0, -halfL);
+        ctx.lineTo(headW / 2, -halfL + headH);
+        ctx.lineTo(shaftW / 2, -halfL + headH);
+        ctx.lineTo(shaftW / 2,  halfL);
+        ctx.lineTo(-shaftW / 2, halfL);
+        ctx.lineTo(-shaftW / 2, -halfL + headH);
+        ctx.lineTo(-headW / 2,  -halfL + headH);
+        ctx.closePath();
+        ctx.fillStyle = accent; ctx.fill();
+        ctx.lineWidth = Math.max(2, W * 0.004);
+        ctx.strokeStyle = "#0a1a2c"; ctx.stroke();
+        ctx.restore();
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillStyle = muted;
+        ctx.font = `600 ${Math.round(W * 0.023)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(`Navigate to ${tLetter} \u2014 ${tMark.name}`, cx, topH * 0.55);
+        const baseY = H - botH;
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.fillStyle = accent;
+        ctx.font = `800 ${Math.round(W * 0.07)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(fmtBearing(brng), cx, baseY + Math.round(H * 0.005));
+        ctx.fillStyle = textC;
+        ctx.font = `600 ${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(tMark.name, cx, baseY + Math.round(H * 0.10));
+        ctx.fillStyle = muted;
+        ctx.font = `${Math.round(W * 0.026)}px -apple-system,"Segoe UI",sans-serif`;
+        ctx.fillText(
+            dist != null ? `${fmtDist(dist)} \u00b7 from GPS` : "GPS off",
+            cx, baseY + Math.round(H * 0.155)
+        );
+    }
+
+    // ---- Canvas sizing ----
+    function sizeMainCanvas() {
+        const mmView = document.getElementById("view-markmap");
+        if (!mmView || !mmCanvas) return;
+        const viewTop = mmView.getBoundingClientRect().top;
+        const totalH  = Math.max(200, window.innerHeight - viewTop);
+        const canvasH = Math.round(totalH * 0.40);
+        mmCanvas.style.height = canvasH + "px";
+        const dpr  = window.devicePixelRatio || 1;
+        const cssW = mmCanvas.clientWidth;
+        if (cssW > 0 && canvasH > 0) {
+            mmCanvas.width  = Math.round(cssW   * dpr);
+            mmCanvas.height = Math.round(canvasH * dpr);
+        }
+    }
+    function sizeSteerCanvas() {
+        if (!markSteerCvs) return;
+        const dpr  = window.devicePixelRatio || 1;
+        const cssW = markSteerCvs.clientWidth;
+        const cssH = markSteerCvs.clientHeight;
+        if (cssW > 0 && cssH > 0) {
+            markSteerCvs.width  = Math.round(cssW * dpr);
+            markSteerCvs.height = Math.round(cssH * dpr);
+        }
+    }
+
+    // ---- GPS button ----
     function syncMarkMapGpsBtn() {
         if (!btnMarkMapGps) return;
         btnMarkMapGps.textContent = state.gpsOn ? "📍 GPS on" : "📍 Use GPS";
         btnMarkMapGps.classList.toggle("primary", state.gpsOn);
     }
     window.syncMarkMapGpsBtn = syncMarkMapGpsBtn;
-
-    // ---- render dispatcher ----
-    function renderMarkMap() {
-        const mmView = document.getElementById("view-markmap");
-        if (!mmView || mmView.hidden) return;
-        if (state.markMapSteerMode && state.selectedMark) {
-            // Steer canvas mode
-            mmLeafletDiv.hidden = true;
-            if (markSteerCvs) {
-                markSteerCvs.removeAttribute("hidden");
-                const dpr = window.devicePixelRatio || 1;
-                const p = markSteerCvs.parentElement;
-                if (markSteerCvs.width < 2 && p && p.clientWidth > 0) {
-                    markSteerCvs.width = Math.round(p.clientWidth * dpr);
-                    markSteerCvs.height = Math.round(p.clientHeight * dpr);
-                }
-                drawMarkSteerTo(markSteerCvs);
-            }
-        } else {
-            // Leaflet map mode
-            if (markSteerCvs) markSteerCvs.hidden = true;
-            mmLeafletDiv.removeAttribute("hidden");
-            ensureMapReady();
-            if (lmap) lmap.invalidateSize({ animate: false });
-            updateGpsMarker();
-            updateBearingLine();
-            updateAllIcons();
-        }
-    }
-    window.renderMarkMap = renderMarkMap;
-
-    // ---- steer-to-mark compass arrow view ----
-    function drawMarkSteerTo(canvas) {
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        const W = canvas.width, H = canvas.height;
-        ctx.clearRect(0, 0, W, H);
-
-        const accent = cssVar("--accent", "#ffb000");
-        const textC = cssVar("--text", "#e7eef5");
-        const muted = cssVar("--muted", "#cfd9e4");
-
-        const targetLetter = state.selectedMark;
-        const targetMark = targetLetter ? MARKS[targetLetter] : null;
-
-        let bearingToMark = null, distanceToMark = null;
-        if (state.gpsPos && targetMark) {
-            const g = geo(state.gpsPos.lat, state.gpsPos.lon, targetMark.lat, targetMark.lon);
-            bearingToMark = g.bearing;
-            distanceToMark = g.distance;
-        }
-
-        const gpsHeading = state.gpsPos && state.gpsPos.heading != null
-            && state.gpsPos.speed != null && state.gpsPos.speed > 0.2
-            ? state.gpsPos.heading : null;
-        const boatHeading = gpsHeading !== null ? gpsHeading
-            : (state.headingOn && state.heading != null ? state.heading : null);
-        const headingRel = boatHeading !== null;
-
-        const topBlockH = Math.round(H * 0.10);
-        const bottomBlockH = Math.round(H * 0.22);
-        const arrowAreaH = H - topBlockH - bottomBlockH;
-        const cx = W / 2;
-        const cy = topBlockH + arrowAreaH / 2;
-
-        // Orientation label
-        ctx.font = `700 ${Math.round(W * 0.022)}px -apple-system,"Segoe UI",Roboto,sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillStyle = muted;
-        ctx.fillText(
-            headingRel ? (gpsHeading !== null ? "↑ Bow  (GPS COG)" : "↑ Bow  (compass)") : "N ↑",
-            W / 2, Math.round(H * 0.025)
-        );
-
-        if (!targetMark) {
-            ctx.fillStyle = muted;
-            ctx.font = `${Math.round(W * 0.04)}px -apple-system,"Segoe UI",sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText("No mark selected", cx, cy);
-            return;
-        }
-        if (bearingToMark == null) {
-            ctx.fillStyle = muted;
-            ctx.font = `${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillText(`${targetLetter} — ${targetMark.name}`, cx, cy - Math.round(H * 0.05));
-            ctx.fillStyle = textC;
-            ctx.font = `${Math.round(W * 0.028)}px -apple-system,"Segoe UI",sans-serif`;
-            ctx.fillText("Turn on GPS for live bearing", cx, cy + Math.round(H * 0.04));
-            return;
-        }
-
-        // Arrow
-        const arrowLen = Math.min(arrowAreaH, W) * 0.82;
-        const shaftW = arrowLen * 0.14;
-        const headW = arrowLen * 0.36;
-        const headH = arrowLen * 0.32;
-        const halfL = arrowLen / 2;
-        const arrowAng = headingRel
-            ? ((bearingToMark - boatHeading + 360) % 360)
-            : bearingToMark;
-
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate((arrowAng * Math.PI) / 180);
-        ctx.beginPath();
-        ctx.moveTo(0, -halfL);
-        ctx.lineTo(headW / 2, -halfL + headH);
-        ctx.lineTo(shaftW / 2, -halfL + headH);
-        ctx.lineTo(shaftW / 2, halfL);
-        ctx.lineTo(-shaftW / 2, halfL);
-        ctx.lineTo(-shaftW / 2, -halfL + headH);
-        ctx.lineTo(-headW / 2, -halfL + headH);
-        ctx.closePath();
-        ctx.fillStyle = accent;
-        ctx.fill();
-        ctx.lineWidth = Math.max(2, W * 0.004);
-        ctx.strokeStyle = "#0a1a2c";
-        ctx.stroke();
-        ctx.restore();
-
-        // Top label
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillStyle = muted;
-        ctx.font = `600 ${Math.round(W * 0.023)}px -apple-system,"Segoe UI",sans-serif`;
-        ctx.fillText(`Navigate to ${targetLetter} — ${targetMark.name}`, cx, topBlockH * 0.55);
-
-        // Bottom stats
-        const baseY = H - bottomBlockH;
-        ctx.textAlign = "center"; ctx.textBaseline = "top";
-        ctx.fillStyle = accent;
-        ctx.font = `800 ${Math.round(W * 0.07)}px -apple-system,"Segoe UI",sans-serif`;
-        ctx.fillText(fmtBearing(bearingToMark), cx, baseY + Math.round(H * 0.005));
-
-        ctx.fillStyle = textC;
-        ctx.font = `600 ${Math.round(W * 0.032)}px -apple-system,"Segoe UI",sans-serif`;
-        ctx.fillText(targetMark.name, cx, baseY + Math.round(H * 0.10));
-
-        ctx.fillStyle = muted;
-        ctx.font = `${Math.round(W * 0.026)}px -apple-system,"Segoe UI",sans-serif`;
-        ctx.fillText(`${fmtDist(distanceToMark)} · from GPS`, cx, baseY + Math.round(H * 0.155));
-    }
-
-    // ---- info panel update ----
-    function updateMarkInfoPanel() {
-        if (!state.selectedMark || !MARKS[state.selectedMark]) {
-            if (markInfoPanel) markInfoPanel.hidden = true;
-            return;
-        }
-        const mark = MARKS[state.selectedMark];
-        const colours = parseBuoyColours(mark.colour);
-
-        if (mipLetter) mipLetter.textContent = mark.letter;
-        if (mipName) mipName.textContent = mark.name;
-        if (mipColour) mipColour.textContent = mark.colour;
-
-        if (mipSwatch) {
-            if (colours.length === 1) {
-                mipSwatch.style.background = colours[0];
-            } else if (colours.length === 2) {
-                mipSwatch.style.background =
-                    `linear-gradient(135deg, ${colours[0]} 50%, ${colours[1]} 50%)`;
-            } else {
-                mipSwatch.style.background =
-                    `linear-gradient(180deg, ${colours[0]} 33%, ${colours[1]} 33% 66%, ${colours[2]} 66%)`;
-            }
-        }
-
-        if (state.gpsPos) {
-            const g = geo(state.gpsPos.lat, state.gpsPos.lon, mark.lat, mark.lon);
-            if (mipDist) mipDist.textContent = fmtDist(g.distance);
-            if (mipBearing) mipBearing.textContent = fmtBearing(g.bearing);
-            if (mipGpsStatus) mipGpsStatus.textContent = "✓ Live";
-        } else {
-            if (mipDist) mipDist.textContent = "—";
-            if (mipBearing) mipBearing.textContent = "—";
-            if (mipGpsStatus) mipGpsStatus.textContent = "Off";
-        }
-
-        if (btnMarkNavigate) btnMarkNavigate.hidden = state.markMapSteerMode;
-        if (btnMarkBackMap) btnMarkBackMap.hidden = !state.markMapSteerMode;
-        if (markInfoPanel) markInfoPanel.hidden = false;
-    }
-    window.updateMarkInfoPanel = updateMarkInfoPanel;
-
-    // ---- GPS toggle button ----
     if (btnMarkMapGps) {
         btnMarkMapGps.addEventListener("click", () => {
             if (state.gpsOn) { stopGps(); } else { startGps(); }
@@ -4350,53 +4245,51 @@ if (btnChangeRegatta) {
         });
     }
 
-    // ---- Navigate button → steer-to-mark mode ----
-    if (btnMarkNavigate) {
-        btnMarkNavigate.addEventListener("click", () => {
-            if (!state.gpsOn) startGps();
-            state.markMapSteerMode = true;
-            renderMarkMap();
-            updateMarkInfoPanel();
-        });
+    // ---- Render ----
+    function renderMarkMap() {
+        const mmView = document.getElementById("view-markmap");
+        if (!mmView || mmView.hidden) return;
+        drawAllMarksTo(mmCanvas);
+        refreshMarkList();
+        if (state.markMapSteerMode) {
+            sizeSteerCanvas();
+            drawMarkSteerTo(markSteerCvs);
+        }
     }
+    window.renderMarkMap = renderMarkMap;
 
-    // ---- Back-to-map button ----
-    if (btnMarkBackMap) {
-        btnMarkBackMap.addEventListener("click", () => {
-            state.markMapSteerMode = false;
-            renderMarkMap();
-            updateMarkInfoPanel();
-        });
+    // ---- Resize ----
+    function resizeMarkMap() {
+        const mmView = document.getElementById("view-markmap");
+        if (!mmView || mmView.hidden) return;
+        sizeMainCanvas();
+        renderMarkMap();
+        if (state.markMapSteerMode) sizeSteerCanvas();
     }
+    window.resizeMarkMap = resizeMarkMap;
 
-    // ---- Close info panel ----
-    if (mipClose) {
-        mipClose.addEventListener("click", () => {
-            state.selectedMark = null;
-            state.markMapSteerMode = false;
-            if (markInfoPanel) markInfoPanel.hidden = true;
-            updateBearingLine();
-            updateAllIcons();
-        });
-    }
+    // ---- Init ----
+    buildMarkList();
+    syncMarkMapGpsBtn();
 
-    // ---- Hook into renderNow for live GPS updates ----
+    // ---- Live GPS updates via renderNow hook ----
     const _rnMm = renderNow;
     renderNow = function () {
         _rnMm();
         const mmView = document.getElementById("view-markmap");
         if (!mmView || mmView.hidden) return;
         syncMarkMapGpsBtn();
-        updateMarkInfoPanel();
-        updateGpsMarker();
-        updateBearingLine();
-        if (state.markMapSteerMode) drawMarkSteerTo(markSteerCvs);
+        refreshMarkList();
+        if (mmCanvas.width > 0) drawAllMarksTo(mmCanvas);
+        if (state.markMapSteerMode) {
+            sizeSteerCanvas();
+            drawMarkSteerTo(markSteerCvs);
+        }
     };
 
-    // ---- Resize when window changes while map tab is visible ----
+    // ---- Re-render on orientation / window resize ----
     window.addEventListener("resize", () => {
         const mmView = document.getElementById("view-markmap");
         if (mmView && !mmView.hidden) resizeMarkMap();
     }, { passive: true });
 })();
-
