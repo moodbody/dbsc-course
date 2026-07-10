@@ -2767,8 +2767,15 @@ footer .app-version {
 }
 
 @keyframes hint-pop {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Landscape: cards side by side already; limit height so they don't fill screen */
@@ -2839,14 +2846,103 @@ footer .app-version {
     text-align: right;
 }
 
-.markmap-canvas {
+.markmap-flex-area {
     flex: 1;
     min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+#markMap {
+    position: absolute;
+    inset: 0;
     width: 100%;
-    display: block;
+    height: 100%;
+}
+
+.markmap-leaflet {
+    width: 100%;
+    height: 100%;
+}
+
+.markmap-steer-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+}
+
+/* Neutralise Leaflet's default divIcon box for buoy + GPS icons */
+.mm-buoy-icon,
+.mm-gps-icon {
+    background: none !important;
+    border: none !important;
+}
+
+/* GPS position dot with pulsing ring */
+.mm-gps-dot {
+    width: 16px;
+    height: 16px;
+    background: #2bb673;
+    border: 2px solid #0a1a2c;
+    border-radius: 50%;
+    position: relative;
+}
+
+.mm-gps-pulse {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid #2bb673;
+    opacity: 0;
+    animation: mm-pulse 2s ease-out infinite;
+}
+
+@keyframes mm-pulse {
+    0%   { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Sea-marks layer toggle button */
+.mmp-layer-btn {
+    font-size: 1rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--card2);
+    color: var(--muted);
     cursor: pointer;
-    touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.mmp-layer-btn.active {
+    background: var(--accent);
+    color: #0a1a2c;
+    border-color: var(--accent);
+}
+
+/* Leaflet attribution bar — dark theme */
+.leaflet-container .leaflet-control-attribution {
+    background: rgba(11, 31, 51, 0.72);
+    color: var(--muted);
+    font-size: 0.65rem;
+}
+
+.leaflet-container .leaflet-control-attribution a {
+    color: var(--accent);
+}
+
+/* Light-theme attribution */
+[data-theme="light"] .leaflet-container .leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.8);
+    color: #444;
+}
+
+[data-theme="light"] .leaflet-container .leaflet-control-attribution a {
+    color: var(--accent);
 }
 
 /* Info panel — slides up from bottom, overlays the canvas */
@@ -2865,8 +2961,15 @@ footer .app-version {
 }
 
 @keyframes mip-slide-in {
-    from { transform: translateY(40%); opacity: 0; }
-    to   { transform: translateY(0);   opacity: 1; }
+    from {
+        transform: translateY(40%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .mip-header {
@@ -2949,7 +3052,7 @@ footer .app-version {
     text-align: center;
 }
 
-.mip-stat + .mip-stat {
+.mip-stat+.mip-stat {
     border-left: 1px solid var(--line);
 }
 
@@ -2993,7 +3096,9 @@ footer .app-version {
     transition: background 0.12s, opacity 0.12s;
 }
 
-.mmp-btn:active { opacity: 0.75; }
+.mmp-btn:active {
+    opacity: 0.75;
+}
 
 .mmp-btn.primary {
     background: var(--accent);
@@ -3001,7 +3106,9 @@ footer .app-version {
     border-color: var(--accent);
 }
 
-.mmp-btn[hidden] { display: none; }
+.mmp-btn[hidden] {
+    display: none;
+}
 
 /* Light-theme overrides for mark map */
 [data-theme="light"] .mark-info-panel {

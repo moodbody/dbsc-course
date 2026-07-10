@@ -5,11 +5,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b3d66" />
-    <!-- Content Security Policy: same-origin only. No remote scripts, no inline JS,
-         no plugins, no foreign forms. Inline styles are permitted because the canvas
-         chart and a few computed colours are set inline. -->
+    <!-- Content Security Policy: same-origin + Leaflet CDN (unpkg.com) for the tile map feature.
+         Tile images permitted from OpenStreetMap and OpenSeaMap. Inline styles allowed for
+         canvas chart and computed colours. -->  
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
+        content="default-src 'self'; img-src 'self' data: https://*.tile.openstreetmap.org https://tiles.openseamap.org; style-src 'self' 'unsafe-inline' https://unpkg.com; script-src 'self' https://unpkg.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
     <meta name="referrer" content="no-referrer" />
     <title>DBSC Navigator</title>
 
@@ -22,6 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
 
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
 
 <body>
@@ -75,7 +76,8 @@
         aria-labelledby="undoConfirmTitle">
         <div class="modal-card welcome-card">
             <h2 id="undoConfirmTitle">↶ Undo GPS-confirmed mark?</h2>
-            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where you actually are.</p>
+            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where
+                you actually are.</p>
             <div class="modal-row" style="margin-top:18px;">
                 <button id="undoConfirmYes" class="ghost" type="button">↶ Go back</button>
                 <button id="undoConfirmNo" class="primary" type="button">Stay on this leg</button>
@@ -503,8 +505,10 @@
                                 </div>
                                 <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
                                 <div class="chart-zoom-bar">
-                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
-                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in"
+                                        title="Zoom in">+</button>
+                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out"
+                                        title="Zoom out">−</button>
                                 </div>
                                 <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                                     title="Expand">⛶</button>
@@ -750,15 +754,20 @@
     <div id="view-markmap" class="view markmap-view" hidden>
         <div class="mmp-toolbar">
             <button id="btnMarkMapGps" type="button" class="mmp-gps-btn">📍 Use GPS</button>
-            <span class="mmp-hint">Tap any mark to explore</span>
+            <button id="btnMarkMapSeamarks" type="button" class="mmp-layer-btn" aria-pressed="true" title="Toggle nautical chart overlay">⚓</button>
+            <span class="mmp-hint">Tap any mark</span>
         </div>
-        <canvas id="markMapCanvas" class="markmap-canvas" aria-label="Dublin Bay racing marks"></canvas>
+        <div class="markmap-flex-area">
+            <div id="markMap" class="markmap-leaflet" aria-label="Dublin Bay racing marks map"></div>
+            <canvas id="markSteerCanvas" class="markmap-steer-canvas" hidden aria-label="Navigate to mark"></canvas>
+        </div>
         <div id="markInfoPanel" class="mark-info-panel" hidden>
             <div class="mip-header">
                 <div class="mip-title-row">
                     <span id="mipSwatch" class="mip-swatch"></span>
                     <div class="mip-title-text">
-                        <span class="mip-letter-name"><span id="mipLetter" class="mip-letter"></span>&ensp;<span id="mipName" class="mip-name"></span></span>
+                        <span class="mip-letter-name"><span id="mipLetter" class="mip-letter"></span>&ensp;<span
+                                id="mipName" class="mip-name"></span></span>
                         <span id="mipColour" class="mip-colour-label"></span>
                     </div>
                 </div>
@@ -808,6 +817,7 @@
 
     <script src="regatta-data.js"></script>
     <script src="data.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="app.js"></script>
 </body>
 

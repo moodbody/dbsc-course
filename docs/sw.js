@@ -1,4 +1,5 @@
-﻿const CACHE_VERSION = "dbsc-v59";
+﻿const CACHE_VERSION = "dbsc-v60";
+const TILE_CACHE = "dbsc-tiles";
 
 const CORE = [
     "./",
@@ -129,6 +130,26 @@ self.addEventListener("fetch", (event) => {
 
     if (isPdf(url.pathname)) {
         return cacheFirst(event, req);
+    }
+
+    // Cache-first for OSM/OpenSeaMap tiles and Leaflet CDN resources
+    const isTileOrCdn =
+        url.hostname.endsWith("tile.openstreetmap.org") ||
+        url.hostname === "tiles.openseamap.org" ||
+        url.hostname === "unpkg.com";
+    if (isTileOrCdn) {
+        event.respondWith(
+            caches.open(TILE_CACHE).then((cache) =>
+                cache.match(req).then((cached) => {
+                    if (cached) return cached;
+                    return fetch(req).then((res) => {
+                        if (res && res.status === 200) cache.put(req, res.clone());
+                        return res;
+                    }).catch(() => cached);
+                })
+            )
+        );
+        return;
     }
 
     if (url.origin === self.location.origin) {
