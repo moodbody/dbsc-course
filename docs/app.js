@@ -1,4 +1,4 @@
-﻿/* DBSC Race Course â€“ app logic
+/* DBSC Race Course â€“ app logic
  * Selection: card -> wind -> course
  * Navigation: marks list with bearing/distance per leg + a "current leg" focus
  * GPS (optional): live bearing & distance from current position to next mark
@@ -142,8 +142,8 @@ let TIDES = null;
 //   MAJOR â€” bump when the SW cache version increments (breaking cache change)
 //   MINOR â€” bump for new features or significant UI additions
 //   PATCH â€” bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v47.0.0";
-const APP_BUILD_DATE = "2026-07-11";
+const APP_VERSION = "v47.0.1";
+const APP_BUILD_DATE = "2026-07-10";
 
 const $ = (id) => document.getElementById(id);
 
@@ -3909,33 +3909,32 @@ if (btnChangeRegatta) {
 }());
 
 // ============================================================
-// âš“ MARK MAP â€” Leaflet tile map explorer
+// ⚓ MARK MAP — Dublin Bay canvas chart + live mark list
 // ============================================================
 (function initMarkMap() {
-    if (typeof L === "undefined") {
-        console.error("Leaflet not loaded â€“ mark map disabled.");
-        return;
-    }
 
     // ---- DOM refs ----
-    const mmLeafletDiv = document.getElementById("markMap");
-    const markSteerCvs = document.getElementById("markSteerCanvas");
-    const markInfoPanel = document.getElementById("markInfoPanel");
-    const mipLetter = document.getElementById("mipLetter");
-    const mipName = document.getElementById("mipName");
-    const mipColour = document.getElementById("mipColour");
+    const mmCanvas      = document.getElementById("mmCanvas");
+    const mmMarkList    = document.getElementById("mmMarkList");
+    const mmSteerPanel  = document.getElementById("mmSteerPanel");
+    const markSteerCvs  = document.getElementById("markSteerCanvas");
+    const btnMarkMapGps = document.getElementById("btnMarkMapGps");
+    const btnSteerBack  = document.getElementById("btnSteerBack");
+    const mmSteerTitle  = document.getElementById("mmSteerTitle");
+
+    if (!mmCanvas || !mmMarkList) return;
     // ---- Colour utilities ----
     const BUOY_COLOUR_MAP = {
-        "orange": "#f97316", "green":  "#22c55e", "yellow": "#eab308",
-        "black":  "#1e293b", "blk":    "#1e293b", "white":  "#f8fafc",
-        "wh":     "#f8fafc", "nav mk": "#eab308", "blue":   "#3b82f6",
-        "red":    "#ef4444",
+        "orange": "#f97316", "green": "#22c55e", "yellow": "#eab308",
+        "black": "#1e293b", "blk": "#1e293b", "white": "#f8fafc",
+        "wh": "#f8fafc", "nav mk": "#eab308", "blue": "#3b82f6",
+        "red": "#ef4444",
     };
     function buoyColours(str) {
         return (str || "").toLowerCase().split(/[/,]/)
             .map((s) => BUOY_COLOUR_MAP[s.trim()] || "#888888");
     }
-    function primaryCol(str)  { return buoyColours(str)[0]; }
+    function primaryCol(str) { return buoyColours(str)[0]; }
     function isLight(hex) {
         const r = parseInt(hex.slice(1, 3), 16) / 255;
         const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -3954,11 +3953,11 @@ if (btnChangeRegatta) {
         const midLat = (B.minLat + B.maxLat) / 2;
         const cosLat = Math.cos(midLat * Math.PI / 180);
         const pad = Math.round(Math.min(W, H) * 0.04);
-        const cW  = W - pad * 2, cH = H - pad * 2;
-        const xR  = (B.maxLon - B.minLon) * cosLat, yR = B.maxLat - B.minLat;
-        const s   = Math.min(cW / xR, cH / yR);
-        const oX  = pad + (cW - xR * s) / 2;
-        const oY  = pad + (cH - yR * s) / 2;
+        const cW = W - pad * 2, cH = H - pad * 2;
+        const xR = (B.maxLon - B.minLon) * cosLat, yR = B.maxLat - B.minLat;
+        const s = Math.min(cW / xR, cH / yR);
+        const oX = pad + (cW - xR * s) / 2;
+        const oY = pad + (cH - yR * s) / 2;
         function proj(lat, lon) {
             return [oX + (lon - B.minLon) * cosLat * s, oY + (B.maxLat - lat) * s];
         }
@@ -3985,7 +3984,7 @@ if (btnChangeRegatta) {
             const ax = W - pad - Math.round(W * 0.028);
             const ay = pad + Math.round(H * 0.045);
             const len = Math.round(Math.min(W, H) * 0.038);
-            const hd  = Math.round(len * 0.35);
+            const hd = Math.round(len * 0.35);
             ctx.strokeStyle = ctx.fillStyle = cssVar("--chart-arrow", "#8aa5bf");
             ctx.lineWidth = Math.max(1.5, W * 0.003);
             ctx.beginPath(); ctx.moveTo(ax, ay + len); ctx.lineTo(ax, ay); ctx.stroke();
@@ -4008,13 +4007,13 @@ if (btnChangeRegatta) {
             ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(mx, my); ctx.stroke();
             ctx.setLineDash([]);
         }
-        const markR    = Math.max(5, Math.round(Math.min(W, H) * 0.014));
+        const markR = Math.max(5, Math.round(Math.min(W, H) * 0.014));
         const fontSize = Math.max(9, Math.round(markR * 1.1));
         for (const [letter, mark] of Object.entries(MARKS)) {
             const [x, y] = proj(mark.lat, mark.lon);
-            const col   = primaryCol(mark.colour);
+            const col = primaryCol(mark.colour);
             const textC = isLight(col) ? "#0a1a2c" : "#f5f7fa";
-            const sel   = letter === state.selectedMark;
+            const sel = letter === state.selectedMark;
             if (sel) {
                 ctx.beginPath(); ctx.arc(x, y, markR + 5, 0, Math.PI * 2);
                 ctx.strokeStyle = cssVar("--accent", "#ffb000");
@@ -4046,24 +4045,24 @@ if (btnChangeRegatta) {
         rowRefs = {};
         const sorted = Object.entries(MARKS).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
         for (const [letter, mark] of sorted) {
-            const col  = primaryCol(mark.colour);
+            const col = primaryCol(mark.colour);
             const txtC = isLight(col) ? "#0a1a2c" : "#f5f7fa";
-            const row  = document.createElement("div");
+            const row = document.createElement("div");
             row.className = "mm-mark-row";
             row.setAttribute("role", "listitem");
             row.dataset.letter = letter;
             row.innerHTML =
                 `<div class="mm-mark-dot" style="background:${col};color:${txtC}">${letter}</div>` +
                 `<div class="mm-mark-info">` +
-                    `<span class="mm-mark-name">${mark.name}</span>` +
-                    `<span class="mm-mark-colour">${mark.colour}</span>` +
+                `<span class="mm-mark-name">${mark.name}</span>` +
+                `<span class="mm-mark-colour">${mark.colour}</span>` +
                 `</div>` +
                 `<div class="mm-mark-data">` +
-                    `<span class="mm-mark-dist">\u2014</span>` +
-                    `<span class="mm-mark-brg">\u2014</span>` +
+                `<span class="mm-mark-dist">\u2014</span>` +
+                `<span class="mm-mark-brg">\u2014</span>` +
                 `</div>` +
                 `<button class="mm-nav-btn" type="button" ` +
-                    `aria-label="Navigate to ${mark.name}">&#8250;</button>`;
+                `aria-label="Navigate to ${mark.name}">&#8250;</button>`;
             row.addEventListener("click", (e) => {
                 if (e.target.closest(".mm-nav-btn")) { enterSteerMode(letter); return; }
                 state.selectedMark = (state.selectedMark === letter) ? null : letter;
@@ -4074,7 +4073,7 @@ if (btnChangeRegatta) {
             rowRefs[letter] = {
                 row,
                 distEl: dataDiv.querySelector(".mm-mark-dist"),
-                brgEl:  dataDiv.querySelector(".mm-mark-brg"),
+                brgEl: dataDiv.querySelector(".mm-mark-brg"),
             };
         }
     }
@@ -4095,7 +4094,7 @@ if (btnChangeRegatta) {
         }
         for (const { letter, refs, dist, brg } of entries) {
             refs.distEl.textContent = dist != null ? fmtDist(dist) : "\u2014";
-            refs.brgEl.textContent  = brg  != null ? fmtBearing(brg) + "T" : "\u2014";
+            refs.brgEl.textContent = brg != null ? fmtBearing(brg) + "T" : "\u2014";
             refs.row.classList.toggle("selected", letter === state.selectedMark);
         }
     }
@@ -4103,7 +4102,7 @@ if (btnChangeRegatta) {
     // ---- Steer-to-mark mode ----
     function enterSteerMode(letter) {
         if (!letter || !MARKS[letter]) return;
-        state.selectedMark     = letter;
+        state.selectedMark = letter;
         state.markMapSteerMode = true;
         const mk = MARKS[letter];
         if (mmSteerTitle) mmSteerTitle.textContent = `${letter} \u2014 ${mk.name}`;
@@ -4128,19 +4127,19 @@ if (btnChangeRegatta) {
         ctx.fillStyle = cssVar("--bg", "#0b1f33");
         ctx.fillRect(0, 0, W, H);
         const accent = cssVar("--accent", "#ffb000");
-        const textC  = cssVar("--text",   "#e7eef5");
-        const muted  = cssVar("--muted",  "#cfd9e4");
+        const textC = cssVar("--text", "#e7eef5");
+        const muted = cssVar("--muted", "#cfd9e4");
         const tLetter = state.selectedMark;
-        const tMark   = tLetter ? MARKS[tLetter] : null;
+        const tMark = tLetter ? MARKS[tLetter] : null;
         let brng = null, dist = null;
         if (state.gpsPos && tMark) {
             const g = geo(state.gpsPos.lat, state.gpsPos.lon, tMark.lat, tMark.lon);
             brng = g.bearing; dist = g.distance;
         }
-        const gpsHdg  = state.gpsPos?.heading != null && (state.gpsPos?.speed ?? 0) > 0.2
-                        ? state.gpsPos.heading : null;
+        const gpsHdg = state.gpsPos?.heading != null && (state.gpsPos?.speed ?? 0) > 0.2
+            ? state.gpsPos.heading : null;
         const boatHdg = gpsHdg ?? (state.headingOn && state.heading != null ? state.heading : null);
-        const hdgRel  = boatHdg !== null;
+        const hdgRel = boatHdg !== null;
         const topH = Math.round(H * 0.10), botH = Math.round(H * 0.22);
         const arrH = H - topH - botH;
         const cx = W / 2, cy = topH + arrH / 2;
@@ -4167,7 +4166,7 @@ if (btnChangeRegatta) {
         }
         const arrLen = Math.min(arrH, W) * 0.82;
         const shaftW = arrLen * 0.14, headW = arrLen * 0.36, headH = arrLen * 0.32;
-        const halfL  = arrLen / 2;
+        const halfL = arrLen / 2;
         const arrAng = hdgRel ? ((brng - boatHdg + 360) % 360) : brng;
         ctx.save();
         ctx.translate(cx, cy);
@@ -4176,10 +4175,10 @@ if (btnChangeRegatta) {
         ctx.moveTo(0, -halfL);
         ctx.lineTo(headW / 2, -halfL + headH);
         ctx.lineTo(shaftW / 2, -halfL + headH);
-        ctx.lineTo(shaftW / 2,  halfL);
+        ctx.lineTo(shaftW / 2, halfL);
         ctx.lineTo(-shaftW / 2, halfL);
         ctx.lineTo(-shaftW / 2, -halfL + headH);
-        ctx.lineTo(-headW / 2,  -halfL + headH);
+        ctx.lineTo(-headW / 2, -halfL + headH);
         ctx.closePath();
         ctx.fillStyle = accent; ctx.fill();
         ctx.lineWidth = Math.max(2, W * 0.004);
@@ -4210,23 +4209,23 @@ if (btnChangeRegatta) {
         const mmView = document.getElementById("view-markmap");
         if (!mmView || !mmCanvas) return;
         const viewTop = mmView.getBoundingClientRect().top;
-        const totalH  = Math.max(200, window.innerHeight - viewTop);
+        const totalH = Math.max(200, window.innerHeight - viewTop);
         const canvasH = Math.round(totalH * 0.40);
         mmCanvas.style.height = canvasH + "px";
-        const dpr  = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio || 1;
         const cssW = mmCanvas.clientWidth;
         if (cssW > 0 && canvasH > 0) {
-            mmCanvas.width  = Math.round(cssW   * dpr);
+            mmCanvas.width = Math.round(cssW * dpr);
             mmCanvas.height = Math.round(canvasH * dpr);
         }
     }
     function sizeSteerCanvas() {
         if (!markSteerCvs) return;
-        const dpr  = window.devicePixelRatio || 1;
+        const dpr = window.devicePixelRatio || 1;
         const cssW = markSteerCvs.clientWidth;
         const cssH = markSteerCvs.clientHeight;
         if (cssW > 0 && cssH > 0) {
-            markSteerCvs.width  = Math.round(cssW * dpr);
+            markSteerCvs.width = Math.round(cssW * dpr);
             markSteerCvs.height = Math.round(cssH * dpr);
         }
     }
