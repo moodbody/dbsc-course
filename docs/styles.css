@@ -742,6 +742,13 @@ footer {
     .panel-splitter {
         display: none;
     }
+
+    /* In portrait, .view has height:auto so the percentage-height chain breaks.
+       Give the map flex area a viewport-relative minimum height so Leaflet
+       always initialises on a container with real dimensions. */
+    .markmap-flex-area {
+        min-height: calc(100svh - 200px);
+    }
 }
 
 /* ---------- Floating landscape nav button (hidden in portrait) ---------- */
@@ -2900,8 +2907,15 @@ footer .app-version {
 }
 
 @keyframes mm-pulse {
-    0%   { transform: scale(0.6); opacity: 0.8; }
-    100% { transform: scale(2.2); opacity: 0; }
+    0% {
+        transform: scale(0.6);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
 }
 
 /* Sea-marks layer toggle button */

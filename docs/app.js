@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v46.0.0";
+const APP_VERSION = "v46.2.0";
 const APP_BUILD_DATE = "2026-07-10";
 
 const $ = (id) => document.getElementById(id);
@@ -3918,20 +3918,20 @@ if (btnChangeRegatta) {
     }
 
     // ---- DOM refs ----
-    const mmLeafletDiv     = document.getElementById("markMap");
-    const markSteerCvs     = document.getElementById("markSteerCanvas");
-    const markInfoPanel    = document.getElementById("markInfoPanel");
-    const mipLetter        = document.getElementById("mipLetter");
-    const mipName          = document.getElementById("mipName");
-    const mipColour        = document.getElementById("mipColour");
-    const mipDist          = document.getElementById("mipDist");
-    const mipBearing       = document.getElementById("mipBearing");
-    const mipGpsStatus     = document.getElementById("mipGpsStatus");
-    const mipSwatch        = document.getElementById("mipSwatch");
-    const btnMarkNavigate  = document.getElementById("btnMarkNavigate");
-    const btnMarkBackMap   = document.getElementById("btnMarkBackMap");
-    const mipClose         = document.getElementById("mipClose");
-    const btnMarkMapGps    = document.getElementById("btnMarkMapGps");
+    const mmLeafletDiv = document.getElementById("markMap");
+    const markSteerCvs = document.getElementById("markSteerCanvas");
+    const markInfoPanel = document.getElementById("markInfoPanel");
+    const mipLetter = document.getElementById("mipLetter");
+    const mipName = document.getElementById("mipName");
+    const mipColour = document.getElementById("mipColour");
+    const mipDist = document.getElementById("mipDist");
+    const mipBearing = document.getElementById("mipBearing");
+    const mipGpsStatus = document.getElementById("mipGpsStatus");
+    const mipSwatch = document.getElementById("mipSwatch");
+    const btnMarkNavigate = document.getElementById("btnMarkNavigate");
+    const btnMarkBackMap = document.getElementById("btnMarkBackMap");
+    const mipClose = document.getElementById("mipClose");
+    const btnMarkMapGps = document.getElementById("btnMarkMapGps");
     const btnMarkMapSeamarks = document.getElementById("btnMarkMapSeamarks");
 
     if (!mmLeafletDiv) return;
@@ -3990,15 +3990,15 @@ if (btnChangeRegatta) {
         } else if (colours.length === 2) {
             defs = `<defs><clipPath id="${lid}r"><rect x="16" y="2" width="14" height="28"/></clipPath></defs>`;
             body = `<circle cx="16" cy="16" r="14" fill="${c1}"/>` +
-                   `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}r)"/>`;
+                `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}r)"/>`;
         } else {
             defs = `<defs>` +
-                   `<clipPath id="${lid}m"><rect x="2" y="11" width="28" height="10"/></clipPath>` +
-                   `<clipPath id="${lid}b"><rect x="2" y="21" width="28" height="9"/></clipPath>` +
-                   `</defs>`;
+                `<clipPath id="${lid}m"><rect x="2" y="11" width="28" height="10"/></clipPath>` +
+                `<clipPath id="${lid}b"><rect x="2" y="21" width="28" height="9"/></clipPath>` +
+                `</defs>`;
             body = `<circle cx="16" cy="16" r="14" fill="${c1}"/>` +
-                   `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}m)"/>` +
-                   `<circle cx="16" cy="16" r="14" fill="${c3}" clip-path="url(#${lid}b)"/>`;
+                `<circle cx="16" cy="16" r="14" fill="${c2}" clip-path="url(#${lid}m)"/>` +
+                `<circle cx="16" cy="16" r="14" fill="${c3}" clip-path="url(#${lid}b)"/>`;
         }
 
         const svg =
