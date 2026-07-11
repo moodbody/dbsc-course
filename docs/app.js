@@ -142,8 +142,8 @@ let TIDES = null;
 //   MAJOR â€” bump when the SW cache version increments (breaking cache change)
 //   MINOR â€” bump for new features or significant UI additions
 //   PATCH â€” bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v47.0.1";
-const APP_BUILD_DATE = "2026-07-10";
+const APP_VERSION = "v48.0.0";
+const APP_BUILD_DATE = "2026-07-11";
 
 const $ = (id) => document.getElementById(id);
 
