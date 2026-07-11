@@ -1170,7 +1170,8 @@ populateWinds();
 populateCourses();
 syncTwdInput();
 renderAll();
-showLanding();
+// Auto-select regatta on startup instead of showing the landing screen
+selectRegatta((() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })() || "dublin-bay");
 
 // Check GPS permission on load: prompt if not yet granted, warn if blocked.
 (function checkGpsPermissionOnLoad() {
