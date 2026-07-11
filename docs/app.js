@@ -142,7 +142,7 @@ let TIDES = null;
 //   MAJOR â€” bump when the SW cache version increments (breaking cache change)
 //   MINOR â€” bump for new features or significant UI additions
 //   PATCH â€” bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v48.0.0";
+const APP_VERSION = "v48.0.1";
 const APP_BUILD_DATE = "2026-07-11";
 
 const $ = (id) => document.getElementById(id);
@@ -3915,13 +3915,13 @@ if (btnChangeRegatta) {
 (function initMarkMap() {
 
     // ---- DOM refs ----
-    const mmCanvas      = document.getElementById("mmCanvas");
-    const mmMarkList    = document.getElementById("mmMarkList");
-    const mmSteerPanel  = document.getElementById("mmSteerPanel");
-    const markSteerCvs  = document.getElementById("markSteerCanvas");
+    const mmCanvas = document.getElementById("mmCanvas");
+    const mmMarkList = document.getElementById("mmMarkList");
+    const mmSteerPanel = document.getElementById("mmSteerPanel");
+    const markSteerCvs = document.getElementById("markSteerCanvas");
     const btnMarkMapGps = document.getElementById("btnMarkMapGps");
-    const btnSteerBack  = document.getElementById("btnSteerBack");
-    const mmSteerTitle  = document.getElementById("mmSteerTitle");
+    const btnSteerBack = document.getElementById("btnSteerBack");
+    const mmSteerTitle = document.getElementById("mmSteerTitle");
 
     if (!mmCanvas || !mmMarkList) return;
     // ---- Colour utilities ----
