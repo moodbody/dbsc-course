@@ -5,8 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b3d66" />
-    <!-- Content Security Policy: same-origin. Inline styles allowed for
-         canvas chart and computed colours. -->
+    <!-- Content Security Policy: same-origin only. No remote scripts, no inline JS,
+         no plugins, no foreign forms. Inline styles are permitted because the canvas
+         chart and a few computed colours are set inline. -->
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'" />
     <meta name="referrer" content="no-referrer" />
@@ -74,8 +75,7 @@
         aria-labelledby="undoConfirmTitle">
         <div class="modal-card welcome-card">
             <h2 id="undoConfirmTitle">↶ Undo GPS-confirmed mark?</h2>
-            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where
-                you actually are.</p>
+            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where you actually are.</p>
             <div class="modal-row" style="margin-top:18px;">
                 <button id="undoConfirmYes" class="ghost" type="button">↶ Go back</button>
                 <button id="undoConfirmNo" class="primary" type="button">Stay on this leg</button>
@@ -275,7 +275,7 @@
     </div>
 
     <!-- Regatta landing page — full-screen overlay shown on every open -->
-    <div id="view-landing" role="main" aria-label="Choose regatta" hidden>
+    <div id="view-landing" role="main" aria-label="Choose regatta">
         <div class="landing-inner">
             <div class="landing-logo">
                 <div class="landing-title">DBSC Navigator</div>
@@ -324,7 +324,6 @@
             <button class="tab" data-tab="race" role="tab" aria-selected="false">Race</button>
             <button class="tab" data-tab="today" role="tab" aria-selected="false">Race finder</button>
             <button class="tab" data-tab="docs" role="tab" aria-selected="false">Docs</button>
-            <button class="tab" data-tab="markmap" role="tab" aria-selected="false">Map</button>
         </nav>
     </header>
 
@@ -503,10 +502,8 @@
                                 </div>
                                 <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
                                 <div class="chart-zoom-bar">
-                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in"
-                                        title="Zoom in">+</button>
-                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out"
-                                        title="Zoom out">−</button>
+                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
+                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out" title="Zoom out">−</button>
                                 </div>
                                 <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                                     title="Expand">⛶</button>
@@ -746,26 +743,6 @@
                 <div class="doc-name">NoR — Dinghy Fleet 2026</div>
             </a>
         </section>
-    </div>
-
-    <!-- ⚓ Mark Map view — Dublin Bay canvas chart + live mark list -->
-    <div id="view-markmap" class="view markmap-view" hidden>
-        <div class="mmp-toolbar">
-            <button id="btnMarkMapGps" type="button" class="mmp-gps-btn">📍 Use GPS</button>
-            <span class="mmp-hint">Tap › to navigate</span>
-        </div>
-        <!-- Dublin Bay overview canvas -->
-        <canvas id="mmCanvas" class="mm-chart-canvas" aria-label="Dublin Bay racing marks"></canvas>
-        <!-- Scrollable mark list with live distance and bearing -->
-        <div id="mmMarkList" class="mm-mark-list" role="list" aria-label="Racing marks"></div>
-        <!-- Steer-to-mark overlay (covers the canvas + list when navigating) -->
-        <div id="mmSteerPanel" class="mm-steer-panel" hidden>
-            <div class="mm-steer-hdr">
-                <button id="btnSteerBack" type="button" class="mm-back-btn">&#8592; Back</button>
-                <span id="mmSteerTitle" class="mm-steer-title"></span>
-            </div>
-            <canvas id="markSteerCanvas" class="mm-steer-canvas" aria-label="Navigate to mark"></canvas>
-        </div>
     </div>
 
     <div id="chartModal" class="chart-modal" hidden role="dialog" aria-label="Course chart fullscreen">
