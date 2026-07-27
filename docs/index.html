@@ -75,7 +75,8 @@
         aria-labelledby="undoConfirmTitle">
         <div class="modal-card welcome-card">
             <h2 id="undoConfirmTitle">↶ Undo GPS-confirmed mark?</h2>
-            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where you actually are.</p>
+            <p>GPS detected you passed this mark. Going back will put you on the previous leg — make sure that's where
+                you actually are.</p>
             <div class="modal-row" style="margin-top:18px;">
                 <button id="undoConfirmYes" class="ghost" type="button">↶ Go back</button>
                 <button id="undoConfirmNo" class="primary" type="button">Stay on this leg</button>
@@ -282,19 +283,28 @@
                 <div class="landing-subtitle">Dublin Bay Sailing Club</div>
             </div>
             <p class="landing-prompt">Select your event</p>
-            <div class="landing-cards">
-                <button class="regatta-card" data-regatta="dublin-bay" type="button">
-                    <span class="regatta-card-icon">⛵</span>
-                    <span class="regatta-card-name">Dublin Bay</span>
-                    <span class="regatta-card-desc">DBSC weekly racing</span>
-                </button>
-                <button class="regatta-card" data-regatta="club-regattas" type="button">
-                    <span class="regatta-card-icon">🏆</span>
-                    <span class="regatta-card-name">Club Regattas</span>
-                    <span class="regatta-card-desc">DL Combined Clubs 2026</span>
-                </button>
+
+            <div class="landing-controls">
+                <div class="landing-search-wrap">
+                    <span class="landing-search-icon" aria-hidden="true">🔍</span>
+                    <input type="search" id="regattaSearch" class="landing-search"
+                        placeholder="Search events…" aria-label="Search events by name">
+                </div>
+                <select id="regattaFilterType" class="landing-select" aria-label="Filter by event type">
+                    <option value="">All types</option>
+                    <option value="Weekly racing">Weekly racing</option>
+                    <option value="Regatta">Regatta</option>
+                </select>
+                <select id="regattaSort" class="landing-select" aria-label="Sort events">
+                    <option value="default">Sort: Recommended</option>
+                    <option value="name">Sort: Name (A–Z)</option>
+                    <option value="type">Sort: Type</option>
+                </select>
             </div>
-            <button id="btnLandingContinue" class="landing-continue" type="button" disabled>Continue →</button>
+
+            <div class="landing-cards" id="landingCards" aria-live="polite"></div>
+            <p class="landing-empty" id="landingEmpty" hidden>No events match your search.</p>
+
             <p class="landing-switch-hint">To switch regattas later, tap the ⛵ button in the top&nbsp;right.</p>
         </div>
     </div>
@@ -502,8 +512,10 @@
                                 </div>
                                 <canvas id="chart" width="800" height="520" aria-label="Course chart"></canvas>
                                 <div class="chart-zoom-bar">
-                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in" title="Zoom in">+</button>
-                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out" title="Zoom out">−</button>
+                                    <button class="chart-zoom-btn" id="btnZoomIn" type="button" aria-label="Zoom in"
+                                        title="Zoom in">+</button>
+                                    <button class="chart-zoom-btn" id="btnZoomOut" type="button" aria-label="Zoom out"
+                                        title="Zoom out">−</button>
                                 </div>
                                 <button id="btnExpandChart" class="chart-expand" type="button" aria-label="Expand chart"
                                     title="Expand">⛶</button>

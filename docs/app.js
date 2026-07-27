@@ -142,8 +142,8 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v44.3.1";
-const APP_BUILD_DATE = "2026-06-10";
+const APP_VERSION = "v44.4.0";
+const APP_BUILD_DATE = "2026-07-27";
 
 const $ = (id) => document.getElementById(id);
 
@@ -408,21 +408,101 @@ function _applyShallowRaceRestore() {
 }
 
 // ---------- Regatta selection ----------
-let _pendingRegatta = null; // which regatta card is currently selected on the landing page
+// Catalog driving the landing page cards + search/filter/sort. Add new
+// events here — no other code needs to change. Only real, known facts go
+// here (no invented dates/locations): the underlying data files carry no
+// scheduling/location metadata.
+const REGATTA_CATALOG = [
+    {
+        id: "dublin-bay",
+        icon: "⛵",
+        name: "Dublin Bay",
+        subtitle: "DBSC weekly racing",
+        type: "Weekly racing",
+        club: "Dublin Bay Sailing Club",
+    },
+    {
+        id: "club-regattas",
+        icon: "🏆",
+        name: "Club Regattas",
+        subtitle: "DL Combined Clubs 2026",
+        type: "Regatta",
+        club: "Combined Clubs, Dun Laoghaire",
+    },
+];
 
 function showLanding() {
     const landingEl = document.getElementById("view-landing");
     if (!landingEl) return;
     landingEl.removeAttribute("hidden");
+
+    // Reset the search/filter/sort controls each time the landing page opens.
+    const searchInput = document.getElementById("regattaSearch");
+    const typeSelect = document.getElementById("regattaFilterType");
+    const sortSelect = document.getElementById("regattaSort");
+    if (searchInput) searchInput.value = "";
+    if (typeSelect) typeSelect.value = "";
+    if (sortSelect) sortSelect.value = "default";
+
+    renderLandingCards();
+
+    // Restart the entrance animation.
+    const inner = landingEl.querySelector(".landing-inner");
+    if (inner) {
+        inner.classList.remove("landing-in");
+        void inner.offsetWidth; // force reflow so the animation restarts
+        requestAnimationFrame(() => inner.classList.add("landing-in"));
+    }
+}
+
+function renderLandingCards() {
+    const container = document.getElementById("landingCards");
+    const emptyEl = document.getElementById("landingEmpty");
+    if (!container) return;
+
+    const query = (document.getElementById("regattaSearch")?.value || "").trim().toLowerCase();
+    const typeFilter = document.getElementById("regattaFilterType")?.value || "";
+    const sortMode = document.getElementById("regattaSort")?.value || "default";
+
     // Pre-highlight the last-used regatta, defaulting to dublin-bay so
-    // first-time visitors can continue immediately without making a choice.
+    // first-time visitors see a sensible default.
     const last = (() => { try { return localStorage.getItem(REGATTA_LS_KEY); } catch (_) { return null; } })() ?? "dublin-bay";
-    _pendingRegatta = last;
-    document.querySelectorAll(".regatta-card").forEach(card => {
-        card.classList.toggle("selected", card.dataset.regatta === last);
+
+    let list = REGATTA_CATALOG.filter((r) => {
+        if (typeFilter && r.type !== typeFilter) return false;
+        if (query) {
+            const haystack = `${r.name} ${r.subtitle} ${r.club}`.toLowerCase();
+            if (!haystack.includes(query)) return false;
+        }
+        return true;
     });
-    const continueBtn = document.getElementById("btnLandingContinue");
-    if (continueBtn) continueBtn.removeAttribute("disabled");
+
+    if (sortMode === "name") {
+        list = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === "type") {
+        list = list.slice().sort((a, b) => a.type.localeCompare(b.type));
+    }
+    // "default" keeps the catalog's natural order.
+
+    container.innerHTML = "";
+    list.forEach((r) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "regatta-card" + (r.id === last ? " last-used" : "");
+        btn.dataset.regatta = r.id;
+        btn.innerHTML = `
+            <span class="regatta-card-icon" aria-hidden="true">${r.icon}</span>
+            <span class="regatta-card-body">
+                <span class="regatta-card-name">${r.name}</span>
+                <span class="regatta-card-desc">${r.subtitle}</span>
+                <span class="regatta-card-meta">${r.club}</span>
+            </span>
+            ${r.id === last ? '<span class="regatta-card-badge">Continue</span>' : ""}
+        `;
+        container.appendChild(btn);
+    });
+
+    if (emptyEl) emptyEl.hidden = list.length !== 0;
 }
 
 function selectRegatta(id) {
@@ -1832,9 +1912,9 @@ function drawMapTo(canvas) {
         ctx.beginPath();
         ctx.moveTo(tipX + nx * head, tipY + ny * head);
         ctx.lineTo(tipX - nx * head * 0.5 + perpX * head * 0.6,
-                   tipY - ny * head * 0.5 + perpY * head * 0.6);
+            tipY - ny * head * 0.5 + perpY * head * 0.6);
         ctx.lineTo(tipX - nx * head * 0.5 - perpX * head * 0.6,
-                   tipY - ny * head * 0.5 - perpY * head * 0.6);
+            tipY - ny * head * 0.5 - perpY * head * 0.6);
         ctx.closePath(); ctx.fill();
         // "N" label near the tail
         ctx.font = `bold ${Math.round(W * 0.022)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
@@ -3862,26 +3942,21 @@ completeDeferredRaceRestore();
 
 // ---------- Regatta landing — event delegation on the overlay ----------
 // Single listener on the container is more reliable than per-button listeners.
+// Clicking a card navigates immediately — there is no separate "Continue" step.
 (function wireLandingHandlers() {
     const overlay = document.getElementById("view-landing");
     if (!overlay) return;
     overlay.addEventListener("click", (e) => {
-        // Card selection
         const card = e.target.closest(".regatta-card");
-        if (card) {
-            _pendingRegatta = card.dataset.regatta;
-            overlay.querySelectorAll(".regatta-card").forEach(c => {
-                c.classList.toggle("selected", c === card);
-            });
-            const continueBtn = document.getElementById("btnLandingContinue");
-            if (continueBtn) continueBtn.removeAttribute("disabled");
-            return;
-        }
-        // Continue button
-        if (e.target.closest("#btnLandingContinue") && _pendingRegatta) {
-            selectRegatta(_pendingRegatta);
-        }
+        if (card) selectRegatta(card.dataset.regatta);
     });
+
+    const searchInput = document.getElementById("regattaSearch");
+    const typeSelect = document.getElementById("regattaFilterType");
+    const sortSelect = document.getElementById("regattaSort");
+    if (searchInput) searchInput.addEventListener("input", renderLandingCards);
+    if (typeSelect) typeSelect.addEventListener("change", renderLandingCards);
+    if (sortSelect) sortSelect.addEventListener("change", renderLandingCards);
 }());
 const btnChangeRegatta = document.getElementById("btnChangeRegatta");
 if (btnChangeRegatta) {
@@ -3892,9 +3967,9 @@ if (btnChangeRegatta) {
 (function wireUndoConfirm() {
     const modal = document.getElementById("undoConfirmModal");
     const btnYes = document.getElementById("undoConfirmYes");
-    const btnNo  = document.getElementById("undoConfirmNo");
+    const btnNo = document.getElementById("undoConfirmNo");
     if (!modal) return;
     if (btnYes) btnYes.addEventListener("click", () => { modal.hidden = true; performUndo(); });
-    if (btnNo)  btnNo.addEventListener("click",  () => { modal.hidden = true; });
+    if (btnNo) btnNo.addEventListener("click", () => { modal.hidden = true; });
 }());
 

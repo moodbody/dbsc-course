@@ -2590,11 +2590,14 @@ footer .app-version {
     position: fixed;
     inset: 0;
     z-index: 2000;
-    background: var(--bg);
+    background:
+        radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+        var(--bg);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
+    overflow-y: auto;
 }
 
 #view-landing[hidden] {
@@ -2605,9 +2608,10 @@ footer .app-version {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 28px;
-    max-width: 560px;
+    gap: 22px;
+    max-width: 640px;
     width: 100%;
+    margin: auto;
 }
 
 .landing-logo {
@@ -2615,16 +2619,31 @@ footer .app-version {
 }
 
 .landing-title {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.1rem;
+    font-weight: 800;
     color: var(--text);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
 }
 
 .landing-subtitle {
     font-size: 1rem;
     color: var(--muted);
     margin-top: 4px;
+    position: relative;
+    padding-bottom: 14px;
+}
+
+.landing-subtitle::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.8;
 }
 
 .landing-prompt {
@@ -2635,25 +2654,84 @@ footer .app-version {
     margin: 0;
 }
 
-.landing-cards {
+/* ---- Search / filter / sort controls ---- */
+.landing-controls {
     display: flex;
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
     width: 100%;
     justify-content: center;
-    flex-wrap: wrap;
+}
+
+.landing-search-wrap {
+    position: relative;
+    flex: 1 1 220px;
+    min-width: 180px;
+}
+
+.landing-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.landing-search {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 14px 10px 36px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.landing-search:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.landing-select {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex: 0 1 auto;
+}
+
+.landing-select:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* ---- Event cards ---- */
+.landing-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    width: 100%;
 }
 
 .regatta-card {
-    flex: 1 1 160px;
-    max-width: 240px;
+    position: relative;
     background: var(--card);
     border: 2px solid var(--line);
     border-radius: 16px;
-    padding: 28px 20px 24px;
+    padding: 22px 20px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
+    text-align: left;
     cursor: pointer;
     transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
     color: var(--text);
@@ -2665,62 +2743,63 @@ footer .app-version {
     border-color: var(--accent);
     outline: none;
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
 }
 
-.regatta-card.selected {
+.regatta-card.last-used {
     border-color: var(--accent);
     background: var(--card2);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .regatta-card-icon {
-    font-size: 2.6rem;
+    font-size: 2.2rem;
     line-height: 1;
+    flex: 0 0 auto;
+}
+
+.regatta-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .regatta-card-name {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
 }
 
 .regatta-card-desc {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.regatta-card-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    opacity: 0.75;
+}
+
+.regatta-card-badge {
+    position: absolute;
+    top: -9px;
+    right: 14px;
+    background: var(--accent);
+    color: #1a1200;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.landing-empty {
+    font-size: 0.85rem;
     color: var(--muted);
     text-align: center;
-}
-
-/* Change-regatta button in the header */
-#btnChangeRegatta {
-    font-size: 1.1rem;
-}
-
-/* Continue button on the landing page */
-.landing-continue {
-    background: var(--good);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 14px 48px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    width: 100%;
-    max-width: 320px;
-    transition: opacity 0.15s, transform 0.12s, box-shadow 0.12s;
-    font-family: inherit;
-}
-
-.landing-continue:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-.landing-continue:not(:disabled):hover,
-.landing-continue:not(:disabled):focus-visible {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-    outline: none;
+    padding: 20px 0;
 }
 
 .landing-switch-hint {
@@ -2729,6 +2808,55 @@ footer .app-version {
     text-align: center;
     margin: 0;
     opacity: 0.75;
+}
+
+/* Change-regatta button in the header */
+#btnChangeRegatta {
+    font-size: 1.1rem;
+}
+
+/* ---- Entrance animation: gentle fade/slide-in of the panel's sections
+   each time the landing page is shown. Disabled entirely for users who
+   prefer reduced motion. ---- */
+.landing-inner>* {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 380ms ease, transform 380ms ease;
+}
+
+.landing-inner.landing-in>* {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.landing-inner.landing-in>*:nth-child(1) {
+    transition-delay: 0ms;
+}
+
+.landing-inner.landing-in>*:nth-child(2) {
+    transition-delay: 60ms;
+}
+
+.landing-inner.landing-in>*:nth-child(3) {
+    transition-delay: 120ms;
+}
+
+.landing-inner.landing-in>*:nth-child(4) {
+    transition-delay: 180ms;
+}
+
+.landing-inner.landing-in>*:nth-child(5) {
+    transition-delay: 240ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .landing-inner>*,
+    .landing-inner.landing-in>* {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
 }
 
 /* ---------- regatta switch hint bubble ---------- */
