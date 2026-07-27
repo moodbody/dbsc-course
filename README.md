@@ -39,21 +39,30 @@ Live at **https://moodbody.github.io/dbsc-course/**
 ## Files
 
 ```
-Course_information/          <- original DBSC PDFs (input only)
-parse_data.py                <- extracts data from the PDFs
-make_icons.py                <- generates app icon PNGs
-data.json                    <- parsed data (for inspection)
-docs/
-  index.html                 <- the app shell
-  styles.css                 <- all styles
-  app.js                     <- all application logic
-  data.js                    <- embedded boot data (window.DBSC_DATA)
-  data.json                  <- async data fetch
-  schedule.json              <- race calendar and class schedules
-  tides.json                 <- tide stream data for chart arrows
-  manifest.webmanifest       <- PWA manifest
-  sw.js                      <- service worker (offline cache)
-  icons/                     <- app icons (various sizes)
+data/
+  course-information/         <- original DBSC PDFs (input only)
+  sailing-instructions/       <- original SI/NoR PDFs (input only)
+  generated/
+    data.json                 <- parsed DBSC data (for inspection)
+    regatta-data.json         <- parsed Combined Clubs regatta data (for inspection)
+scripts/
+  parse_data.py               <- extracts DBSC course/marks data from the PDFs
+  parse_regatta_data.py       <- extracts Combined Clubs Course Card A data
+  make_icons.py                <- generates app icon PNGs
+  extract_pdfs.py              <- dev helper: dumps raw PDF text for inspection
+docs/                          <- the deployed app (GitHub Pages root)
+  index.html                  <- the app shell
+  styles.css                  <- all styles
+  app.js                      <- all application logic
+  data.js                     <- embedded boot data (window.DBSC_DATA)
+  data.json                   <- async data fetch
+  regatta-data.js             <- embedded regatta data (window.REGATTA_DATA)
+  schedule.json               <- race calendar and class schedules
+  tides.json                  <- tide stream data for chart arrows
+  manifest.webmanifest        <- PWA manifest
+  sw.js                       <- service worker (offline cache)
+  icons/                      <- app icons (various sizes)
+  pdfs/                       <- PDFs served to the Docs tab
 README.md
 ```
 
@@ -81,14 +90,20 @@ README.md
 
 ### B · Regenerate from new DBSC PDFs (full season update)
 
-1. Drop new PDFs into `Course_information/` (keep the same filenames: `CC1_...`, `CC2_...`, etc.).
+1. Drop new PDFs into `data/course-information/` (keep the same filenames: `CC1_...`, `CC2_...`, etc.).
 2. Run the parser:
 
    ```powershell
-   "c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" parse_data.py
+   "c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" scripts\parse_data.py
    ```
 
-   This rewrites `data.json`, `docs/data.json` and `docs/data.js`.
+   This rewrites `data/generated/data.json`, `docs/data.json` and `docs/data.js`.
+
+   If Course Card A also changed, also run:
+
+   ```powershell
+   "c:\Users\maxgo\Desktop\DBSC Courses\.venv\Scripts\python.exe" scripts\parse_regatta_data.py
+   ```
 
 3. Bump `CACHE_VERSION` in `docs/sw.js` (e.g. `"dbsc-v36"` -> `"dbsc-v37"`). This forces already-installed devices to download the new app shell.
 

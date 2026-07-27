@@ -1,11 +1,11 @@
 """Generate simple DBSC app icons (PNG) for the PWA.
 Run once after parse_data.py:
-    python make_icons.py
+    scripts\\make_icons.py
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-OUT = Path(__file__).resolve().parent / "docs" / "icons"
+OUT = Path(__file__).resolve().parent.parent / "docs" / "icons"
 OUT.mkdir(parents=True, exist_ok=True)
 
 BG = (11, 31, 51)        # deep navy (matches app)

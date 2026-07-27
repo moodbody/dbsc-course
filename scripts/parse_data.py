@@ -3,11 +3,11 @@ Parse DBSC course-card PDFs and the Marks/Bearings/Distances PDF
 into a single data.js file for the offline web app.
 
 Run:
-    python parse_data.py
+    scripts\parse_data.py   (from the repo root, with the venv active)
 
 Outputs:
-    docs/data.js   (defines window.DBSC_DATA)
-    data.json      (same data, easier to inspect)
+    docs/data.js         (defines window.DBSC_DATA)
+    data/generated/data.json   (same data, easier to inspect)
 """
 
 from __future__ import annotations
@@ -18,10 +18,12 @@ from pathlib import Path
 
 import pdfplumber
 
-ROOT = Path(__file__).resolve().parent
-PDF_DIR = ROOT / "Course_information"
+ROOT = Path(__file__).resolve().parent.parent
+PDF_DIR = ROOT / "data" / "course-information"
 APP_DIR = ROOT / "docs"
+GENERATED_DIR = ROOT / "data" / "generated"
 APP_DIR.mkdir(exist_ok=True)
+GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
 # Column order used by the bearings/distances matrix
 LETTERS = ["A","B","C","D","E","F","G","H","J","K","L","M",
@@ -263,7 +265,7 @@ def main() -> None:
         "cards":     cards,
     }
 
-    json_path = ROOT / "data.json"
+    json_path = GENERATED_DIR / "data.json"
     json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     print(f"Wrote {json_path}")
 

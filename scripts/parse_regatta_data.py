@@ -8,20 +8,22 @@ The mark/bearing/distance tables are shared with the main DBSC data (same physic
 marks on Dublin Bay), so they are read from data.json rather than duplicated.
 
 Run:
-    .venv\\Scripts\\python.exe parse_regatta_data.py
+    .venv\\Scripts\\python.exe scripts\\parse_regatta_data.py
 
 Outputs:
-    docs/regatta-data.js   (defines window.REGATTA_DATA)
-    regatta-data.json      (same data, easier to inspect)
+    docs/regatta-data.js         (defines window.REGATTA_DATA)
+    data/generated/regatta-data.json   (same data, easier to inspect)
 """
 
 from __future__ import annotations
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 APP_DIR = ROOT / "docs"
+GENERATED_DIR = ROOT / "data" / "generated"
 APP_DIR.mkdir(exist_ok=True)
+GENERATED_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Course Card A — DL Combined Clubs 2026
@@ -198,10 +200,10 @@ def stringify_course_keys(wind: dict) -> dict:
 # ---------------------------------------------------------------------------
 def main() -> None:
     # Load shared marks/bearings/distances from the already-parsed data.json
-    data_json = ROOT / "data.json"
+    data_json = GENERATED_DIR / "data.json"
     if not data_json.exists():
         raise FileNotFoundError(
-            "data.json not found — run parse_data.py first to generate it."
+            "data/generated/data.json not found — run parse_data.py first to generate it."
         )
     with open(data_json, encoding="utf-8") as f:
         base = json.load(f)
@@ -223,7 +225,7 @@ def main() -> None:
         },
     }
 
-    json_path = ROOT / "regatta-data.json"
+    json_path = GENERATED_DIR / "regatta-data.json"
     json_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     print(f"Wrote {json_path}")
 
