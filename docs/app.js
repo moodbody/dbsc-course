@@ -272,7 +272,7 @@ function sidePill(side) {
 }
 function fmtBearing(b) {
     if (b == null || isNaN(b)) return "â€”";
-    return String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, "0") + "Â°";
+    return String(Math.round(((b % 360) + 360) % 360) % 360).padStart(3, "0") + "°";
 }
 function fmtDist(d) {
     if (d == null || isNaN(d)) return "â€”";
@@ -283,15 +283,15 @@ function fmtDist(d) {
 function geo(lat1, lon1, lat2, lon2) {
     const toRad = (x) => x * Math.PI / 180;
     const toDeg = (x) => x * 180 / Math.PI;
-    const Ï†1 = toRad(lat1), Ï†2 = toRad(lat2);
-    const Î”Ï† = toRad(lat2 - lat1), Î”Î» = toRad(lon2 - lon1);
+    const phi1 = toRad(lat1), phi2 = toRad(lat2);
+    const dPhi = toRad(lat2 - lat1), dLam = toRad(lon2 - lon1);
     // distance (haversine) in nautical miles
-    const a = Math.sin(Î”Ï† / 2) ** 2 + Math.cos(Ï†1) * Math.cos(Ï†2) * Math.sin(Î”Î» / 2) ** 2;
+    const a = Math.sin(dPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(dLam / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distNM = (6371000 * c) / 1852;
     // initial bearing
-    const y = Math.sin(Î”Î») * Math.cos(Ï†2);
-    const x = Math.cos(Ï†1) * Math.sin(Ï†2) - Math.sin(Ï†1) * Math.cos(Ï†2) * Math.cos(Î”Î»);
+    const y = Math.sin(dLam) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLam);
     const brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
     return { bearing: brng, distance: distNM };
 }
@@ -535,7 +535,7 @@ function populateWinds() {
     for (const w of winds) {
         const opt = document.createElement("option");
         opt.value = w;
-        opt.textContent = `${w} â€“ ${String(card.wind[w].bearing).padStart(3, "0")}Â°`;
+        opt.textContent = `${w} â€“ ${String(card.wind[w].bearing).padStart(3, "0")}°`;
         windSel.appendChild(opt);
     }
     if (!card.wind[state.windKey]) state.windKey = winds[0];
@@ -584,7 +584,7 @@ function effectiveTWD() {
 //     side: "S" | "P" | "" } // tack: wind on Stbd/Port (empty when head-to-wind or DDW)
 //
 // Worked example matches the user's spec:
-//   TWD = 090Â°, leg bearing = 000Â°
+//   TWD = 090°, leg bearing = 000°
 //   diff = ((90 - 0 + 540) % 360) - 180 = 90  -> wind on starboard
 function twa(legBearing, twd) {
     if (legBearing == null) return null;
@@ -598,9 +598,9 @@ function twa(legBearing, twd) {
 
 function twaHtml(t) {
     if (!t) return "";
-    if (t.side === "S") return `<span class="tack-s">${t.angle}Â° Starboard</span>`;
-    if (t.side === "P") return `<span class="tack-p">${t.angle}Â° Port</span>`;
-    return `<span>${t.angle}Â°</span>`;
+    if (t.side === "S") return `<span class="tack-s">${t.angle}° Starboard</span>`;
+    if (t.side === "P") return `<span class="tack-p">${t.angle}° Port</span>`;
+    return `<span>${t.angle}°</span>`;
 }
 
 function renderSummary() {
@@ -742,12 +742,12 @@ function renderNow() {
             let off = ((g.bearing - state.heading + 540) % 360) - 180;
             const offAbs = Math.abs(off).toFixed(0);
             const dir = off > 1 ? "stbd" : (off < -1 ? "port" : "â€”");
-            const steerText = (dir === "â€”") ? "on bearing" : `${offAbs}Â° ${dir === "stbd" ? "â†»" : "â†º"}`;
+            const steerText = (dir === "â€”") ? "on bearing" : `${offAbs}° ${dir === "stbd" ? "â†»" : "â†º"}`;
             steerRowHtml = `<div class="steer-row"><span class="steer-lbl">Steer</span><span class="steer">${steerText}</span></div>`;
         }
 
         const headingStr = (state.headingOn && state.heading != null)
-            ? ` Â· heading ${Math.round(state.heading)}Â°${state.headingTrue ? "T" : "M"}`
+            ? ` Â· heading ${Math.round(state.heading)}°${state.headingTrue ? "T" : "M"}`
             : ` Â· tap ðŸ§­ for steer`;
         gpsFooterHtml = `<div class="gps-footer">GPS Â±${Math.round(state.gpsPos.accuracy)}â€¯m${headingStr}</div>`;
 
@@ -1645,7 +1645,7 @@ function drawMapTo(canvas) {
         const wy = margin + Math.round(W * 0.05);
         const wlen = Math.round(W * 0.06);
         const whead = Math.round(W * 0.018);
-        // Wind blows TO (TWD + 180). Convert to screen angle: 0Â° = up.
+        // Wind blows TO (TWD + 180). Convert to screen angle: 0° = up.
         const blowTo = (wTwd + 180) % 360;
         const rad = (blowTo - 90) * Math.PI / 180;
         const dx = Math.cos(rad), dy = Math.sin(rad);
@@ -1669,7 +1669,7 @@ function drawMapTo(canvas) {
         // label below the icon
         ctx.font = `bold ${Math.round(W * 0.018)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
         ctx.textAlign = "left"; ctx.textBaseline = "top";
-        ctx.fillText(`Wind ${String(Math.round(wTwd)).padStart(3, "0")}Â°`,
+        ctx.fillText(`Wind ${String(Math.round(wTwd)).padStart(3, "0")}°`,
             margin, wy + Math.round(W * 0.06));
     }
 
@@ -1744,7 +1744,7 @@ function drawMapTo(canvas) {
                 exclusionPts.push({ x: gx, y: gy });
             }
 
-            // Screen angle: compass set 0Â°=north â†’ canvas 0Â°=east, so subtract 90Â°
+            // Screen angle: compass set 0°=north â†’ canvas 0°=east, so subtract 90°
             const rad = (gridTs.set - 90) * Math.PI / 180;
             const dx = Math.cos(rad), dy = Math.sin(rad);
             const px = -dy, py = dx; // perpendicular for arrowhead
@@ -1896,7 +1896,7 @@ function drawMapTo(canvas) {
             // we want compass 0 = up = -Ï€/2.
             const rad = (state.heading - 90) * Math.PI / 180;
             const len = Math.max(28, W * 0.07);
-            const half = 0.45; // wedge half-angle in radians (~26Â°)
+            const half = 0.45; // wedge half-angle in radians (~26°)
             ctx.beginPath();
             ctx.moveTo(gx, gy);
             ctx.arc(gx, gy, len, rad - half, rad + half);
@@ -1953,7 +1953,7 @@ function drawMapTo(canvas) {
         const ix = W - margin - Math.round(W * 0.025);
         const iy = margin + Math.round(W * 0.04);
         // After rotating the canvas by -cogDeg, North appears at screen angle
-        // (-cogDeg - 90)Â° from east (canvas convention: 0 = east, CW positive).
+        // (-cogDeg - 90)° from east (canvas convention: 0 = east, CW positive).
         const northAng = (-cogDeg - 90) * Math.PI / 180;
         const nx = Math.cos(northAng), ny = Math.sin(northAng);
         const aColor = cssVar("--chart-arrow", "#8aa5bf");
@@ -1984,7 +1984,7 @@ function drawMapTo(canvas) {
     if (cogDeg != null) {
         const spd = state.gpsPos && state.gpsPos.speed != null
             ? state.gpsPos.speed * 1.94384 : null; // m/s â†’ knots
-        const cogStr = `COG ${String(Math.round(cogDeg)).padStart(3, "0")}Â°`;
+        const cogStr = `COG ${String(Math.round(cogDeg)).padStart(3, "0")}°`;
         const spdStr = spd != null && spd >= 0.3 ? `${spd.toFixed(1)} kn` : null;
         const bx = W / 2;
         const cogFontSz = Math.round(W * 0.044);
@@ -2123,7 +2123,7 @@ function drawSteerTo(canvas) {
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate((arrowAngle * Math.PI) / 180); // 0Â° = up
+    ctx.rotate((arrowAngle * Math.PI) / 180); // 0° = up
     // arrow shape pointing up before rotation
     ctx.beginPath();
     ctx.moveTo(0, -halfL);                      // tip
@@ -2183,7 +2183,7 @@ function drawSteerTo(canvas) {
         const ts = tideStreamAt(nextMarkLetter, Date.now());
         if (ts && ts.drift >= 0.1) {
             const tideCol = cssVar("--chart-tide", "#5fc0ff");
-            // Relative angle: 0Â° = tide running same direction as mark bearing (with you)
+            // Relative angle: 0° = tide running same direction as mark bearing (with you)
             const relDeg = ((ts.set - bearingToMark + 360) % 360);
             const relRad = (relDeg - 90) * Math.PI / 180; // screen: 0rad = east
             const tArrowLen = Math.round(W * 0.07);
@@ -2447,7 +2447,7 @@ renderInstallBanner();
 // ---------- welcome / how-to-use modal ----------
 // Declared here (before the IIFE) to avoid TDZ â€” selectRegatta() calls this
 // hook after the landing page closes.
-let _triggerWelcomeIfNeeded = null;
+var _triggerWelcomeIfNeeded = null;
 (function setupWelcome() {
     const welcomeModal = document.getElementById("welcomeModal");
     const helpModal = document.getElementById("helpModal");
@@ -2508,14 +2508,18 @@ const views = {
     markmap: document.getElementById("view-markmap"),
 };
 function showTab(name) {
-    for (const btn of tabButtons) {
+    for (const btn of document.querySelectorAll(".tabs .tab")) {
         const active = btn.dataset.tab === name;
         btn.classList.toggle("active", active);
         btn.setAttribute("aria-selected", active ? "true" : "false");
     }
-    for (const [k, el] of Object.entries(views)) {
+    for (const [viewName, id] of [
+        ["course", "view-course"], ["start", "view-start"],
+        ["today", "view-today"], ["docs", "view-docs"], ["markmap", "view-markmap"],
+    ]) {
+        const el = document.getElementById(id);
         if (!el) continue;
-        if (k === name) el.removeAttribute("hidden");
+        if (viewName === name) el.removeAttribute("hidden");
         else el.setAttribute("hidden", "");
     }
     if (name === "course") {
@@ -2715,8 +2719,8 @@ function setAccordion(id, open) {
 // Module-level handles set by the initStartSequence IIFE below.
 // Declared here so saveRaceState() (defined earlier) can call
 // _getStartSeqState before the IIFE runs (returns null safely).
-let _getStartSeqState = null;
-let _restoreStartSeqState = null;
+var _getStartSeqState = null;
+var _restoreStartSeqState = null;
 
 (function initStartSequence() {
     // --- DOM refs ---
@@ -3338,7 +3342,7 @@ function startCompass() {
             state.heading = h;
             state.headingTrue = isTrue;
             state.headingOn = true;
-            // Throttle re-render: only redraw if heading changed by â‰¥ 2Â°.
+            // Throttle re-render: only redraw if heading changed by â‰¥ 2°.
             if (state._lastDrawnHeading == null || Math.abs(h - state._lastDrawnHeading) > 2) {
                 state._lastDrawnHeading = h;
                 renderNow();
