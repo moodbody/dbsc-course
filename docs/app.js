@@ -51,6 +51,34 @@ function applyData(d) {
 applyData(window.DBSC_DATA);
 const REGATTA_LS_KEY = "dbsc.regatta";
 
+// ============================================================
+// Custom course storage
+// Persists user-built mark sequences for any course slot whose
+// predefined array is empty.  Works for any event, card, wind
+// sector and course number — no event-specific hardcoding.
+//
+// localStorage key: dbsc.custom.<regattaId>.<cardId>.<windKey>.<courseN>
+// Changing any selector naturally scopes to the new combination.
+// ============================================================
+function _customCourseKey() {
+    const rid = state.regatta || "default";
+    return `dbsc.custom.${rid}.${state.cardId}.${state.windKey}.${state.courseN}`;
+}
+function loadCustomCourse() {
+    try {
+        const raw = localStorage.getItem(_customCourseKey());
+        if (!raw) return null;
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : null;
+    } catch (_) { return null; }
+}
+function saveCustomCourse(tokens) {
+    try { localStorage.setItem(_customCourseKey(), JSON.stringify(tokens)); } catch (_) { }
+}
+function clearCustomCourse() {
+    try { localStorage.removeItem(_customCourseKey()); } catch (_) { }
+}
+
 // ---------- Coastline (approx) ----------
 // Hand-traced shoreline of Dublin Bay — Howth Head south to Bray Head —
 // running roughly N -> S along the western shore of the bay. Used to
@@ -170,8 +198,8 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v48.0.0";
-const APP_BUILD_DATE = "2026-08-03";
+const APP_VERSION = "v48.1.0";
+const APP_BUILD_DATE = "2026-08-04";
 
 const $ = (id) => document.getElementById(id);
 
@@ -569,11 +597,20 @@ function populateCourses() {
 function currentCourse() {
     const card = CARDS[state.cardId];
     const wind = card.wind[state.windKey];
+    let tokens = wind.courses[state.courseN] || [];
+    // For any course slot with no pre-defined marks, check for a user-built
+    // custom course saved on this device.  This is fully data-driven — no
+    // event-specific checks needed.  Any future event with empty course slots
+    // automatically benefits from the same builder flow.
+    if (tokens.length === 0) {
+        const custom = loadCustomCourse();
+        if (custom && custom.length > 0) tokens = custom;
+    }
     return {
         card,
         wind,
         bearing: wind.bearing,
-        tokens: wind.courses[state.courseN] || [],
+        tokens,
     };
 }
 
@@ -658,7 +695,34 @@ function renderSummary() {
 }
 
 function renderLegs() {
-    const c = currentCourse();
+    const card = CARDS[state.cardId];
+    const wind = card.wind[state.windKey];
+    const predefined = wind.courses[state.courseN] || [];
+    const c = currentCourse(); // may include a user-built custom course
+
+    const builderPanel = document.getElementById("courseBuilderPanel");
+    const builderActiveBar = document.getElementById("courseBuilderActive");
+
+    // Default: hide both builder UI elements; logic below shows them if needed.
+    if (builderPanel) builderPanel.hidden = true;
+    if (builderActiveBar) builderActiveBar.hidden = true;
+
+    if (predefined.length === 0) {
+        if (c.tokens.length === 0) {
+            // No pre-defined marks and no saved custom course — show the builder.
+            // Works for any event; no event-specific checks required.
+            legListEl.innerHTML = "";
+            if (builderPanel) {
+                builderPanel.hidden = false;
+                // Notify the builder IIFE to reset its draft state for this slot.
+                document.dispatchEvent(new CustomEvent("dbsc:courseBuilderShow"));
+            }
+            return;
+        }
+        // A custom course has been saved for this slot — show the edit bar.
+        if (builderActiveBar) builderActiveBar.hidden = false;
+    }
+
     legListEl.innerHTML = "";
     c.tokens.forEach((tok, i) => {
         const li = document.createElement("li");
@@ -701,6 +765,21 @@ function renderLegs() {
 function renderNow() {
     const c = currentCourse();
     const idx = state.rounded;
+
+    // Handle the case where no marks are defined yet (manual course slot,
+    // builder not yet used).  No event-specific check — works generically.
+    if (c.tokens.length === 0) {
+        const predefined = CARDS[state.cardId].wind[state.windKey].courses[state.courseN] || [];
+        if (predefined.length === 0) {
+            nowEl.innerHTML = `<p class="now-hint">Use the mark picker in the <strong>Legs</strong> section to build your course, then race.</p>`;
+        } else {
+            nowEl.innerHTML = `<p class="now-hint">No course defined for this selection.</p>`;
+        }
+        btnNext.disabled = true;
+        btnUndo.disabled = true;
+        return;
+    }
+
     const target = c.tokens[idx];
     if (!target) {
         nowEl.innerHTML = `<h3>Course complete</h3>
@@ -3886,6 +3965,143 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     })
     .catch(() => { /* offline / not deployed yet */ });
 
+// ============================================================
+// Course Builder
+// Provides a mark-picking UI for any course slot that has no
+// pre-defined marks.  Completely data-driven — no event-specific
+// checks.  Integrates with loadCustomCourse / saveCustomCourse /
+// clearCustomCourse so the built course persists across reloads.
+// ============================================================
+(function initCourseBuilder() {
+    const builderPanel = document.getElementById("courseBuilderPanel");
+    const builderActiveBar = document.getElementById("courseBuilderActive");
+    if (!builderPanel) return; // guard: HTML not present
+
+    const seqEl = document.getElementById("cbSequence");
+    const pickerEl = document.getElementById("cbPicker");
+    const undoBtn = document.getElementById("cbUndo");
+    const saveBtn = document.getElementById("cbSave");
+    const clearBtn = document.getElementById("cbClear");
+
+    // Draft tokens — marks the user has tapped but not yet saved.
+    let _draft = [];
+
+    // Render the current draft sequence above the picker.
+    function renderDraft() {
+        if (!seqEl) return;
+        if (_draft.length === 0) {
+            seqEl.innerHTML = '<span class="cb-seq-empty">Tap marks below to add them</span>';
+        } else {
+            seqEl.innerHTML = _draft.map((tok, i) => {
+                const sc = tok.side === "p" ? "pill p" : tok.side === "s" ? "pill s" : "pill x";
+                const st = tok.side === "p" ? "P" : tok.side === "s" ? "S" : "—";
+                return (i > 0 ? '<span class="sum-sep">→</span>' : "") +
+                    `<button class="cb-tok" type="button" data-idx="${i}" title="Tap to change rounding side">` +
+                    `${tok.mark}<sup class="${sc}">${st}</sup>` +
+                    `</button>`;
+            }).join("");
+        }
+        if (undoBtn) undoBtn.disabled = _draft.length === 0;
+        // Require at least 2 marks (start + one rounding mark) to save.
+        if (saveBtn) saveBtn.disabled = _draft.length < 2;
+    }
+
+    // Populate the mark picker with all non-hazard marks from the current dataset.
+    // Rebuilds on every open so it reflects any regatta data switch.
+    function buildPicker() {
+        if (!pickerEl || !MARKS) return;
+        pickerEl.innerHTML = "";
+        // Default side: port — sensible for all-port events and most legs.
+        Object.keys(MARKS).sort().forEach(letter => {
+            const m = MARKS[letter];
+            if (m.type === "hazard") return; // hazard marks are not course marks
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cb-mark-btn";
+            btn.dataset.mark = letter;
+            btn.innerHTML =
+                `<span class="cb-letter">${letter}</span>` +
+                `<span class="cb-name">${m.name || ""}</span>`;
+            btn.setAttribute("aria-label", `Add mark ${letter} – ${m.name || ""}`);
+            btn.addEventListener("click", () => {
+                _draft.push({ mark: letter, side: "p" });
+                renderDraft();
+            });
+            pickerEl.appendChild(btn);
+        });
+    }
+
+    // Reset the builder to empty draft state and rebuild the picker grid.
+    function resetBuilder() {
+        _draft = [];
+        buildPicker();
+        renderDraft();
+    }
+
+    // Cycle the rounding side of a draft token: port → stbd → (none) → port.
+    if (seqEl) {
+        seqEl.addEventListener("click", (e) => {
+            const tok = e.target.closest(".cb-tok");
+            if (!tok) return;
+            const idx = parseInt(tok.dataset.idx, 10);
+            if (!isFinite(idx) || !_draft[idx]) return;
+            const cur = _draft[idx].side;
+            _draft[idx].side = cur === "p" ? "s" : cur === "s" ? "" : "p";
+            renderDraft();
+        });
+    }
+
+    if (undoBtn) {
+        undoBtn.addEventListener("click", () => {
+            _draft.pop();
+            renderDraft();
+        });
+    }
+
+    if (saveBtn) {
+        saveBtn.addEventListener("click", () => {
+            if (_draft.length < 2) return;
+            saveCustomCourse([..._draft]);
+            builderPanel.hidden = true;
+            if (builderActiveBar) builderActiveBar.hidden = false;
+            state.rounded = 0;
+            state.lastWasAutoRound = false;
+            renderAll();
+            saveRaceState();
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            clearCustomCourse();
+            _draft = [];
+            state.rounded = 0;
+            state.lastWasAutoRound = false;
+            // Show builder, hide the active-course bar, and refresh course view.
+            builderPanel.hidden = false;
+            if (builderActiveBar) builderActiveBar.hidden = true;
+            buildPicker();
+            renderDraft();
+            legListEl.innerHTML = "";
+            renderSummary();
+            renderNow();
+            if (typeof renderChart === "function") renderChart();
+            saveRaceState();
+        });
+    }
+
+    // renderLegs() dispatches this event to reset the draft when showing the builder.
+    document.addEventListener("dbsc:courseBuilderShow", () => {
+        resetBuilder();
+    });
+
+    // When the user changes the card, wind, or course selector, reset the draft
+    // so a stale draft from the previous selection is not shown in the new context.
+    if (cardSel) cardSel.addEventListener("change", () => { _draft = []; });
+    if (windSel) windSel.addEventListener("change", () => { _draft = []; });
+    if (courseSel) courseSel.addEventListener("change", () => { _draft = []; });
+})();
+
 // ---------- Version footer ----------
 // Show APP_VERSION + build date in the footer so we can confirm which
 // build the installed PWA is actually running. Tap the chip to force the
@@ -4057,13 +4273,13 @@ if (btnChangeRegatta) {
 (function initMarkMap() {
 
     // ---- DOM refs ----
-    const mmCanvas      = document.getElementById("mmCanvas");
-    const mmMarkList    = document.getElementById("mmMarkList");
-    const mmSteerPanel  = document.getElementById("mmSteerPanel");
-    const markSteerCvs  = document.getElementById("markSteerCanvas");
+    const mmCanvas = document.getElementById("mmCanvas");
+    const mmMarkList = document.getElementById("mmMarkList");
+    const mmSteerPanel = document.getElementById("mmSteerPanel");
+    const markSteerCvs = document.getElementById("markSteerCanvas");
     const btnMarkMapGps = document.getElementById("btnMarkMapGps");
-    const btnSteerBack  = document.getElementById("btnSteerBack");
-    const mmSteerTitle  = document.getElementById("mmSteerTitle");
+    const btnSteerBack = document.getElementById("btnSteerBack");
+    const mmSteerTitle = document.getElementById("mmSteerTitle");
 
     if (!mmCanvas || !mmMarkList) return;
     // ---- Colour utilities ----

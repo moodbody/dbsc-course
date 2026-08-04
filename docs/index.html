@@ -287,8 +287,8 @@
             <div class="landing-controls">
                 <div class="landing-search-wrap">
                     <span class="landing-search-icon" aria-hidden="true">🔍</span>
-                    <input type="search" id="regattaSearch" class="landing-search"
-                        placeholder="Search events…" aria-label="Search events by name">
+                    <input type="search" id="regattaSearch" class="landing-search" placeholder="Search events…"
+                        aria-label="Search events by name">
                 </div>
                 <select id="regattaFilterType" class="landing-select" aria-label="Filter by event type">
                     <option value="">All types</option>
@@ -533,6 +533,27 @@
                     </button>
                     <div class="ac-body" id="ac-legs-body" role="region">
                         <div class="ac-inner">
+                            <!-- Course Builder — shown for any course slot with no pre-defined
+                                 marks (e.g. events where the RA announces the course at the start).
+                                 Data-driven: no event-specific checks. Hidden by default; app.js
+                                 shows it when the predefined course array is empty. -->
+                            <section id="courseBuilderPanel" class="course-builder" hidden aria-live="polite">
+                                <p class="cb-hint">No pre-defined course for this selection.
+                                    Tap marks below to build your course, then tap <strong>Use Course</strong>.</p>
+                                <div id="cbSequence" class="cb-seq" role="region" aria-label="Built course sequence">
+                                    <span class="cb-seq-empty">Tap marks below to add them</span>
+                                </div>
+                                <div id="cbPicker" class="cb-picker" role="group" aria-label="Available marks"></div>
+                                <div class="cb-footer">
+                                    <button id="cbUndo" class="ghost-sm" type="button" disabled>↶ Remove last</button>
+                                    <button id="cbSave" class="primary" type="button" disabled>✓ Use Course</button>
+                                </div>
+                            </section>
+                            <!-- Shown when a user-built custom course is active for this slot -->
+                            <div id="courseBuilderActive" class="cb-active-bar" hidden>
+                                <span class="cb-active-label">✏ Custom course</span>
+                                <button id="cbClear" class="ghost-sm" type="button">Edit / clear</button>
+                            </div>
                             <section class="legs">
                                 <ol id="legList"></ol>
                             </section>
