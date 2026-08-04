@@ -553,10 +553,14 @@
                     </button>
                     <div class="ac-body" id="ac-legs-body" role="region">
                         <div class="ac-inner">
-                            <!-- Course Builder — shown for any course slot with no pre-defined
-                                 marks (e.g. events where the RA announces the course at the start).
-                                 Data-driven: no event-specific checks. Hidden by default; app.js
-                                 shows it when the predefined course array is empty. -->
+                            <!-- Entry button: shown when the slot has no saved course yet -->
+                            <div id="cbCreateBtn" class="cb-create-prompt" hidden>
+                                <button class="cb-create-action" type="button">&#9999; Click to Create Custom Course</button>
+                            </div>
+
+                            <!-- Course Builder — opens when the user clicks the entry button or edits
+                                 an existing course. Activates automatically for any slot with no
+                                 pre-defined marks. Hidden by default; shown by app.js. -->
                             <section id="courseBuilderPanel" class="course-builder" hidden aria-live="polite">
                                 <p class="cb-hint">Tap a mark below, choose Port or Starboard, then
                                     <em>Add to course</em>. Set laps if the sequence repeats, then
@@ -601,22 +605,26 @@
                                     <p id="cbSideError" class="cb-side-error" hidden role="alert">
                                         Cannot add the same mark twice in a row.
                                     </p>
-                                    <button id="cbSideConfirm" class="primary" type="button"
+                                    <button id="cbSideConfirm" class="cb-action primary" type="button"
                                         disabled>&#10003; Add to course</button>
                                 </div>
 
                                 <!-- Footer actions -->
                                 <div class="cb-footer">
-                                    <button id="cbUndo" class="ghost-sm" type="button"
-                                        disabled>&#8630; Remove last</button>
-                                    <button id="cbSave" class="primary" type="button"
+                                    <div class="cb-footer-row">
+                                        <button id="cbUndo" class="cb-action ghost" type="button"
+                                            disabled>&#8630; Remove last</button>
+                                        <button id="cbClear" class="cb-action ghost cb-clear-btn" type="button"
+                                            hidden>Clear Course</button>
+                                    </div>
+                                    <button id="cbSave" class="cb-action primary" type="button"
                                         disabled>&#10003; Use Course</button>
                                 </div>
                             </section>
                             <!-- Shown when a user-built custom course is active for this slot -->
                             <div id="courseBuilderActive" class="cb-active-bar" hidden>
                                 <span class="cb-active-label">&#9999; Custom course active</span>
-                                <button id="cbClear" class="ghost-sm" type="button">Edit / clear</button>
+                                <button id="cbEdit" class="ghost-sm" type="button">Edit Course</button>
                             </div>
                             <section class="legs">
                                 <ol id="legList"></ol>

@@ -2603,6 +2603,11 @@ footer .app-version {
 .cb-mark-btn:active {
     background: var(--hi);
 }
+/* Highlight marks already in the draft sequence */
+.cb-mark-btn.in-draft {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+}
 .cb-letter {
     font-size: 17px;
     font-weight: 700;
@@ -2617,12 +2622,19 @@ footer .app-version {
     white-space: nowrap;
 }
 
-/* Builder footer buttons */
+/* Builder footer — column of large action buttons */
 .cb-footer {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.cb-footer-row {
+    display: flex;
+    gap: 8px;
+}
+.cb-footer-row .cb-action {
+    flex: 1;
 }
 
 /* Active-course bar shown when a custom course is saved */
@@ -2653,6 +2665,60 @@ footer .app-version {
 
 /* ---- Course Builder v2 additions ---- */
 
+/* Entry-point prompt shown before the builder is opened */
+.cb-create-prompt {
+    padding: 8px 0 12px;
+}
+.cb-create-action {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 2px dashed var(--accent);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+    text-align: center;
+}
+.cb-create-action:active {
+    background: var(--hi);
+}
+
+/* Large action buttons matching Racing Controls sizing */
+.cb-action {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+}
+.cb-action.primary {
+    background: var(--good);
+    border-color: var(--good);
+    color: #fff;
+    font-weight: 700;
+}
+.cb-action.primary:disabled {
+    background: var(--card2);
+    color: var(--muted);
+    border-color: var(--line);
+    opacity: .7;
+}
+.cb-action.ghost:disabled {
+    color: var(--muted);
+    opacity: .55;
+}
+.cb-action:active {
+    transform: translateY(1px);
+}
+
 /* Non-interactive token in the built sequence (replaces tappable button) */
 .cb-tok {
     display: inline-flex;
@@ -2672,6 +2738,13 @@ footer .app-version {
     margin-left: 2px;
     border-radius: 3px;
     padding: 1px 3px;
+}
+
+/* Clear Course button in "Confirm?" state */
+.cb-clear-btn.confirming {
+    background: var(--port);
+    border-color: var(--port);
+    color: #fff;
 }
 
 /* Side picker — slides in replacing the mark grid */

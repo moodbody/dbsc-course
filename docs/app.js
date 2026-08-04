@@ -198,7 +198,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v48.2.0";
+const APP_VERSION = "v48.3.0";
 const APP_BUILD_DATE = "2026-08-04";
 
 const $ = (id) => document.getElementById(id);
@@ -715,24 +715,26 @@ function renderLegs() {
 
     const builderPanel = document.getElementById("courseBuilderPanel");
     const builderActiveBar = document.getElementById("courseBuilderActive");
+    const createBtn = document.getElementById("cbCreateBtn");
 
-    // Default: hide both builder UI elements; logic below shows them if needed.
+    // Default: hide all builder UI elements; logic below shows them if needed.
     if (builderPanel) builderPanel.hidden = true;
     if (builderActiveBar) builderActiveBar.hidden = true;
+    if (createBtn) createBtn.hidden = true;
 
     if (predefined.length === 0) {
         if (c.tokens.length === 0) {
-            // No pre-defined marks and no saved custom course — show the builder.
-            // Works for any event; no event-specific checks required.
+            // No pre-defined marks and no saved custom course — show the "Create" button.
             legListEl.innerHTML = "";
-            if (builderPanel) {
-                builderPanel.hidden = false;
-                // Notify the builder IIFE to reset its draft state for this slot.
-                document.dispatchEvent(new CustomEvent("dbsc:courseBuilderShow"));
-            }
+            if (createBtn) createBtn.hidden = false;
             return;
         }
-        // A custom course has been saved for this slot — show the edit bar.
+        // If the builder is already open (user clicked "Edit Course"), leave it alone.
+        if (builderPanel && !builderPanel.hidden) {
+            legListEl.innerHTML = "";
+            return;
+        }
+        // A custom course has been saved for this slot — show the active bar.
         if (builderActiveBar) builderActiveBar.hidden = false;
     }
 
@@ -3997,6 +3999,10 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     const builderActiveBar = document.getElementById("courseBuilderActive");
     if (!builderPanel) return;
 
+    // Entry-point and active-course control buttons
+    const createBtn = document.getElementById("cbCreateBtn");
+    const editBtn   = document.getElementById("cbEdit");
+
     // Sequence + picker
     const seqEl    = document.getElementById("cbSequence");
     const pickerEl = document.getElementById("cbPicker");
@@ -4016,19 +4022,20 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     const lapsValEl     = document.getElementById("cbLapsVal");
     const lapsPreviewEl = document.getElementById("cbLapsPreview");
 
-    // Footer + clear
+    // Footer actions
     const undoBtn  = document.getElementById("cbUndo");
     const saveBtn  = document.getElementById("cbSave");
-    const clearBtn = document.getElementById("cbClear");
+    const clearBtn = document.getElementById("cbClear"); // "Clear Course" (inside builder)
 
     // Intro modal
     const introModal    = document.getElementById("customCourseIntroModal");
     const introCloseBtn = document.getElementById("cciClose");
 
-    let _draft       = [];    // marks added so far (not yet saved)
-    let _laps        = 1;     // lap multiplier
-    let _pendingMark = null;  // letter of mark awaiting side selection
-    let _pendingSide = null;  // "p" | "s"
+    let _draft           = [];     // marks added so far (not yet saved)
+    let _laps            = 1;      // lap multiplier
+    let _pendingMark     = null;   // letter of mark awaiting side selection
+    let _pendingSide     = null;   // "p" | "s"
+    let _clearConfirming = false;  // true when Clear Course awaits 2nd click
 
     // ---- Draft sequence ----
     function renderDraft() {
@@ -4045,6 +4052,7 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         }
         if (undoBtn) undoBtn.disabled = _draft.length === 0;
         if (saveBtn) saveBtn.disabled = _draft.length < 2;
+        syncPickerHighlights();
         updateLapsPreview();
     }
 
@@ -4054,6 +4062,15 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         const total = _draft.length * _laps;
         lapsPreviewEl.textContent =
             `${_draft.length} mark${_draft.length !== 1 ? "s" : ""} \xd7 ${_laps} laps = ${total} total`;
+    }
+
+    // Highlight picker buttons for marks already present in the draft
+    function syncPickerHighlights() {
+        if (!pickerEl) return;
+        const inDraft = new Set(_draft.map(t => t.mark));
+        pickerEl.querySelectorAll(".cb-mark-btn").forEach(btn => {
+            btn.classList.toggle("in-draft", inDraft.has(btn.dataset.mark));
+        });
     }
 
     // ---- Mark picker grid ----
@@ -4104,6 +4121,7 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         _pendingSide = null;
         if (sidePickerEl) sidePickerEl.hidden = true;
         if (pickerEl) pickerEl.hidden = false;
+        syncPickerHighlights();
     }
 
     function selectSide(side) {
@@ -4160,6 +4178,7 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             for (let i = 0; i < _laps; i++) expanded.push(..._draft);
             saveCustomCourse(expanded);
             builderPanel.hidden = true;
+            if (clearBtn) { clearBtn.hidden = true; resetClearBtn(); }
             if (builderActiveBar) builderActiveBar.hidden = false;
             state.rounded = 0;
             state.lastWasAutoRound = false;
@@ -4168,24 +4187,69 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         });
     }
 
-    // ---- Clear / edit ----
+    // ---- Clear Course — two-step confirmation ----
+    function resetClearBtn() {
+        _clearConfirming = false;
+        if (!clearBtn) return;
+        clearBtn.textContent = "Clear Course";
+        clearBtn.classList.remove("confirming");
+    }
+
     if (clearBtn) {
         clearBtn.addEventListener("click", () => {
+            if (!_clearConfirming) {
+                // Step 2: change label to "Confirm?" and wait for second click
+                _clearConfirming = true;
+                clearBtn.textContent = "Confirm?";
+                clearBtn.classList.add("confirming");
+                return;
+            }
+            // Step 3: actually clear
             clearCustomCourse();
             _draft = [];
             state.rounded = 0;
             state.lastWasAutoRound = false;
-            builderPanel.hidden = false;
+            builderPanel.hidden = true;
+            clearBtn.hidden = true;
+            resetClearBtn();
             if (builderActiveBar) builderActiveBar.hidden = true;
+            if (createBtn) createBtn.hidden = false;
             setLaps(1);
-            buildPicker();
-            renderDraft();
             closeSidePicker();
             legListEl.innerHTML = "";
             renderSummary();
             renderNow();
             if (typeof renderChart === "function") renderChart();
             saveRaceState();
+        });
+    }
+
+    // ---- "Click to Create Custom Course" entry button ----
+    if (createBtn) {
+        createBtn.addEventListener("click", () => {
+            createBtn.hidden = true;
+            _draft = [];
+            setLaps(1);
+            buildPicker();
+            renderDraft();
+            closeSidePicker();
+            builderPanel.hidden = false;
+        });
+    }
+
+    // ---- "Edit Course" button in the active bar ----
+    if (editBtn) {
+        editBtn.addEventListener("click", () => {
+            builderActiveBar.hidden = true;
+            _draft = [];
+            resetClearBtn();
+            setLaps(1);
+            buildPicker();
+            renderDraft();
+            closeSidePicker();
+            if (clearBtn) clearBtn.hidden = false; // expose the Clear Course button
+            builderPanel.hidden = false;
+            legListEl.innerHTML = "";
         });
     }
 
@@ -4200,19 +4264,10 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     }
 
     // ---- Lifecycle ----
-    // renderLegs() fires this when showing the builder for a new empty slot.
-    document.addEventListener("dbsc:courseBuilderShow", () => {
-        _draft = [];
-        setLaps(1);
-        buildPicker();
-        renderDraft();
-        closeSidePicker();
-    });
-
-    // Discard in-progress draft when the selector context changes.
-    if (cardSel)   cardSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); });
-    if (windSel)   windSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); });
-    if (courseSel) courseSel.addEventListener("change", () => { _draft = []; closeSidePicker(); setLaps(1); });
+    // Discard in-progress draft and reset when selector context changes.
+    if (cardSel)   cardSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); resetClearBtn(); });
+    if (windSel)   windSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); resetClearBtn(); });
+    if (courseSel) courseSel.addEventListener("change", () => { _draft = []; closeSidePicker(); setLaps(1); resetClearBtn(); });
 })();
 
 // ---------- Version footer ----------
