@@ -2651,6 +2651,115 @@ footer .app-version {
     line-height: 1.5;
 }
 
+/* ---- Course Builder v2 additions ---- */
+
+/* Non-interactive token in the built sequence (replaces tappable button) */
+.cb-tok {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: default;
+}
+.cb-tok sup {
+    font-size: 9px;
+    font-weight: 700;
+    margin-left: 2px;
+    border-radius: 3px;
+    padding: 1px 3px;
+}
+
+/* Side picker — slides in replacing the mark grid */
+.cb-side-picker {
+    background: var(--card2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.cb-side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.cb-side-markname {
+    font-size: 15px;
+    font-weight: 700;
+}
+.cb-side-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.cb-side-btn {
+    padding: 12px 8px;
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+}
+.cb-side-btn:active { opacity: 0.8; }
+.cb-side-btn.selected { border-color: var(--accent); background: var(--hi); }
+.cb-side-btn-p.selected { border-color: var(--port); background: rgba(211,51,51,0.13); }
+.cb-side-btn-s.selected { border-color: var(--stbd); background: rgba(26,166,74,0.13); }
+.cb-side-error {
+    font-size: 12px;
+    color: var(--port);
+    margin: 0 0 8px;
+}
+
+/* Laps selector row */
+.cb-laps-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.cb-laps-label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 600;
+}
+.cb-laps-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cb-laps-btn {
+    min-width: 32px;
+    text-align: center;
+}
+.cb-laps-val {
+    font-size: 16px;
+    font-weight: 700;
+    min-width: 24px;
+    text-align: center;
+}
+.cb-laps-preview {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+}
+
+/* Intro modal steps list */
+.cci-steps {
+    margin: 10px 0 0 20px;
+    line-height: 1.9;
+}
+
 /* Signal strip */
 .start-signals {
     width: 100%;

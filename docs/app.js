@@ -198,7 +198,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v48.1.0";
+const APP_VERSION = "v48.2.0";
 const APP_BUILD_DATE = "2026-08-04";
 
 const $ = (id) => document.getElementById(id);
@@ -235,7 +235,12 @@ const btnTwdReset = $("btnTwdReset");
 const state = {
     cardId: localStorage.getItem("dbsc.card") || "CC1",
     windKey: localStorage.getItem("dbsc.wind") || "A",
-    courseN: +(localStorage.getItem("dbsc.course") || 1),
+    courseN: (() => {
+        const v = localStorage.getItem("dbsc.course");
+        if (v === "custom") return "custom";
+        const n = +(v || 1);
+        return Number.isFinite(n) && n > 0 ? n : 1;
+    })(),
     rounded: 0,             // index of next mark to round (0-based into legs[])
     regatta: null,          // 'dublin-bay' | 'club-regattas' — set by selectRegatta()
     gpsOn: false,
@@ -589,7 +594,15 @@ function populateCourses() {
         opt.textContent = `${n}`;
         courseSel.appendChild(opt);
     }
-    if (!wind.courses[state.courseN]) state.courseN = nums[0];
+    // "Custom Course" is always available for any event — no event-specific check needed
+    const customOpt = document.createElement("option");
+    customOpt.value = "custom";
+    customOpt.textContent = "Custom…";
+    courseSel.appendChild(customOpt);
+    // Preserve "custom" selection; fall back to first predefined number otherwise
+    if (state.courseN !== "custom" && !wind.courses[state.courseN]) {
+        state.courseN = nums[0] || 1;
+    }
     courseSel.value = state.courseN;
 }
 
@@ -1032,10 +1045,16 @@ windSel.addEventListener("change", () => {
     saveRaceState();
 });
 courseSel.addEventListener("change", () => {
-    state.courseN = +courseSel.value;
+    const newVal = courseSel.value;
+    state.courseN = newVal === "custom" ? "custom" : +newVal;
     state.rounded = 0;
     state.lastWasAutoRound = false;
     saveSelection(); renderAll();
+    // Show the intro guide the first time the user explicitly picks Custom Course
+    if (state.courseN === "custom" && !loadCustomCourse()) {
+        const introModal = document.getElementById("customCourseIntroModal");
+        if (introModal) introModal.hidden = false;
+    }
     saveRaceState();
 });
 
@@ -3966,55 +3985,84 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     .catch(() => { /* offline / not deployed yet */ });
 
 // ============================================================
-// Course Builder
+// Course Builder (v2)
 // Provides a mark-picking UI for any course slot that has no
-// pre-defined marks.  Completely data-driven — no event-specific
-// checks.  Integrates with loadCustomCourse / saveCustomCourse /
-// clearCustomCourse so the built course persists across reloads.
+// pre-defined marks, and for the explicit "Custom…" option in
+// the Course # selector.  Fully data-driven — no event-specific
+// checks.  Uses loadCustomCourse / saveCustomCourse /
+// clearCustomCourse for persistence.
 // ============================================================
 (function initCourseBuilder() {
-    const builderPanel = document.getElementById("courseBuilderPanel");
+    const builderPanel     = document.getElementById("courseBuilderPanel");
     const builderActiveBar = document.getElementById("courseBuilderActive");
-    if (!builderPanel) return; // guard: HTML not present
+    if (!builderPanel) return;
 
-    const seqEl = document.getElementById("cbSequence");
+    // Sequence + picker
+    const seqEl    = document.getElementById("cbSequence");
     const pickerEl = document.getElementById("cbPicker");
-    const undoBtn = document.getElementById("cbUndo");
-    const saveBtn = document.getElementById("cbSave");
+
+    // Side-picker (appears after tapping a mark)
+    const sidePickerEl   = document.getElementById("cbSidePicker");
+    const sideMarkNameEl = document.getElementById("cbSideMarkName");
+    const sidePortBtn    = document.getElementById("cbSidePort");
+    const sideStbdBtn    = document.getElementById("cbSideStbd");
+    const sideConfirmBtn = document.getElementById("cbSideConfirm");
+    const sideCancelBtn  = document.getElementById("cbSideCancel");
+    const sideErrorEl    = document.getElementById("cbSideError");
+
+    // Laps
+    const lapsMinusBtn  = document.getElementById("cbLapsMinus");
+    const lapsPlusBtn   = document.getElementById("cbLapsPlus");
+    const lapsValEl     = document.getElementById("cbLapsVal");
+    const lapsPreviewEl = document.getElementById("cbLapsPreview");
+
+    // Footer + clear
+    const undoBtn  = document.getElementById("cbUndo");
+    const saveBtn  = document.getElementById("cbSave");
     const clearBtn = document.getElementById("cbClear");
 
-    // Draft tokens — marks the user has tapped but not yet saved.
-    let _draft = [];
+    // Intro modal
+    const introModal    = document.getElementById("customCourseIntroModal");
+    const introCloseBtn = document.getElementById("cciClose");
 
-    // Render the current draft sequence above the picker.
+    let _draft       = [];    // marks added so far (not yet saved)
+    let _laps        = 1;     // lap multiplier
+    let _pendingMark = null;  // letter of mark awaiting side selection
+    let _pendingSide = null;  // "p" | "s"
+
+    // ---- Draft sequence ----
     function renderDraft() {
         if (!seqEl) return;
         if (_draft.length === 0) {
-            seqEl.innerHTML = '<span class="cb-seq-empty">Tap marks below to add them</span>';
+            seqEl.innerHTML = '<span class="cb-seq-empty">Tap a mark below to begin</span>';
         } else {
             seqEl.innerHTML = _draft.map((tok, i) => {
                 const sc = tok.side === "p" ? "pill p" : tok.side === "s" ? "pill s" : "pill x";
-                const st = tok.side === "p" ? "P" : tok.side === "s" ? "S" : "—";
-                return (i > 0 ? '<span class="sum-sep">→</span>' : "") +
-                    `<button class="cb-tok" type="button" data-idx="${i}" title="Tap to change rounding side">` +
-                    `${tok.mark}<sup class="${sc}">${st}</sup>` +
-                    `</button>`;
+                const st = tok.side === "p" ? "P" : tok.side === "s" ? "S" : "\u2014";
+                return (i > 0 ? '<span class="sum-sep">\u2192</span>' : "") +
+                    `<span class="cb-tok">${tok.mark}<sup class="${sc}">${st}</sup></span>`;
             }).join("");
         }
         if (undoBtn) undoBtn.disabled = _draft.length === 0;
-        // Require at least 2 marks (start + one rounding mark) to save.
         if (saveBtn) saveBtn.disabled = _draft.length < 2;
+        updateLapsPreview();
     }
 
-    // Populate the mark picker with all non-hazard marks from the current dataset.
-    // Rebuilds on every open so it reflects any regatta data switch.
+    function updateLapsPreview() {
+        if (!lapsPreviewEl) return;
+        if (_draft.length < 2 || _laps <= 1) { lapsPreviewEl.textContent = ""; return; }
+        const total = _draft.length * _laps;
+        lapsPreviewEl.textContent =
+            `${_draft.length} mark${_draft.length !== 1 ? "s" : ""} \xd7 ${_laps} laps = ${total} total`;
+    }
+
+    // ---- Mark picker grid ----
     function buildPicker() {
         if (!pickerEl || !MARKS) return;
         pickerEl.innerHTML = "";
-        // Default side: port — sensible for all-port events and most legs.
         Object.keys(MARKS).sort().forEach(letter => {
             const m = MARKS[letter];
-            if (m.type === "hazard") return; // hazard marks are not course marks
+            if (m.type === "hazard") return;
             const btn = document.createElement("button");
             btn.type = "button";
             btn.className = "cb-mark-btn";
@@ -4022,46 +4070,95 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             btn.innerHTML =
                 `<span class="cb-letter">${letter}</span>` +
                 `<span class="cb-name">${m.name || ""}</span>`;
-            btn.setAttribute("aria-label", `Add mark ${letter} – ${m.name || ""}`);
-            btn.addEventListener("click", () => {
-                _draft.push({ mark: letter, side: "p" });
-                renderDraft();
-            });
+            btn.setAttribute("aria-label", `Select mark ${letter} \u2013 ${m.name || ""}`);
+            btn.addEventListener("click", () => openSidePicker(letter));
             pickerEl.appendChild(btn);
         });
     }
 
-    // Reset the builder to empty draft state and rebuild the picker grid.
-    function resetBuilder() {
-        _draft = [];
-        buildPicker();
-        renderDraft();
+    // ---- Side picker ----
+    function openSidePicker(letter) {
+        _pendingMark = letter;
+        _pendingSide = null;
+        const m = MARKS[letter];
+        if (sideMarkNameEl) sideMarkNameEl.textContent = `${letter} \u2013 ${m ? m.name : letter}`;
+
+        // Consecutive-duplicate check
+        const lastMark = _draft.length > 0 ? _draft[_draft.length - 1].mark : null;
+        const isDupe = (lastMark === letter);
+        if (sideErrorEl) sideErrorEl.hidden = !isDupe;
+
+        // Reset side button states
+        [sidePortBtn, sideStbdBtn].forEach(btn => {
+            if (btn) { btn.setAttribute("aria-pressed", "false"); btn.classList.remove("selected"); }
+        });
+        if (sideConfirmBtn) sideConfirmBtn.disabled = true;
+
+        // Swap picker ↔ side-picker
+        if (pickerEl) pickerEl.hidden = true;
+        if (sidePickerEl) sidePickerEl.hidden = false;
     }
 
-    // Cycle the rounding side of a draft token: port → stbd → (none) → port.
-    if (seqEl) {
-        seqEl.addEventListener("click", (e) => {
-            const tok = e.target.closest(".cb-tok");
-            if (!tok) return;
-            const idx = parseInt(tok.dataset.idx, 10);
-            if (!isFinite(idx) || !_draft[idx]) return;
-            const cur = _draft[idx].side;
-            _draft[idx].side = cur === "p" ? "s" : cur === "s" ? "" : "p";
+    function closeSidePicker() {
+        _pendingMark = null;
+        _pendingSide = null;
+        if (sidePickerEl) sidePickerEl.hidden = true;
+        if (pickerEl) pickerEl.hidden = false;
+    }
+
+    function selectSide(side) {
+        _pendingSide = side;
+        if (sidePortBtn) {
+            sidePortBtn.setAttribute("aria-pressed", String(side === "p"));
+            sidePortBtn.classList.toggle("selected", side === "p");
+        }
+        if (sideStbdBtn) {
+            sideStbdBtn.setAttribute("aria-pressed", String(side === "s"));
+            sideStbdBtn.classList.toggle("selected", side === "s");
+        }
+        // Confirm is allowed only when no consecutive-dupe violation
+        const lastMark = _draft.length > 0 ? _draft[_draft.length - 1].mark : null;
+        if (sideConfirmBtn) sideConfirmBtn.disabled = (lastMark === _pendingMark);
+    }
+
+    if (sidePortBtn) sidePortBtn.addEventListener("click", () => selectSide("p"));
+    if (sideStbdBtn) sideStbdBtn.addEventListener("click", () => selectSide("s"));
+    if (sideCancelBtn) sideCancelBtn.addEventListener("click", closeSidePicker);
+
+    if (sideConfirmBtn) {
+        sideConfirmBtn.addEventListener("click", () => {
+            if (!_pendingMark || !_pendingSide) return;
+            const lastMark = _draft.length > 0 ? _draft[_draft.length - 1].mark : null;
+            if (lastMark === _pendingMark) return; // safety guard
+            _draft.push({ mark: _pendingMark, side: _pendingSide });
             renderDraft();
+            closeSidePicker();
         });
     }
 
+    // ---- Undo ----
     if (undoBtn) {
-        undoBtn.addEventListener("click", () => {
-            _draft.pop();
-            renderDraft();
-        });
+        undoBtn.addEventListener("click", () => { _draft.pop(); renderDraft(); });
     }
 
+    // ---- Laps ----
+    function setLaps(n) {
+        _laps = Math.max(1, Math.min(10, n));
+        if (lapsValEl) lapsValEl.textContent = String(_laps);
+        if (lapsMinusBtn) lapsMinusBtn.disabled = (_laps <= 1);
+        if (lapsPlusBtn)  lapsPlusBtn.disabled  = (_laps >= 10);
+        updateLapsPreview();
+    }
+    if (lapsMinusBtn) lapsMinusBtn.addEventListener("click", () => setLaps(_laps - 1));
+    if (lapsPlusBtn)  lapsPlusBtn.addEventListener("click",  () => setLaps(_laps + 1));
+
+    // ---- Save — expand base sequence by lap count, then persist ----
     if (saveBtn) {
         saveBtn.addEventListener("click", () => {
             if (_draft.length < 2) return;
-            saveCustomCourse([..._draft]);
+            const expanded = [];
+            for (let i = 0; i < _laps; i++) expanded.push(..._draft);
+            saveCustomCourse(expanded);
             builderPanel.hidden = true;
             if (builderActiveBar) builderActiveBar.hidden = false;
             state.rounded = 0;
@@ -4071,17 +4168,19 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         });
     }
 
+    // ---- Clear / edit ----
     if (clearBtn) {
         clearBtn.addEventListener("click", () => {
             clearCustomCourse();
             _draft = [];
             state.rounded = 0;
             state.lastWasAutoRound = false;
-            // Show builder, hide the active-course bar, and refresh course view.
             builderPanel.hidden = false;
             if (builderActiveBar) builderActiveBar.hidden = true;
+            setLaps(1);
             buildPicker();
             renderDraft();
+            closeSidePicker();
             legListEl.innerHTML = "";
             renderSummary();
             renderNow();
@@ -4090,16 +4189,30 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         });
     }
 
-    // renderLegs() dispatches this event to reset the draft when showing the builder.
+    // ---- Intro modal ----
+    if (introCloseBtn && introModal) {
+        introCloseBtn.addEventListener("click", () => { introModal.hidden = true; });
+    }
+    if (introModal) {
+        introModal.addEventListener("click", e => {
+            if (e.target === introModal) introModal.hidden = true;
+        });
+    }
+
+    // ---- Lifecycle ----
+    // renderLegs() fires this when showing the builder for a new empty slot.
     document.addEventListener("dbsc:courseBuilderShow", () => {
-        resetBuilder();
+        _draft = [];
+        setLaps(1);
+        buildPicker();
+        renderDraft();
+        closeSidePicker();
     });
 
-    // When the user changes the card, wind, or course selector, reset the draft
-    // so a stale draft from the previous selection is not shown in the new context.
-    if (cardSel) cardSel.addEventListener("change", () => { _draft = []; });
-    if (windSel) windSel.addEventListener("change", () => { _draft = []; });
-    if (courseSel) courseSel.addEventListener("change", () => { _draft = []; });
+    // Discard in-progress draft when the selector context changes.
+    if (cardSel)   cardSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); });
+    if (windSel)   windSel.addEventListener("change",   () => { _draft = []; closeSidePicker(); setLaps(1); });
+    if (courseSel) courseSel.addEventListener("change", () => { _draft = []; closeSidePicker(); setLaps(1); });
 })();
 
 // ---------- Version footer ----------

@@ -98,6 +98,26 @@
         </div>
     </div>
 
+    <!-- Custom Course intro guide — shown when the user first selects Custom&#8230; in the Course # picker -->
+    <div id="customCourseIntroModal" class="modal" hidden role="dialog" aria-modal="true"
+        aria-labelledby="cciTitle">
+        <div class="modal-card welcome-card">
+            <h2 id="cciTitle">&#9999; Build a Custom Course</h2>
+            <p>Create a one-off course by picking marks in order:</p>
+            <ol class="cci-steps">
+                <li>Tap a <strong>mark</strong> from the grid below.</li>
+                <li>Choose <strong>Port</strong> or <strong>Starboard</strong> rounding.</li>
+                <li>Tap <strong>Add to course</strong> to confirm.</li>
+                <li>Set the number of <strong>laps</strong> &mdash; the base sequence repeats that many times.</li>
+                <li>Tap <strong>Use Course</strong> when done to start navigating.</li>
+            </ol>
+            <p class="modal-note">The same mark cannot appear twice in a row. Use <em>&#8630; Remove last</em> to undo a step.</p>
+            <div class="modal-row" style="margin-top:18px;">
+                <button id="cciClose" class="primary" type="button">Got it &mdash; let's build</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Short welcome popup — shown once on first visit -->
     <div id="welcomeModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
         <div class="modal-card welcome-card">
@@ -538,20 +558,64 @@
                                  Data-driven: no event-specific checks. Hidden by default; app.js
                                  shows it when the predefined course array is empty. -->
                             <section id="courseBuilderPanel" class="course-builder" hidden aria-live="polite">
-                                <p class="cb-hint">No pre-defined course for this selection.
-                                    Tap marks below to build your course, then tap <strong>Use Course</strong>.</p>
+                                <p class="cb-hint">Tap a mark below, choose Port or Starboard, then
+                                    <em>Add to course</em>. Set laps if the sequence repeats, then
+                                    tap <strong>Use Course</strong>.</p>
+
+                                <!-- Built sequence display -->
                                 <div id="cbSequence" class="cb-seq" role="region" aria-label="Built course sequence">
-                                    <span class="cb-seq-empty">Tap marks below to add them</span>
+                                    <span class="cb-seq-empty">Tap a mark below to begin</span>
                                 </div>
-                                <div id="cbPicker" class="cb-picker" role="group" aria-label="Available marks"></div>
+
+                                <!-- Laps selector -->
+                                <div class="cb-laps-row">
+                                    <span class="cb-laps-label">Laps</span>
+                                    <div class="cb-laps-ctrl">
+                                        <button id="cbLapsMinus" class="ghost-sm cb-laps-btn" type="button"
+                                            aria-label="Fewer laps" disabled>&#8722;</button>
+                                        <span id="cbLapsVal" class="cb-laps-val" aria-live="polite"
+                                            aria-atomic="true">1</span>
+                                        <button id="cbLapsPlus" class="ghost-sm cb-laps-btn" type="button"
+                                            aria-label="More laps">+</button>
+                                    </div>
+                                    <span class="cb-laps-preview" id="cbLapsPreview"></span>
+                                </div>
+
+                                <!-- Mark picker grid (hidden while side-picker is open) -->
+                                <div id="cbPicker" class="cb-picker" role="group"
+                                    aria-label="Available marks"></div>
+
+                                <!-- Side picker — replaces the grid after tapping a mark -->
+                                <div id="cbSidePicker" class="cb-side-picker" hidden role="group"
+                                    aria-label="Choose rounding side">
+                                    <div class="cb-side-header">
+                                        <span class="cb-side-markname" id="cbSideMarkName">Mark &mdash;</span>
+                                        <button id="cbSideCancel" class="ghost-sm" type="button">&#10005; Cancel</button>
+                                    </div>
+                                    <div class="cb-side-btns">
+                                        <button id="cbSidePort" class="cb-side-btn cb-side-btn-p" type="button"
+                                            aria-pressed="false">&#9664; Port</button>
+                                        <button id="cbSideStbd" class="cb-side-btn cb-side-btn-s" type="button"
+                                            aria-pressed="false">Starboard &#9654;</button>
+                                    </div>
+                                    <p id="cbSideError" class="cb-side-error" hidden role="alert">
+                                        Cannot add the same mark twice in a row.
+                                    </p>
+                                    <button id="cbSideConfirm" class="primary" type="button"
+                                        disabled>&#10003; Add to course</button>
+                                </div>
+
+                                <!-- Footer actions -->
                                 <div class="cb-footer">
-                                    <button id="cbUndo" class="ghost-sm" type="button" disabled>↶ Remove last</button>
-                                    <button id="cbSave" class="primary" type="button" disabled>✓ Use Course</button>
+                                    <button id="cbUndo" class="ghost-sm" type="button"
+                                        disabled>&#8630; Remove last</button>
+                                    <button id="cbSave" class="primary" type="button"
+                                        disabled>&#10003; Use Course</button>
                                 </div>
                             </section>
                             <!-- Shown when a user-built custom course is active for this slot -->
                             <div id="courseBuilderActive" class="cb-active-bar" hidden>
-                                <span class="cb-active-label">✏ Custom course</span>
+                                <span class="cb-active-label">&#9999; Custom course active</span>
                                 <button id="cbClear" class="ghost-sm" type="button">Edit / clear</button>
                             </div>
                             <section class="legs">
