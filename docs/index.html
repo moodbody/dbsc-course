@@ -553,6 +553,9 @@
                     </button>
                     <div class="ac-body" id="ac-legs-body" role="region">
                         <div class="ac-inner">
+                            <!-- Saved course library — items rendered by JS -->
+                            <div id="cbSavedCourses" class="cb-saved-courses" hidden></div>
+
                             <!-- Entry button: shown when the slot has no saved course yet -->
                             <div id="cbCreateBtn" class="cb-create-prompt" hidden>
                                 <button class="cb-create-action" type="button">&#9999; Click to Create Custom Course</button>
@@ -562,9 +565,15 @@
                                  an existing course. Activates automatically for any slot with no
                                  pre-defined marks. Hidden by default; shown by app.js. -->
                             <section id="courseBuilderPanel" class="course-builder" hidden aria-live="polite">
-                                <p class="cb-hint">Tap a mark below, choose Port or Starboard, then
-                                    <em>Add to course</em>. Set laps if the sequence repeats, then
-                                    tap <strong>Use Course</strong>.</p>
+                                <p class="cb-hint">Tap a mark, choose Port or Starboard, set laps if the
+                                    sequence repeats, enter the True Wind Direction, then tap
+                                    <strong>Use Course</strong>. Add a name to save it to your library.</p>
+
+                                <!-- Course name (optional) — if provided, saved to the library -->
+                                <div class="cb-name-row">
+                                    <input id="cbNameInput" class="cb-name-input" type="text"
+                                        placeholder="Course name (saves to library)">
+                                </div>
 
                                 <!-- Built sequence display -->
                                 <div id="cbSequence" class="cb-seq" role="region" aria-label="Built course sequence">
@@ -607,6 +616,16 @@
                                     </p>
                                     <button id="cbSideConfirm" class="cb-action primary" type="button"
                                         disabled>&#10003; Add to course</button>
+                                </div>
+
+                                <!-- True Wind Direction — required before "Use Course" is enabled -->
+                                <div class="cb-twd-row">
+                                    <label for="cbTwdInput" class="cb-twd-label">True Wind Direction</label>
+                                    <div class="cb-twd-ctrl">
+                                        <input id="cbTwdInput" class="cb-twd-input" type="number"
+                                            min="0" max="359" placeholder="0&ndash;359" step="1">
+                                        <span class="cb-twd-unit">&#176;</span>
+                                    </div>
                                 </div>
 
                                 <!-- Footer actions -->

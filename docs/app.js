@@ -79,6 +79,33 @@ function clearCustomCourse() {
     try { localStorage.removeItem(_customCourseKey()); } catch (_) { }
 }
 
+// ---------- Course Library ----------
+// Named courses saved across sessions for quick reuse.
+// Scoped to the current regatta dataset.
+function _courseLibKey() {
+    return `dbsc.courseLib.${state.regatta || "default"}`;
+}
+function loadCourseLibrary() {
+    try {
+        const raw = localStorage.getItem(_courseLibKey());
+        return raw ? JSON.parse(raw) : [];
+    } catch (_) { return []; }
+}
+function saveCourseToLibrary(entry) {
+    try {
+        const lib = loadCourseLibrary();
+        const idx = lib.findIndex(e => e.id === entry.id);
+        if (idx >= 0) lib[idx] = entry; else lib.push(entry);
+        localStorage.setItem(_courseLibKey(), JSON.stringify(lib));
+    } catch (_) { }
+}
+function deleteCourseFromLibrary(id) {
+    try {
+        const lib = loadCourseLibrary().filter(e => e.id !== id);
+        localStorage.setItem(_courseLibKey(), JSON.stringify(lib));
+    } catch (_) { }
+}
+
 // ---------- Coastline (approx) ----------
 // Hand-traced shoreline of Dublin Bay — Howth Head south to Bray Head —
 // running roughly N -> S along the western shore of the bay. Used to
@@ -198,7 +225,7 @@ let TIDES = null;
 //   MAJOR — bump when the SW cache version increments (breaking cache change)
 //   MINOR — bump for new features or significant UI additions
 //   PATCH — bump for bug-fixes, copy tweaks, minor adjustments
-const APP_VERSION = "v48.3.0";
+const APP_VERSION = "v48.4.0";
 const APP_BUILD_DATE = "2026-08-04";
 
 const $ = (id) => document.getElementById(id);
@@ -723,6 +750,7 @@ function renderLegs() {
     if (createBtn) createBtn.hidden = true;
 
     if (predefined.length === 0) {
+        renderSavedCourses(); // keep library list up to date
         if (c.tokens.length === 0) {
             // No pre-defined marks and no saved custom course — show the "Create" button.
             legListEl.innerHTML = "";
@@ -3987,6 +4015,70 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     .catch(() => { /* offline / not deployed yet */ });
 
 // ============================================================
+// Saved-Course Library UI helpers
+// Renders the library list above the "Create" button and handles
+// loading / deleting saved courses.
+// ============================================================
+function renderSavedCourses() {
+    const container = document.getElementById("cbSavedCourses");
+    if (!container) return;
+    const lib = loadCourseLibrary();
+    if (lib.length === 0) { container.hidden = true; return; }
+    container.hidden = false;
+    container.innerHTML =
+        '<div class="cb-saved-hd">' +
+        '<span>&#128218; Saved Courses</span>' +
+        '</div>' +
+        lib.map(entry => {
+            const mc  = (entry.marks || []).length;
+            const lps = entry.laps || 1;
+            const twd = entry.twd != null ? `${entry.twd}\u00b0` : "\u2014";
+            const meta = `${mc} mark${mc !== 1 ? "s" : ""}${lps > 1 ? ` \xd7 ${lps} laps` : ""} &middot; TWD ${twd}`;
+            return `<div class="cb-saved-item">
+                <div class="cb-saved-info">
+                    <span class="cb-saved-name">${entry.name}</span>
+                    <span class="cb-saved-meta">${meta}</span>
+                </div>
+                <div class="cb-saved-actions">
+                    <button class="ghost-sm cb-lib-load" data-id="${entry.id}" type="button">Load</button>
+                    <button class="ghost-sm cb-lib-del" data-id="${entry.id}" type="button" aria-label="Delete">&#10005;</button>
+                </div>
+            </div>`;
+        }).join("");
+    container.querySelectorAll(".cb-lib-load").forEach(btn =>
+        btn.addEventListener("click", () => loadSavedCourse(btn.dataset.id))
+    );
+    container.querySelectorAll(".cb-lib-del").forEach(btn =>
+        btn.addEventListener("click", () => {
+            deleteCourseFromLibrary(btn.dataset.id);
+            renderSavedCourses();
+        })
+    );
+}
+
+function loadSavedCourse(id) {
+    const entry = loadCourseLibrary().find(e => e.id === id);
+    if (!entry) return;
+    const base = entry.marks || [];
+    const laps = entry.laps || 1;
+    const expanded = [];
+    for (let i = 0; i < laps; i++) expanded.push(...base);
+    saveCustomCourse(expanded);
+    if (entry.twd != null && Number.isFinite(entry.twd)) {
+        state.twdOverride = entry.twd;
+        syncTwdInput();
+    }
+    const savedSection = document.getElementById("cbSavedCourses");
+    const createBtnEl  = document.getElementById("cbCreateBtn");
+    if (savedSection) savedSection.hidden = true;
+    if (createBtnEl)  createBtnEl.hidden  = true;
+    state.rounded = 0;
+    state.lastWasAutoRound = false;
+    renderAll();
+    saveRaceState();
+}
+
+// ============================================================
 // Course Builder (v2)
 // Provides a mark-picking UI for any course slot that has no
 // pre-defined marks, and for the explicit "Custom…" option in
@@ -4027,6 +4119,10 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     const saveBtn  = document.getElementById("cbSave");
     const clearBtn = document.getElementById("cbClear"); // "Clear Course" (inside builder)
 
+    // Name + TWD inputs
+    const cbNameInput = document.getElementById("cbNameInput");
+    const cbTwdInput  = document.getElementById("cbTwdInput");
+
     // Intro modal
     const introModal    = document.getElementById("customCourseIntroModal");
     const introCloseBtn = document.getElementById("cciClose");
@@ -4051,8 +4147,8 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             }).join("");
         }
         if (undoBtn) undoBtn.disabled = _draft.length === 0;
-        if (saveBtn) saveBtn.disabled = _draft.length < 2;
         syncPickerHighlights();
+        updateSaveBtn();
         updateLapsPreview();
     }
 
@@ -4071,6 +4167,15 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
         pickerEl.querySelectorAll(".cb-mark-btn").forEach(btn => {
             btn.classList.toggle("in-draft", inDraft.has(btn.dataset.mark));
         });
+    }
+
+    // Save enabled only when draft has ≥2 marks AND a valid TWD is entered
+    function updateSaveBtn() {
+        if (!saveBtn) return;
+        const hasDraft = _draft.length >= 2;
+        const twdStr = cbTwdInput ? cbTwdInput.value.trim() : "";
+        const hasTwd = twdStr !== "" && Number.isFinite(+twdStr);
+        saveBtn.disabled = !(hasDraft && hasTwd);
     }
 
     // ---- Mark picker grid ----
@@ -4169,14 +4274,37 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
     }
     if (lapsMinusBtn) lapsMinusBtn.addEventListener("click", () => setLaps(_laps - 1));
     if (lapsPlusBtn)  lapsPlusBtn.addEventListener("click",  () => setLaps(_laps + 1));
+    if (cbTwdInput)   cbTwdInput.addEventListener("input",   updateSaveBtn);
 
-    // ---- Save — expand base sequence by lap count, then persist ----
+    // ---- Save — validate TWD, expand by laps, persist, optionally save to library ----
     if (saveBtn) {
         saveBtn.addEventListener("click", () => {
             if (_draft.length < 2) return;
+            const twdStr = cbTwdInput ? cbTwdInput.value.trim() : "";
+            const twdNum = ((+twdStr % 360) + 360) % 360;
+            if (!twdStr || !Number.isFinite(twdNum)) return;
+
             const expanded = [];
             for (let i = 0; i < _laps; i++) expanded.push(..._draft);
             saveCustomCourse(expanded);
+
+            // Apply True Wind Direction to the session
+            state.twdOverride = twdNum;
+            syncTwdInput();
+
+            // If a name was provided, save permanently to the course library
+            const name = cbNameInput ? cbNameInput.value.trim() : "";
+            if (name) {
+                saveCourseToLibrary({
+                    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                    name,
+                    marks: [..._draft],
+                    laps: _laps,
+                    twd: twdNum,
+                    createdAt: Date.now()
+                });
+            }
+
             builderPanel.hidden = true;
             if (clearBtn) { clearBtn.hidden = true; resetClearBtn(); }
             if (builderActiveBar) builderActiveBar.hidden = false;
@@ -4233,6 +4361,10 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             buildPicker();
             renderDraft();
             closeSidePicker();
+            // Pre-fill TWD with current session value if one is set
+            if (cbTwdInput) cbTwdInput.value = state.twdOverride != null ? Math.round(state.twdOverride) : "";
+            if (cbNameInput) cbNameInput.value = "";
+            updateSaveBtn();
             builderPanel.hidden = false;
         });
     }
@@ -4247,6 +4379,9 @@ fetch("tides.json?v=" + Date.now(), { cache: "no-store" })
             buildPicker();
             renderDraft();
             closeSidePicker();
+            if (cbTwdInput) cbTwdInput.value = state.twdOverride != null ? Math.round(state.twdOverride) : "";
+            if (cbNameInput) cbNameInput.value = "";
+            updateSaveBtn();
             if (clearBtn) clearBtn.hidden = false; // expose the Clear Course button
             builderPanel.hidden = false;
             legListEl.innerHTML = "";

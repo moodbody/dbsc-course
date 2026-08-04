@@ -2665,9 +2665,122 @@ footer .app-version {
 
 /* ---- Course Builder v2 additions ---- */
 
+/* Saved course library */
+.cb-saved-courses {
+    margin-bottom: 10px;
+}
+.cb-saved-hd {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    padding: 4px 0 6px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 4px;
+}
+.cb-saved-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    gap: 8px;
+}
+.cb-saved-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.cb-saved-name {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cb-saved-meta {
+    font-size: 11px;
+    color: var(--muted);
+}
+.cb-saved-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
 /* Entry-point prompt shown before the builder is opened */
 .cb-create-prompt {
     padding: 8px 0 12px;
+}
+
+/* Course name input */
+.cb-name-row {
+    margin-bottom: 10px;
+}
+.cb-name-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.cb-name-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+.cb-name-input::placeholder { color: var(--muted); }
+
+/* True Wind Direction input */
+.cb-twd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.cb-twd-label {
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.cb-twd-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.cb-twd-input {
+    width: 88px;
+    padding: 10px 8px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    background: var(--card);
+    color: var(--text);
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+}
+.cb-twd-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+}
+.cb-twd-input::-webkit-inner-spin-button,
+.cb-twd-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.cb-twd-unit {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--muted);
 }
 .cb-create-action {
     width: 100%;
